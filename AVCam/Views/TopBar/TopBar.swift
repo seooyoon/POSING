@@ -26,7 +26,7 @@ struct TopBar<CameraModel: Camera>: View {
                 FormatButton(captureMode: camera.captureMode)
                 // 초기화 · 포즈 · MY: 따로 떨어진 버튼 3개 (docs/01_SPEC.md 2절)
                 PosingButton(title: "초기화", onLongPress: {
-                    // 설정 화면은 #8에서 연결
+                    layers.isShowingSettings = true
                 }) {
                     layers.reset()
                     resetCount += 1
