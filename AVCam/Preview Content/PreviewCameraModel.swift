@@ -59,12 +59,23 @@ class PreviewCameraModel: Camera {
         logger.debug("Device switching isn't implemented in PreviewCamera.")
     }
     
+    // 시뮬레이터 셔터 흉내: 화면을 깜빡이고 샘플 이미지를 썸네일로 보여줌 (05_TECH_NOTES 13절)
     func capturePhoto() {
-        logger.debug("Photo capture isn't implemented in PreviewCamera.")
+        shouldFlashScreen = true
+        withAnimation(.linear(duration: 0.01)) {
+            shouldFlashScreen = false
+        }
+        thumbnail = UIImage(named: "photo_mode")?.cgImage
     }
-    
+
+    // 시뮬레이터 녹화 흉내: 녹화 중 화면(빨간 시간 · 숨는 버튼)을 확인하는 용도
     func toggleRecording() {
-        logger.debug("Moving capture isn't implemented in PreviewCamera.")
+        if captureActivity.isRecording {
+            captureActivity = .idle
+            thumbnail = UIImage(named: "video_mode")?.cgImage
+        } else {
+            captureActivity = .movieCapture()
+        }
     }
     
     func focusAndExpose(at point: CGPoint) {
