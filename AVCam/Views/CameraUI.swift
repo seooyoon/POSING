@@ -11,13 +11,22 @@ import SwiftUI
 struct CameraUI<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
+    let layers: LayerState
     let layout: CameraLayout
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            TopBar(camera: camera)
+            TopBar(camera: camera, layers: layers)
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.topBarCenterY)
+
+            // 포즈 · MY 패널: 상단 바 바로 아래, 한 번에 하나만. 전환할 때는 내용만 바뀜
+            if let kind = layers.openPanel {
+                LayerPanel(layers: layers, kind: kind)
+                    .frame(width: layout.size.width)
+                    .offset(y: layout.safeTop + CameraLayout.topBarHeight)
+                    .transition(.offset(y: -12).combined(with: .opacity))
+            }
 
             // 사진을 찍는 순간 미리보기 위쪽 가운데에 LIVE 표시
             LiveBadge()
@@ -34,6 +43,7 @@ struct CameraUI<CameraModel: Camera>: View {
             StatusOverlayView(status: camera.status)
                 .frame(width: layout.size.width, height: layout.size.height)
         }
+        .animation(.easeOut(duration: 0.2), value: layers.openPanel)
     }
 }
 
