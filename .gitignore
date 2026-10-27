@@ -16,3 +16,5 @@ build/
 
 # 개인 사진이 들어간 포즈 대표 사진은 공개 저장소에 올리지 않음 (테두리 PNG는 올림)
 **/Resources/Poses/*_photo.*
+# 테스트용 임시 포즈(단순 도형)는 올림. 실제 포즈 세트를 넣을 때 지운다
+!**/Resources/Poses/*sample*

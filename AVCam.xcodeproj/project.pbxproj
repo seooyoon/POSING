@@ -7,6 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2E07FDFFC786B7ECCB681BD8 /* LayerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = F777FF23EFF79304594D5258 /* LayerItem.swift */; };
+		6652649B131992D78B3A2734 /* LayerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = F777FF23EFF79304594D5258 /* LayerItem.swift */; };
+		E1C658802FE566C029BFB81C /* PoseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0275E6595F458A5717223CC6 /* PoseLibrary.swift */; };
+		D97F00815AB055E8901F2A99 /* PoseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0275E6595F458A5717223CC6 /* PoseLibrary.swift */; };
+		6AC698C62B26C5FF5471E555 /* LayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6DEE35AD265FC3618F1CC8 /* LayerState.swift */; };
+		9D6B57B4376A8FE371C6FE96 /* LayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6DEE35AD265FC3618F1CC8 /* LayerState.swift */; };
+		E158E19AD17FCAA1AB53D649 /* LayerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0B06E27586286E51EF6078 /* LayerOverlay.swift */; };
+		E99072C09B3A50F7252BF8E0 /* LayerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0B06E27586286E51EF6078 /* LayerOverlay.swift */; };
+		B43D70E69F970FC9C523154D /* LayerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F505727295AEF9F4C4F96F /* LayerPanel.swift */; };
+		0D55C0CF88F9ABE1C444340E /* LayerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F505727295AEF9F4C4F96F /* LayerPanel.swift */; };
+		0C44BA3F7BFF122D45E4CE0C /* OpacitySlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789AE4A43BD97D21511D4689 /* OpacitySlider.swift */; };
+		2DE10EA706A5B7A52728CEDE /* OpacitySlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789AE4A43BD97D21511D4689 /* OpacitySlider.swift */; };
+		B27C2F7905D69CD88E1FD75C /* Poses in Resources */ = {isa = PBXBuildFile; fileRef = 24D270174CB96868C9FC6D94 /* Poses */; };
 		26FB8E31F1E5FD785AA2D5B2 /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D823665F41CD435C177D75 /* AppDefaults.swift */; };
 		400B0FE41DA5B628F4D08E1B /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D823665F41CD435C177D75 /* AppDefaults.swift */; };
 		D3CFCB5FF9270E3F889E8BC8 /* CameraLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6DDC494B7C4BD70C8D6FC1 /* CameraLayout.swift */; };
@@ -128,6 +141,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F777FF23EFF79304594D5258 /* LayerItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerItem.swift; sourceTree = "<group>"; };
+		0275E6595F458A5717223CC6 /* PoseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseLibrary.swift; sourceTree = "<group>"; };
+		BD6DEE35AD265FC3618F1CC8 /* LayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerState.swift; sourceTree = "<group>"; };
+		7F0B06E27586286E51EF6078 /* LayerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerOverlay.swift; sourceTree = "<group>"; };
+		C0F505727295AEF9F4C4F96F /* LayerPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerPanel.swift; sourceTree = "<group>"; };
+		789AE4A43BD97D21511D4689 /* OpacitySlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpacitySlider.swift; sourceTree = "<group>"; };
+		24D270174CB96868C9FC6D94 /* Poses */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Poses; sourceTree = "<group>"; };
 		D5D823665F41CD435C177D75 /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
 		EB6DDC494B7C4BD70C8D6FC1 /* CameraLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLayout.swift; sourceTree = "<group>"; };
 		30DA51A26F36C14FDB0E877E /* CameraTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTheme.swift; sourceTree = "<group>"; };
@@ -223,6 +243,41 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		82AF8F5FF2942F982D1751B1 /* Layers */ = {
+			isa = PBXGroup;
+			children = (
+				F777FF23EFF79304594D5258 /* LayerItem.swift */,
+				0275E6595F458A5717223CC6 /* PoseLibrary.swift */,
+				BD6DEE35AD265FC3618F1CC8 /* LayerState.swift */,
+			);
+			path = Layers;
+			sourceTree = "<group>";
+		};
+		C0469DF54D5FEE553D15739F /* Layers */ = {
+			isa = PBXGroup;
+			children = (
+				7F0B06E27586286E51EF6078 /* LayerOverlay.swift */,
+			);
+			path = Layers;
+			sourceTree = "<group>";
+		};
+		8188C915800E6ED312833522 /* Panels */ = {
+			isa = PBXGroup;
+			children = (
+				C0F505727295AEF9F4C4F96F /* LayerPanel.swift */,
+				789AE4A43BD97D21511D4689 /* OpacitySlider.swift */,
+			);
+			path = Panels;
+			sourceTree = "<group>";
+		};
+		0C289804BCCAA60E950275B5 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				24D270174CB96868C9FC6D94 /* Poses */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		F8396B33B3011D74E7113B46 /* Layout */ = {
 			isa = PBXGroup;
 			children = (
@@ -298,6 +353,7 @@
 		C470F0EF2899E2FB004D4515 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				82AF8F5FF2942F982D1751B1 /* Layers */,
 				C4F82CC9285AE13B005D427A /* Camera.swift */,
 				C4DFD84328C3E173005B74F0 /* DataTypes.swift */,
 				C442A31028BEAEA70029B42B /* MediaLibrary.swift */,
@@ -310,6 +366,8 @@
 		C472D847285BD4A40082244A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				8188C915800E6ED312833522 /* Panels */,
+				C0469DF54D5FEE553D15739F /* Layers */,
 				F8396B33B3011D74E7113B46 /* Layout */,
 				D2B9199F440A88BA88C64E6D /* TopBar */,
 				C44DC7BD289AC3DD0099BB87 /* PreviewContainer.swift */,
@@ -388,6 +446,7 @@
 		C4F82C9B285ADDA2005D427A /* AVCam */ = {
 			isa = PBXGroup;
 			children = (
+				0C289804BCCAA60E950275B5 /* Resources */,
 				C4F82C9C285ADDA2005D427A /* AVCamApp.swift */,
 				C48091832BD584AD00753C4A /* CameraModel.swift */,
 				C4F82CCB285AE206005D427A /* CaptureService.swift */,
@@ -537,6 +596,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B27C2F7905D69CD88E1FD75C /* Poses in Resources */,
 				C4F82CA5285ADDA3005D427A /* Preview Assets.xcassets in Resources */,
 				C4F82CA1285ADDA3005D427A /* Assets.xcassets in Resources */,
 			);
@@ -549,6 +609,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6652649B131992D78B3A2734 /* LayerItem.swift in Sources */,
+				D97F00815AB055E8901F2A99 /* PoseLibrary.swift in Sources */,
+				9D6B57B4376A8FE371C6FE96 /* LayerState.swift in Sources */,
+				E99072C09B3A50F7252BF8E0 /* LayerOverlay.swift in Sources */,
+				0D55C0CF88F9ABE1C444340E /* LayerPanel.swift in Sources */,
+				2DE10EA706A5B7A52728CEDE /* OpacitySlider.swift in Sources */,
 				400B0FE41DA5B628F4D08E1B /* AppDefaults.swift in Sources */,
 				39ED809156D77E728E46AC93 /* CameraLayout.swift in Sources */,
 				4DAB55D331A2F9AB0250BB6E /* CameraTheme.swift in Sources */,
@@ -599,6 +665,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2E07FDFFC786B7ECCB681BD8 /* LayerItem.swift in Sources */,
+				E1C658802FE566C029BFB81C /* PoseLibrary.swift in Sources */,
+				6AC698C62B26C5FF5471E555 /* LayerState.swift in Sources */,
+				E158E19AD17FCAA1AB53D649 /* LayerOverlay.swift in Sources */,
+				B43D70E69F970FC9C523154D /* LayerPanel.swift in Sources */,
+				0C44BA3F7BFF122D45E4CE0C /* OpacitySlider.swift in Sources */,
 				26FB8E31F1E5FD785AA2D5B2 /* AppDefaults.swift in Sources */,
 				D3CFCB5FF9270E3F889E8BC8 /* CameraLayout.swift in Sources */,
 				E5A82D59BFD33C9489E2FBCB /* CameraTheme.swift in Sources */,
