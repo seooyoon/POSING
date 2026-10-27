@@ -56,6 +56,8 @@ final class LayerState {
     private(set) var openPanel: LayerKind?
     /// MY 꾹 누르기로 사진 피커를 띄움
     var isPickingMY = false
+    /// 초기화 꾹 누르기로 설정 화면을 띄움
+    var isShowingSettings = false
 
     init(poses: [LayerItem] = PoseLibrary.load(), myItems: [LayerItem] = MYLibrary.load()) {
         pose.items = poses
@@ -95,6 +97,29 @@ final class LayerState {
         my.items = newItems + my.items.filter { !newIDs.contains($0.id) }
         my.select(first)
         openPanel = .my
+        MYLibrary.saveOrder(my.items)
+    }
+
+    // MARK: - 설정 화면 목록 편집
+
+    func movePoses(from source: IndexSet, to destination: Int) {
+        pose.items.move(fromOffsets: source, toOffset: destination)
+        PoseLibrary.saveOrder(pose.items)
+    }
+
+    func moveMY(from source: IndexSet, to destination: Int) {
+        my.items.move(fromOffsets: source, toOffset: destination)
+        MYLibrary.saveOrder(my.items)
+    }
+
+    /// 선택 중인 사진을 지우면 화면의 MY 레이어도 사라짐
+    func deleteMY(at offsets: IndexSet) {
+        let removed = offsets.map { my.items[$0] }
+        if removed.contains(where: { $0.id == my.selectedID }) {
+            my.deselect()
+        }
+        my.items.remove(atOffsets: offsets)
+        MYLibrary.delete(removed)
         MYLibrary.saveOrder(my.items)
     }
 }
