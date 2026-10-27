@@ -6,92 +6,37 @@ A view that presents the main camera user interface.
 */
 
 import SwiftUI
-import AVFoundation
 
-/// A view that presents the main camera user interface.
-struct CameraUI<CameraModel: Camera>: PlatformView {
+/// 카메라 화면 UI. 기본 카메라와 같은 자리에 상단 바 · 셔터 · 하단 줄을 놓는다.
+struct CameraUI<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
-    @Binding var swipeDirection: SwipeDirection
-    
-    @Environment(\.verticalSizeClass) var verticalSizeClass
-    @Environment(\.horizontalSizeClass) var horizontalSizeClass
-
-    // The size of the window that contains the camera UI.
-    @State private var windowSize = CGSize.zero
+    let layout: CameraLayout
 
     var body: some View {
-        Group {
-            if isRegularSize {
-                regularUI
-            } else {
-                compactUI
-            }
-        }
-        // Measure the window that contains the UI. The geometry proxy reports the layout area,
-        // which excludes the safe areas, so add those insets back to determine the window size.
-        .onGeometryChange(for: CGSize.self) { proxy in
-            let insets = proxy.safeAreaInsets
-            return CGSize(width: proxy.size.width + insets.leading + insets.trailing,
-                          height: proxy.size.height + insets.top + insets.bottom)
-        } action: { size in
-            windowSize = size
-        }
-        .overlay(alignment: .top) {
-            switch camera.captureMode {
-            case .photo:
-                LiveBadge()
-                    .opacity(camera.captureActivity.isLivePhoto ? 1.0 : 0.0)
-            case .video:
-                RecordingTimeView(time: camera.captureActivity.currentTime)
-                    .offset(y: isRegularSize ? 20 : 0)
-            }
-        }
-        .overlay {
+        ZStack(alignment: .topLeading) {
+            TopBar(camera: camera)
+                .frame(width: layout.size.width)
+                .position(x: layout.centerX, y: layout.topBarCenterY)
+
+            // 사진을 찍는 순간 미리보기 위쪽 가운데에 LIVE 표시
+            LiveBadge()
+                .opacity(camera.captureMode == .photo && camera.captureActivity.isLivePhoto ? 1 : 0)
+                .position(x: layout.centerX, y: layout.previewRect.minY + 24)
+
+            CaptureButton(camera: camera)
+                .position(x: layout.centerX, y: layout.shutterCenterY)
+
+            BottomBar(camera: camera)
+                .frame(width: layout.size.width)
+                .position(x: layout.centerX, y: layout.bottomRowCenterY)
+
             StatusOverlayView(status: camera.status)
+                .frame(width: layout.size.width, height: layout.size.height)
         }
-    }
-    
-    /// This view arranges UI elements vertically.
-    @ViewBuilder
-    var compactUI: some View {
-        VStack(spacing: 0) {
-            FeaturesToolbar(camera: camera)
-            Spacer()
-            CaptureModeView(camera: camera, direction: $swipeDirection)
-            MainToolbar(camera: camera)
-                .padding(.bottom, bottomPadding)
-        }
-    }
-    
-    /// This view arranges UI elements in a layered stack.
-    @ViewBuilder
-    var regularUI: some View {
-        VStack {
-            Spacer()
-            ZStack {
-                CaptureModeView(camera: camera, direction: $swipeDirection)
-                    .offset(x: -250) // The vertical offset from center.
-                MainToolbar(camera: camera)
-                FeaturesToolbar(camera: camera)
-                    .frame(width: 250)
-                    .offset(x: 250) // The vertical offset from center.
-            }
-            .frame(width: 740)
-            .background(.ultraThinMaterial.opacity(0.8))
-            .cornerRadius(12)
-            .padding(.bottom, 32)
-        }
-    }
-    
-    var bottomPadding: CGFloat {
-        // Dynamically calculate the offset for the bottom toolbar in iOS.
-        let bounds = CGRect(origin: .zero, size: windowSize)
-        let rect = AVMakeRect(aspectRatio: movieAspectRatio, insideRect: bounds)
-        return (rect.minY.rounded() / 2) + 12
     }
 }
 
 #Preview {
-    CameraUI(camera: PreviewCameraModel(), swipeDirection: .constant(.left))
+    CameraView(camera: PreviewCameraModel(status: .running))
 }

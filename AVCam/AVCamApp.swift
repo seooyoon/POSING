@@ -13,7 +13,12 @@ import SwiftUI
 struct AVCamApp: App {
 
     // Simulator doesn't support the AVFoundation capture APIs. Use the preview camera when running in Simulator.
+#if targetEnvironment(simulator)
+    // 시뮬레이터에서는 샘플 이미지를 보여주는 가짜 카메라 (CLAUDE.md 4절 7번)
+    @State private var camera = PreviewCameraModel()
+#else
     @State private var camera = CameraModel()
+#endif
     
     // An indication of the scene's operational state.
     @Environment(\.scenePhase) var scenePhase

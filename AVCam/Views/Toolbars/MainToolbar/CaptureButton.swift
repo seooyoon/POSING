@@ -14,7 +14,8 @@ struct CaptureButton<CameraModel: Camera>: View {
     @State var camera: CameraModel
     @State var isRecording = false
     
-    private let mainButtonDimension: CGFloat = 68
+    // 기본 카메라 셔터 바깥 지름 (iPhone 16 Pro 기준 약 78pt)
+    private let mainButtonDimension: CGFloat = 78
     
     var body: some View {
         captureButton
@@ -58,7 +59,7 @@ struct CaptureButton<CameraModel: Camera>: View {
 
 private struct PhotoCaptureButton: View {
     private let action: () -> Void
-    private let lineWidth = CGFloat(4.0)
+    private let lineWidth = CGFloat(3.0)
     
     init(action: @escaping () -> Void) {
         self.action = action
@@ -92,7 +93,7 @@ private struct PhotoCaptureButton: View {
 private struct MovieCaptureButton: View {
     
     private let action: (Bool) -> Void
-    private let lineWidth = CGFloat(4.0)
+    private let lineWidth = CGFloat(3.0)
     
     @Binding private var isRecording: Bool
     

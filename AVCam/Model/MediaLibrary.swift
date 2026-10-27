@@ -8,6 +8,8 @@ An object that writes photos and movies to the user's Photos library.
 import Foundation
 import Photos
 import UIKit
+import ImageIO
+import AVFoundation
 
 /// An object that writes photos and movies to the user's Photos library.
 actor MediaLibrary {
@@ -52,7 +54,8 @@ actor MediaLibrary {
     /// Saves a photo to the Photos library.
     func save(photo: Photo) async throws {
         let location = try await currentLocation
-        try await performChange {
+        let thumbnail = makeThumbnail(from: photo.data)
+        try await performChange(thumbnail: thumbnail) {
             let creationRequest = PHAssetCreationRequest.forAsset()
             
             // Save primary photo.
@@ -68,42 +71,36 @@ actor MediaLibrary {
                 creationRequest.addResource(with: .pairedVideo, fileURL: url, options: livePhotoOptions)
             }
             
-            return creationRequest.placeholderForCreatedAsset
         }
     }
     
     /// Saves a movie to the Photos library.
     func save(movie: Movie) async throws {
         let location = try await currentLocation
-        try await performChange {
+        // 저장하면서 파일이 옮겨지므로 썸네일을 먼저 만든다
+        let thumbnail = await makeThumbnail(fromMovieAt: movie.url)
+        try await performChange(thumbnail: thumbnail) {
             let options = PHAssetResourceCreationOptions()
             options.shouldMoveFile = true
             let creationRequest = PHAssetCreationRequest.forAsset()
             creationRequest.addResource(with: .video, fileURL: movie.url, options: options)
             creationRequest.location = location
-            return creationRequest.placeholderForCreatedAsset
         }
     }
     
     // A template method for writing a change to the user's photo library.
-    private func performChange(_ change: @Sendable @escaping () -> PHObjectPlaceholder?) async throws {
+    private func performChange(thumbnail: CGImage?, _ change: @Sendable @escaping () -> Void) async throws {
         guard await isAuthorized else {
             throw Error.unauthorized
         }
         
         do {
-            var placeholder: PHObjectPlaceholder?
             try await PHPhotoLibrary.shared().performChanges {
                 // Execute the change closure.
-                placeholder = change()
+                change()
             }
-            
-            if let placeholder {
-                /// Retrieve the newly created `PHAsset` instance.
-                guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [placeholder.localIdentifier],
-                                                      options: nil).firstObject else { return }
-                await createThumbnail(for: asset)
-            }
+            // 저장에 성공하면 미리 만든 썸네일을 화면에 보냄
+            continuation?.yield(thumbnail)
         } catch {
             throw Error.saveFailed
         }
@@ -111,16 +108,27 @@ actor MediaLibrary {
     
     // MARK: - Thumbnail handling
     
-    private func createThumbnail(for asset: PHAsset) async {
-        // Request the generation of a 256x256 thumbnail image.
-        PHImageManager.default().requestImage(for: asset,
-                                              targetSize: .init(width: 256, height: 256),
-                                              contentMode: .default,
-                                              options: nil) { [weak self] image, _ in
-            // Set the latest thumbnail image.
-            guard let self, let image = image else { return }
-            continuation?.yield(image.cgImage)
-        }
+    // 사진 앱 읽기 권한(.addOnly만 사용)이 없어서 저장한 항목을 다시 읽을 수 없다.
+    // 그래서 찍은 데이터로 직접 썸네일을 만든다 (05_TECH_NOTES 7절).
+    private let thumbnailMaxPixelSize = 256
+    
+    private func makeThumbnail(from data: Data) -> CGImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            // 사진 방향(EXIF)을 반영
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: thumbnailMaxPixelSize
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
+    
+    private func makeThumbnail(fromMovieAt url: URL) async -> CGImage? {
+        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+        // 영상 방향을 반영
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: thumbnailMaxPixelSize, height: thumbnailMaxPixelSize)
+        return try? await generator.image(at: .zero).image
     }
     
     // MARK: - Location management
