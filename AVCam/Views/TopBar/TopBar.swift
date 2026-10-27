@@ -41,7 +41,7 @@ struct TopBar<CameraModel: Camera>: View {
                              isActive: layers.openPanel == .my,
                              showsDot: layers.my.isSelected,
                              onLongPress: {
-                    // 사진 추가는 #7에서 연결
+                    layers.isPickingMY = true
                 }) {
                     layers.togglePanel(.my)
                 }

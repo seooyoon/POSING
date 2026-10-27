@@ -54,9 +54,12 @@ final class LayerState {
     var my = LayerSlot(defaultOpacity: AppDefaults.myOpacity)
     /// 지금 열린 패널. 포즈 · MY 패널은 같은 자리에 하나만
     private(set) var openPanel: LayerKind?
+    /// MY 꾹 누르기로 사진 피커를 띄움
+    var isPickingMY = false
 
-    init(poses: [LayerItem] = PoseLibrary.load()) {
+    init(poses: [LayerItem] = PoseLibrary.load(), myItems: [LayerItem] = MYLibrary.load()) {
         pose.items = poses
+        my.items = myItems
     }
 
     subscript(kind: LayerKind) -> LayerSlot {
@@ -82,5 +85,16 @@ final class LayerState {
         pose.deselect()
         my.deselect()
         openPanel = nil
+    }
+
+    /// 새로 추가한 사진을 고른 순서대로 맨 왼쪽에 놓고, 1번을 바로 적용 + MY 패널 열기.
+    /// 이미 있던 사진은 중복으로 쌓지 않고 맨 왼쪽으로 옮김
+    func addMY(_ newItems: [LayerItem]) {
+        guard let first = newItems.first else { return }
+        let newIDs = Set(newItems.map(\.id))
+        my.items = newItems + my.items.filter { !newIDs.contains($0.id) }
+        my.select(first)
+        openPanel = .my
+        MYLibrary.saveOrder(my.items)
     }
 }

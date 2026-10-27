@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		59D18CB2DDD1705F1DFAAD9A /* MYLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFC5D4027E48E1AC353A3C /* MYLibrary.swift */; };
+		DCA942E2FDBC778C4DE66833 /* MYLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFC5D4027E48E1AC353A3C /* MYLibrary.swift */; };
+		00F9DC47BBEF9DE3E108DDC5 /* MYPhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73145D8B08CAA2D92C65C3F /* MYPhotoPicker.swift */; };
+		92F9C1E65FBC76053215045A /* MYPhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73145D8B08CAA2D92C65C3F /* MYPhotoPicker.swift */; };
 		2E07FDFFC786B7ECCB681BD8 /* LayerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = F777FF23EFF79304594D5258 /* LayerItem.swift */; };
 		6652649B131992D78B3A2734 /* LayerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = F777FF23EFF79304594D5258 /* LayerItem.swift */; };
 		E1C658802FE566C029BFB81C /* PoseLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0275E6595F458A5717223CC6 /* PoseLibrary.swift */; };
@@ -141,6 +145,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		6EFFC5D4027E48E1AC353A3C /* MYLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MYLibrary.swift; sourceTree = "<group>"; };
+		B73145D8B08CAA2D92C65C3F /* MYPhotoPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MYPhotoPicker.swift; sourceTree = "<group>"; };
 		F777FF23EFF79304594D5258 /* LayerItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerItem.swift; sourceTree = "<group>"; };
 		0275E6595F458A5717223CC6 /* PoseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseLibrary.swift; sourceTree = "<group>"; };
 		BD6DEE35AD265FC3618F1CC8 /* LayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerState.swift; sourceTree = "<group>"; };
@@ -246,6 +252,7 @@
 		82AF8F5FF2942F982D1751B1 /* Layers */ = {
 			isa = PBXGroup;
 			children = (
+				6EFFC5D4027E48E1AC353A3C /* MYLibrary.swift */,
 				F777FF23EFF79304594D5258 /* LayerItem.swift */,
 				0275E6595F458A5717223CC6 /* PoseLibrary.swift */,
 				BD6DEE35AD265FC3618F1CC8 /* LayerState.swift */,
@@ -264,6 +271,7 @@
 		8188C915800E6ED312833522 /* Panels */ = {
 			isa = PBXGroup;
 			children = (
+				B73145D8B08CAA2D92C65C3F /* MYPhotoPicker.swift */,
 				C0F505727295AEF9F4C4F96F /* LayerPanel.swift */,
 				789AE4A43BD97D21511D4689 /* OpacitySlider.swift */,
 			);
@@ -609,6 +617,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DCA942E2FDBC778C4DE66833 /* MYLibrary.swift in Sources */,
+				92F9C1E65FBC76053215045A /* MYPhotoPicker.swift in Sources */,
 				6652649B131992D78B3A2734 /* LayerItem.swift in Sources */,
 				D97F00815AB055E8901F2A99 /* PoseLibrary.swift in Sources */,
 				9D6B57B4376A8FE371C6FE96 /* LayerState.swift in Sources */,
@@ -665,6 +675,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				59D18CB2DDD1705F1DFAAD9A /* MYLibrary.swift in Sources */,
+				00F9DC47BBEF9DE3E108DDC5 /* MYPhotoPicker.swift in Sources */,
 				2E07FDFFC786B7ECCB681BD8 /* LayerItem.swift in Sources */,
 				E1C658802FE566C029BFB81C /* PoseLibrary.swift in Sources */,
 				6AC698C62B26C5FF5471E555 /* LayerState.swift in Sources */,

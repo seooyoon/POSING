@@ -40,6 +40,8 @@ struct CameraView<CameraModel: Camera>: View {
             }
             .ignoresSafeArea()
         }
+        // MY 꾹 누르기 → 사진 고르기
+        .myPhotoPicker(layers: layers)
         .preferredColorScheme(.dark)
     }
 
