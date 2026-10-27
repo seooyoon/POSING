@@ -76,6 +76,8 @@ struct CameraView<CameraModel: Camera>: View {
         DragGesture(minimumDistance: 50)
             .onEnded { value in
                 guard !camera.captureActivity.isRecording else { return }
+                // 세로로 쓸어내린 건 모드 전환이 아님
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
                 let direction: SwipeDirection = value.translation.width < 0 ? .left : .right
                 camera.captureMode = CaptureModePicker<CameraModel>.mode(after: camera.captureMode, swipe: direction)
             }
