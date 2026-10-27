@@ -12,7 +12,7 @@ import SwiftUI
 struct LayerSlot {
     var items: [LayerItem] = []
     private(set) var selectedID: String?
-    /// 화면에 겹치는 이미지. 고를 때 한 번만 읽음
+    /// 화면에 겹치는 이미지. 고른 뒤 메인 스레드 밖에서 읽어 채움
     private(set) var image: UIImage?
     var opacity: Double
     let defaultOpacity: Double
@@ -36,8 +36,14 @@ struct LayerSlot {
     /// 새로 고를 때마다 투명도는 기본값에서 시작 (CLAUDE.md 6절)
     mutating func select(_ item: LayerItem) {
         selectedID = item.id
-        image = UIImage(contentsOfFile: item.imageURL.path)
+        image = nil
         opacity = defaultOpacity
+    }
+
+    /// 다 읽은 이미지를 적용. 그 사이 다른 칸으로 바뀌었으면 버림
+    mutating func setImage(_ image: UIImage?, for id: String) {
+        guard selectedID == id else { return }
+        self.image = image
     }
 
     mutating func deselect() {
@@ -80,6 +86,7 @@ final class LayerState {
 
     func toggle(_ item: LayerItem, in kind: LayerKind) {
         self[kind].toggle(item)
+        loadImage(of: item, in: kind)
     }
 
     /// 초기화 탭: 선택 해제 + 패널 닫기. 목록은 그대로
@@ -96,6 +103,7 @@ final class LayerState {
         let newIDs = Set(newItems.map(\.id))
         my.items = newItems + my.items.filter { !newIDs.contains($0.id) }
         my.select(first)
+        loadImage(of: first, in: .my)
         openPanel = .my
         MYLibrary.saveOrder(my.items)
     }
@@ -121,5 +129,19 @@ final class LayerState {
         my.items.remove(atOffsets: offsets)
         MYLibrary.delete(removed)
         MYLibrary.saveOrder(my.items)
+    }
+
+    // MARK: - 이미지 읽기
+
+    /// 선택된 칸의 큰 이미지를 메인 스레드 밖에서 읽고 화면용으로 미리 풀어 둠
+    private func loadImage(of item: LayerItem, in kind: LayerKind) {
+        guard self[kind].selectedID == item.id else { return }
+        let url = item.imageURL
+        Task {
+            let image = await Task.detached(priority: .userInitiated) {
+                await UIImage(contentsOfFile: url.path)?.byPreparingForDisplay()
+            }.value
+            self[kind].setImage(image, for: item.id)
+        }
     }
 }

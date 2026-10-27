@@ -9,7 +9,6 @@
 import ImageIO
 import PhotosUI
 import SwiftUI
-import UniformTypeIdentifiers
 
 enum MYLibrary {
 
@@ -87,7 +86,7 @@ enum MYLibrary {
               let cgImage = ImageDownsampler.cgImage(from: source, maxPixels: maxImagePixels)
         else { return nil }
         let output = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil)
+        guard let destination = CGImageDestinationCreateWithData(output, "public.jpeg" as CFString, 1, nil)
         else { return nil }
         CGImageDestinationAddImage(destination, cgImage, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { return nil }
