@@ -72,7 +72,7 @@
 ## ⚙️ 실행 환경
 
 - **대상 기기**: iPhone 16 Pro (세로 고정)
-- **최소 iOS**: `18.0`
+- **최소 iOS**: `26.0`
 - **외부 라이브러리**: 없음 (애플 기본 프레임워크만 사용)
 - **여는 방법**
   ```bash
@@ -179,9 +179,18 @@
 │  ├─ 📄 04_ASSETS.md            # 포즈 · 아이콘 · 카메라 규격
 │  ├─ 📄 05_TECH_NOTES.md        # 기술 메모
 │  └─ 📁 reference               # 기본 카메라 참고 스크린샷
-└─ 📁 (AVCam 프로젝트)            # 0단계에서 추가
-   └─ 📁 Resources
-      ├─ 📁 Poses                # 포즈 대표 사진 + 테두리 PNG
-      ├─ 📁 Cameras              # 카메라 PNG + 색감 (.cube)
-      └─ 📁 AppIcons             # 앱 아이콘 원본
+├─ 📄 LICENSE-AVCam.txt          # 애플 AVCam 예제 라이선스
+├─ 📁 Configuration              # 샘플 코드 빌드 설정 (xcconfig)
+├─ 📄 AVCam.xcodeproj            # Xcode 프로젝트
+├─ 📁 AVCam                      # 앱 본체 (애플 AVCam 예제 기반)
+│  ├─ 📄 AVCamApp.swift           # 앱 시작점
+│  ├─ 📄 CameraModel.swift        # 화면과 촬영 서비스를 잇는 모델
+│  ├─ 📄 CaptureService.swift     # 카메라 세션 (actor, 메인 스레드 밖)
+│  ├─ 📁 Capture                  # 사진 · 동영상 촬영
+│  ├─ 📁 Model                    # 상태 · 데이터 타입 · 사진 앱 저장
+│  ├─ 📁 Views                    # 카메라 화면 · 툴바 · 오버레이
+│  ├─ 📁 Support                  # 확장 함수
+│  └─ 📁 Preview Content          # 시뮬레이터 · 프리뷰용 가짜 카메라
+├─ 📁 AVCamCaptureExtension       # 잠금화면 카메라 확장
+└─ 📁 AVCamControlCenterExtension # 제어 센터 · 카메라 컨트롤 위젯
 ```
