@@ -13,6 +13,7 @@ import AVKit
 struct CameraView<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
+    @State private var layers = LayerState()
 
     var body: some View {
         GeometryReader { proxy in
@@ -28,8 +29,14 @@ struct CameraView<CameraModel: Camera>: View {
                 .clipped()
                 .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
+                // 포즈 · MY 레이어: 미리보기와 같은 자리에 화면으로만 겹침
+                LayerOverlay(layers: layers)
+                    .frame(width: layout.previewRect.width, height: layout.previewRect.height)
+                    .clipped()
+                    .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
+                    .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 // 카메라 화면 UI
-                CameraUI(camera: camera, layout: layout)
+                CameraUI(camera: camera, layers: layers, layout: layout)
             }
             .ignoresSafeArea()
         }
