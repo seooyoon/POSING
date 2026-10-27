@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="220" height="220" alt="포징 앱 아이콘" src="docs/reference/app_icon_preview.png" />
+  <img width="220" height="220" alt="image" src="https://github.com/user-attachments/assets/3425df54-a5ff-452e-804c-9174bd29f844" />
 </p>
 
 <div>
