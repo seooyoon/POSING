@@ -12,12 +12,13 @@ import SwiftUI
 
 private struct MYPhotoPicker: ViewModifier {
 
-    @Bindable var layers: LayerState
+    @Binding var isPresented: Bool
+    let layers: LayerState
     @State private var selection: [PhotosPickerItem] = []
 
     func body(content: Content) -> some View {
         content
-            .photosPicker(isPresented: $layers.isPickingMY,
+            .photosPicker(isPresented: $isPresented,
                           selection: $selection,
                           maxSelectionCount: AppDefaults.allowsMultipleMYSelection ? nil : 1,
                           selectionBehavior: .ordered,
@@ -36,7 +37,8 @@ private struct MYPhotoPicker: ViewModifier {
 }
 
 extension View {
-    func myPhotoPicker(layers: LayerState) -> some View {
-        modifier(MYPhotoPicker(layers: layers))
+    /// 카메라 화면(MY 꾹 누르기)과 설정 화면(사진 추가 줄)에서 같이 씀
+    func myPhotoPicker(isPresented: Binding<Bool>, layers: LayerState) -> some View {
+        modifier(MYPhotoPicker(isPresented: isPresented, layers: layers))
     }
 }

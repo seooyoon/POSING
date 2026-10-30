@@ -12,7 +12,7 @@ import SwiftUI
 struct LayerSlot {
     var items: [LayerItem] = []
     private(set) var selectedID: String?
-    /// 화면에 겹치는 이미지. 고를 때 한 번만 읽음
+    /// 화면에 겹치는 이미지. 고른 뒤 메인 스레드 밖에서 읽어 채움
     private(set) var image: UIImage?
     var opacity: Double
     let defaultOpacity: Double
@@ -36,8 +36,14 @@ struct LayerSlot {
     /// 새로 고를 때마다 투명도는 기본값에서 시작 (CLAUDE.md 6절)
     mutating func select(_ item: LayerItem) {
         selectedID = item.id
-        image = UIImage(contentsOfFile: item.imageURL.path)
+        image = nil
         opacity = defaultOpacity
+    }
+
+    /// 다 읽은 이미지를 적용. 그 사이 다른 칸으로 바뀌었으면 버림
+    mutating func setImage(_ image: UIImage?, for id: String) {
+        guard selectedID == id else { return }
+        self.image = image
     }
 
     mutating func deselect() {
@@ -56,6 +62,8 @@ final class LayerState {
     private(set) var openPanel: LayerKind?
     /// MY 꾹 누르기로 사진 피커를 띄움
     var isPickingMY = false
+    /// 초기화 꾹 누르기로 설정 화면을 띄움
+    var isShowingSettings = false
 
     init(poses: [LayerItem] = PoseLibrary.load(), myItems: [LayerItem] = MYLibrary.load()) {
         pose.items = poses
@@ -78,6 +86,7 @@ final class LayerState {
 
     func toggle(_ item: LayerItem, in kind: LayerKind) {
         self[kind].toggle(item)
+        loadImage(of: item, in: kind)
     }
 
     /// 초기화 탭: 선택 해제 + 패널 닫기. 목록은 그대로
@@ -94,7 +103,45 @@ final class LayerState {
         let newIDs = Set(newItems.map(\.id))
         my.items = newItems + my.items.filter { !newIDs.contains($0.id) }
         my.select(first)
+        loadImage(of: first, in: .my)
         openPanel = .my
         MYLibrary.saveOrder(my.items)
+    }
+
+    // MARK: - 설정 화면 목록 편집
+
+    func movePoses(from source: IndexSet, to destination: Int) {
+        pose.items.move(fromOffsets: source, toOffset: destination)
+        PoseLibrary.saveOrder(pose.items)
+    }
+
+    func moveMY(from source: IndexSet, to destination: Int) {
+        my.items.move(fromOffsets: source, toOffset: destination)
+        MYLibrary.saveOrder(my.items)
+    }
+
+    /// 선택 중인 사진을 지우면 화면의 MY 레이어도 사라짐
+    func deleteMY(at offsets: IndexSet) {
+        let removed = offsets.map { my.items[$0] }
+        if removed.contains(where: { $0.id == my.selectedID }) {
+            my.deselect()
+        }
+        my.items.remove(atOffsets: offsets)
+        MYLibrary.delete(removed)
+        MYLibrary.saveOrder(my.items)
+    }
+
+    // MARK: - 이미지 읽기
+
+    /// 선택된 칸의 큰 이미지를 메인 스레드 밖에서 읽고 화면용으로 미리 풀어 둠
+    private func loadImage(of item: LayerItem, in kind: LayerKind) {
+        guard self[kind].selectedID == item.id else { return }
+        let url = item.imageURL
+        Task {
+            let image = await Task.detached(priority: .userInitiated) {
+                await UIImage(contentsOfFile: url.path)?.byPreparingForDisplay()
+            }.value
+            self[kind].setImage(image, for: item.id)
+        }
     }
 }

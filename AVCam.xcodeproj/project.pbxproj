@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		42DD4BEFB7D4387803B68409 /* ImageDownsampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2688DC64FE3113DCE0D76295 /* ImageDownsampler.swift */; };
+		3829152E991C885401F0DDDF /* ImageDownsampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2688DC64FE3113DCE0D76295 /* ImageDownsampler.swift */; };
+		2A541CC7CD9C7B4D3F802E0B /* SettingsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9059D449D23E9AAA157BE1E /* SettingsKeys.swift */; };
+		1E55336251FEF6A520C4CCE7 /* SettingsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9059D449D23E9AAA157BE1E /* SettingsKeys.swift */; };
+		E0CC2A232441B2F3CD8E7636 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91107F86D7D19E69ECF71DD /* SettingsView.swift */; };
+		3A8F0BD26774CBAAC969E4CE /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91107F86D7D19E69ECF71DD /* SettingsView.swift */; };
+		3EDE9C745D3738368D21AFF8 /* PoseOrderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A467D252A49721DB7D30C29 /* PoseOrderView.swift */; };
+		2F2103E24235D84722B9C6A4 /* PoseOrderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A467D252A49721DB7D30C29 /* PoseOrderView.swift */; };
+		F06C2309DBD3BE90F1421C98 /* MYListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B360AD6CCB45083E66557D0 /* MYListView.swift */; };
+		BF89014AB86847F73972D213 /* MYListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B360AD6CCB45083E66557D0 /* MYListView.swift */; };
 		59D18CB2DDD1705F1DFAAD9A /* MYLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFC5D4027E48E1AC353A3C /* MYLibrary.swift */; };
 		DCA942E2FDBC778C4DE66833 /* MYLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFC5D4027E48E1AC353A3C /* MYLibrary.swift */; };
 		00F9DC47BBEF9DE3E108DDC5 /* MYPhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73145D8B08CAA2D92C65C3F /* MYPhotoPicker.swift */; };
@@ -145,6 +155,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2688DC64FE3113DCE0D76295 /* ImageDownsampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDownsampler.swift; sourceTree = "<group>"; };
+		A9059D449D23E9AAA157BE1E /* SettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsKeys.swift; sourceTree = "<group>"; };
+		B91107F86D7D19E69ECF71DD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		6A467D252A49721DB7D30C29 /* PoseOrderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOrderView.swift; sourceTree = "<group>"; };
+		0B360AD6CCB45083E66557D0 /* MYListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MYListView.swift; sourceTree = "<group>"; };
 		6EFFC5D4027E48E1AC353A3C /* MYLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MYLibrary.swift; sourceTree = "<group>"; };
 		B73145D8B08CAA2D92C65C3F /* MYPhotoPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MYPhotoPicker.swift; sourceTree = "<group>"; };
 		F777FF23EFF79304594D5258 /* LayerItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerItem.swift; sourceTree = "<group>"; };
@@ -249,6 +264,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		EA5CE56085A6998525CB6082 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				0B360AD6CCB45083E66557D0 /* MYListView.swift */,
+				6A467D252A49721DB7D30C29 /* PoseOrderView.swift */,
+				B91107F86D7D19E69ECF71DD /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		82AF8F5FF2942F982D1751B1 /* Layers */ = {
 			isa = PBXGroup;
 			children = (
@@ -374,6 +399,7 @@
 		C472D847285BD4A40082244A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				EA5CE56085A6998525CB6082 /* Settings */,
 				8188C915800E6ED312833522 /* Panels */,
 				C0469DF54D5FEE553D15739F /* Layers */,
 				F8396B33B3011D74E7113B46 /* Layout */,
@@ -419,6 +445,8 @@
 		C4EA0DC12891F2D60085A584 /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				2688DC64FE3113DCE0D76295 /* ImageDownsampler.swift */,
+				A9059D449D23E9AAA157BE1E /* SettingsKeys.swift */,
 				D5D823665F41CD435C177D75 /* AppDefaults.swift */,
 				C4EA0DC22891F2F80085A584 /* CaptureExtensions.swift */,
 				C400F46228DFDAB700861093 /* FoundationExtensions.swift */,
@@ -617,6 +645,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3829152E991C885401F0DDDF /* ImageDownsampler.swift in Sources */,
+				1E55336251FEF6A520C4CCE7 /* SettingsKeys.swift in Sources */,
+				3A8F0BD26774CBAAC969E4CE /* SettingsView.swift in Sources */,
+				2F2103E24235D84722B9C6A4 /* PoseOrderView.swift in Sources */,
+				BF89014AB86847F73972D213 /* MYListView.swift in Sources */,
 				DCA942E2FDBC778C4DE66833 /* MYLibrary.swift in Sources */,
 				92F9C1E65FBC76053215045A /* MYPhotoPicker.swift in Sources */,
 				6652649B131992D78B3A2734 /* LayerItem.swift in Sources */,
@@ -675,6 +708,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				42DD4BEFB7D4387803B68409 /* ImageDownsampler.swift in Sources */,
+				2A541CC7CD9C7B4D3F802E0B /* SettingsKeys.swift in Sources */,
+				E0CC2A232441B2F3CD8E7636 /* SettingsView.swift in Sources */,
+				3EDE9C745D3738368D21AFF8 /* PoseOrderView.swift in Sources */,
+				F06C2309DBD3BE90F1421C98 /* MYListView.swift in Sources */,
 				59D18CB2DDD1705F1DFAAD9A /* MYLibrary.swift in Sources */,
 				00F9DC47BBEF9DE3E108DDC5 /* MYPhotoPicker.swift in Sources */,
 				2E07FDFFC786B7ECCB681BD8 /* LayerItem.swift in Sources */,
@@ -1054,7 +1092,6 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
@@ -1101,7 +1138,6 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";

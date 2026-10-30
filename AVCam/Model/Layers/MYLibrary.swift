@@ -9,14 +9,11 @@
 import ImageIO
 import PhotosUI
 import SwiftUI
-import UniformTypeIdentifiers
 
 enum MYLibrary {
 
     /// 화면에 겹칠 사진의 긴 변 최대 크기 (메모리 절약)
     private static let maxImagePixels = 2400
-    /// 목록 칸 썸네일 크기 (56pt × 3배)
-    private static let thumbnailPixels = 168
 
     private static var folder: URL {
         URL.documentsDirectory.appending(path: "MY", directoryHint: .isDirectory)
@@ -39,6 +36,13 @@ enum MYLibrary {
     static func saveOrder(_ items: [LayerItem]) {
         guard let data = try? JSONEncoder().encode(items.map(\.id)) else { return }
         try? data.write(to: orderFile, options: .atomic)
+    }
+
+    /// 목록에서 지운 사진의 복사본 삭제
+    static func delete(_ items: [LayerItem]) {
+        for item in items {
+            try? FileManager.default.removeItem(at: item.imageURL)
+        }
     }
 
     // MARK: - 사진 추가
@@ -66,7 +70,7 @@ enum MYLibrary {
 
     private static func item(named name: String) -> LayerItem? {
         let url = folder.appending(path: name)
-        guard let thumbnail = image(at: url, maxPixels: thumbnailPixels) else { return nil }
+        guard let thumbnail = ImageDownsampler.image(at: url, maxPixels: ImageDownsampler.thumbnailPixels) else { return nil }
         return LayerItem(id: name, thumbnail: thumbnail, imageURL: url)
     }
 
@@ -79,29 +83,13 @@ enum MYLibrary {
     /// 방향을 바로잡고 긴 변을 줄인 JPEG
     private static func downsampledJPEG(from data: Data) -> Data? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let cgImage = thumbnail(from: source, maxPixels: maxImagePixels)
+              let cgImage = ImageDownsampler.cgImage(from: source, maxPixels: maxImagePixels)
         else { return nil }
         let output = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil)
+        guard let destination = CGImageDestinationCreateWithData(output, "public.jpeg" as CFString, 1, nil)
         else { return nil }
         CGImageDestinationAddImage(destination, cgImage, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { return nil }
         return output as Data
-    }
-
-    private static func image(at url: URL, maxPixels: Int) -> UIImage? {
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-              let cgImage = thumbnail(from: source, maxPixels: maxPixels)
-        else { return nil }
-        return UIImage(cgImage: cgImage)
-    }
-
-    private static func thumbnail(from source: CGImageSource, maxPixels: Int) -> CGImage? {
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixels,
-        ]
-        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 }

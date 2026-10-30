@@ -39,10 +39,15 @@ struct CameraView<CameraModel: Camera>: View {
                 CameraUI(camera: camera, layers: layers, layout: layout)
             }
             .ignoresSafeArea()
+            // 카메라 화면만 다크 고정. 설정 화면 · 사진 피커는 아이폰 설정을 따름 (docs/02_UI.md 10절)
+            .environment(\.colorScheme, .dark)
         }
         // MY 꾹 누르기 → 사진 고르기
-        .myPhotoPicker(layers: layers)
-        .preferredColorScheme(.dark)
+        .myPhotoPicker(isPresented: $layers.isPickingMY, layers: layers)
+        // 초기화 꾹 누르기 → 설정 화면
+        .fullScreenCover(isPresented: $layers.isShowingSettings) {
+            SettingsView(layers: layers)
+        }
     }
 
     /// A view that provides a preview of the captured content.
