@@ -5,7 +5,7 @@
 //  더보기(•••) 메뉴 값: 플래시 · 타이머 · 노출 (docs/01_SPEC.md 8절).
 //
 
-import Foundation
+import AVFoundation
 
 /// 플래시: 자동 → 켬 → 끔
 enum FlashMode: String, CaseIterable, Sendable {
@@ -166,6 +166,11 @@ enum PhotoResolution {
     static func megapixels(width: Int32, height: Int32) -> Int {
         let mp = Double(width) * Double(height) / 1_000_000
         return values.min { abs(Double($0) - mp) < abs(Double($1) - mp) } ?? 12
+    }
+
+    /// 장치 사진 크기 목록 → 고를 수 있는 MP (같은 MP는 하나로, 작은 것부터)
+    static func available(in dimensions: [CMVideoDimensions]) -> [Int] {
+        Array(Set(dimensions.map { megapixels(width: $0.width, height: $0.height) })).sorted()
     }
 
     static var saved: Int {

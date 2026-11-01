@@ -130,7 +130,8 @@ final class PhotoCapture: OutputService {
     ///
     func updateConfiguration(for device: AVCaptureDevice) {
         // Enable all supported features.
-        photoOutput.maxPhotoDimensions = device.activeFormat.supportedMaxPhotoDimensions.last ?? .zero
+        // 목록 순서는 보장되지 않으므로 픽셀 면적이 가장 큰 크기를 출력 최대로
+        photoOutput.maxPhotoDimensions = Self.sortedByArea(device.activeFormat.supportedMaxPhotoDimensions).last ?? .zero
         photoOutput.isLivePhotoCaptureEnabled = photoOutput.isLivePhotoCaptureSupported
         photoOutput.maxPhotoQualityPrioritization = .quality
         photoOutput.isResponsiveCaptureEnabled = photoOutput.isResponsiveCaptureSupported
@@ -142,7 +143,11 @@ final class PhotoCapture: OutputService {
     private func updateCapabilities(for device: AVCaptureDevice) {
         capabilities = CaptureCapabilities(isLivePhotoCaptureSupported: photoOutput.isLivePhotoCaptureSupported,
                                            isFlashSupported: photoOutput.supportedFlashModes.contains(.on),
-                                           photoDimensions: device.activeFormat.supportedMaxPhotoDimensions)
+                                           photoDimensions: Self.sortedByArea(device.activeFormat.supportedMaxPhotoDimensions))
+    }
+
+    private static func sortedByArea(_ dimensions: [CMVideoDimensions]) -> [CMVideoDimensions] {
+        dimensions.sorted { Int($0.width) * Int($0.height) < Int($1.width) * Int($1.height) }
     }
 }
 
