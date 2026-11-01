@@ -42,6 +42,15 @@ final class FocusModel {
         show(at: location, locked: true)
     }
 
+    /// 밝기 조절은 초점 사각형 · 해 아이콘 근처에서 시작한 밀기만 (스치는 동작으로 바뀌지 않게)
+    private static let adjustableSize = CGSize(width: 200, height: 240)
+
+    func canAdjustBias(startingAt location: CGPoint) -> Bool {
+        guard let point else { return false }
+        return abs(location.x - point.x) <= Self.adjustableSize.width / 2
+            && abs(location.y - point.y) <= Self.adjustableSize.height / 2
+    }
+
     /// 위아래로 민 거리만큼 밝기 변경. 표시가 없으면 nil (밝기 조절 안 함)
     func adjustBias(byDragging translation: CGFloat) -> Float? {
         guard point != nil else { return nil }

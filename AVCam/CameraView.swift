@@ -20,6 +20,8 @@ struct CameraView<CameraModel: Camera>: View {
     @State private var touchLocation: CGPoint = .zero
     /// 지금 미는 방향. 위아래 = 밝기, 좌우 = 모드 전환
     @State private var dragAxis: Axis?
+    /// 두 손가락 확대를 시작할 때 배율
+    @State private var pinchStartZoom: CGFloat?
 
     var body: some View {
         GeometryReader { proxy in
@@ -102,10 +104,25 @@ struct CameraView<CameraModel: Camera>: View {
             .simultaneousGesture(touchTracker)
             // 위아래로 밀면 밝기, 좌우로 밀면 모드 전환 (기본 카메라와 같은 방향)
             .simultaneousGesture(dragGesture)
+            // 두 손가락 벌리기/모으기 → 배율
+            .simultaneousGesture(pinchGesture)
             /// The value of `shouldFlashScreen` changes briefly to `true` when capture
             /// starts, and then immediately changes to `false`. Use this change to
             /// flash the screen to provide visual feedback when capturing photos.
             .opacity(camera.shouldFlashScreen ? 0 : 1)
+    }
+
+    private var pinchGesture: some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                guard camera.zoom.isAvailable else { return }
+                let start = pinchStartZoom ?? camera.zoom.displayFactor
+                pinchStartZoom = start
+                Task { await camera.setZoom(start * value.magnification, animated: false) }
+            }
+            .onEnded { _ in
+                pinchStartZoom = nil
+            }
     }
 
     private var touchTracker: some Gesture {
@@ -121,8 +138,9 @@ struct CameraView<CameraModel: Camera>: View {
                 if dragAxis == nil {
                     dragAxis = abs(value.translation.height) > abs(value.translation.width) ? .vertical : .horizontal
                 }
-                // 초점 표시가 있을 때만 밝기 조절
+                // 초점 표시 근처에서 시작한 위아래 밀기만 밝기 조절
                 guard dragAxis == .vertical,
+                      focus.canAdjustBias(startingAt: value.startLocation),
                       let bias = focus.adjustBias(byDragging: value.translation.height)
                 else { return }
                 Task { await camera.setExposureBias(bias) }
