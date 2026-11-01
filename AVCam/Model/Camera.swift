@@ -58,6 +58,24 @@ protocol Camera: AnyObject, SendableMetatype {
     
     /// Captures a photo and writes it to the user's photo library.
     func capturePhoto() async
+
+    /// 셔터: 타이머가 켜져 있으면 카운트다운 뒤 촬영, 카운트다운 중에 누르면 취소
+    func shutterPressed() async
+
+    /// 플래시 (자동 → 켬 → 끔). 비디오 모드에서는 조명
+    var flashMode: FlashMode { get set }
+
+    /// 타이머 (끔 → 3 → 5 → 10초)
+    var timerDuration: TimerDuration { get set }
+
+    /// 타이머 남은 초. 카운트다운 중이 아니면 nil
+    var countdown: Int? { get }
+
+    /// 더보기 메뉴 노출 (±2, 전체 밝기 고정)
+    var exposureCompensation: Float { get set }
+
+    /// 전면 화면 플래시 중 (화면 전체를 하얗게)
+    var isScreenFlashing: Bool { get }
     
     /// A Boolean value that indicates whether to show visual feedback when capture begins.
     var shouldFlashScreen: Bool { get }

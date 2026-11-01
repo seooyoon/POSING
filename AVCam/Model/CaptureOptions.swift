@@ -1,0 +1,84 @@
+//
+//  CaptureOptions.swift
+//  포징
+//
+//  더보기(•••) 메뉴 값: 플래시 · 타이머 · 노출 (docs/01_SPEC.md 8절).
+//
+
+import Foundation
+
+/// 플래시: 자동 → 켬 → 끔
+enum FlashMode: String, CaseIterable, Sendable {
+    case auto
+    case on
+    case off
+
+    var next: FlashMode {
+        switch self {
+        case .auto: .on
+        case .on: .off
+        case .off: .auto
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .auto: "bolt.badge.automatic"
+        case .on: "bolt.fill"
+        case .off: "bolt.slash"
+        }
+    }
+
+    /// 마지막 값 유지
+    static var saved: FlashMode {
+        FlashMode(rawValue: UserDefaults.standard.string(forKey: SettingsKeys.flashMode) ?? "") ?? .auto
+    }
+
+    func save() {
+        UserDefaults.standard.set(rawValue, forKey: SettingsKeys.flashMode)
+    }
+}
+
+/// 타이머: 끔 → 3초 → 5초 → 10초
+enum TimerDuration: Int, CaseIterable, Sendable {
+    case off = 0
+    case three = 3
+    case five = 5
+    case ten = 10
+
+    var next: TimerDuration {
+        let all = Self.allCases
+        return all[(all.firstIndex(of: self)! + 1) % all.count]
+    }
+
+    var title: String {
+        self == .off ? "타이머" : "\(rawValue)초"
+    }
+
+    static var saved: TimerDuration {
+        TimerDuration(rawValue: UserDefaults.standard.integer(forKey: SettingsKeys.timerDuration)) ?? .off
+    }
+
+    func save() {
+        UserDefaults.standard.set(rawValue, forKey: SettingsKeys.timerDuration)
+    }
+}
+
+/// 더보기 메뉴 노출: ±2, 1/3 단위. 앱을 다시 켜면 0 (기본 카메라와 같음)
+enum ExposureCompensation {
+    static let range: ClosedRange<Float> = -2...2
+    static let step: Float = 1.0 / 3
+
+    /// 가장 가까운 눈금으로
+    static func snapped(_ value: Float) -> Float {
+        let clamped = min(max(value, range.lowerBound), range.upperBound)
+        return (clamped / step).rounded() * step
+    }
+
+    /// `+0.7`, `-1.3`, `0.0`
+    static func label(_ value: Float) -> String {
+        let text = String(format: "%.1f", abs(value))
+        if abs(value) < 0.05 { return "0.0" }
+        return (value > 0 ? "+" : "-") + text
+    }
+}

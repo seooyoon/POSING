@@ -74,6 +74,11 @@ final class PhotoCapture: OutputService {
         // Set the movie URL if the photo output supports Live Photo capture.
         photoSettings.livePhotoMovieFileURL = features.isLivePhotoEnabled ? URL.movieFileURL : nil
         
+        // 플래시 (출력이 지원하는 값만)
+        if photoOutput.supportedFlashModes.contains(features.flashMode) {
+            photoSettings.flashMode = features.flashMode
+        }
+        
         // Set the priority of speed versus quality during this capture.
         if let prioritization = AVCapturePhotoOutput.QualityPrioritization(rawValue: features.qualityPrioritization.rawValue) {
             photoSettings.photoQualityPrioritization = prioritization
@@ -128,7 +133,18 @@ final class PhotoCapture: OutputService {
     }
     
     private func updateCapabilities(for device: AVCaptureDevice) {
-        capabilities = CaptureCapabilities(isLivePhotoCaptureSupported: photoOutput.isLivePhotoCaptureSupported)
+        capabilities = CaptureCapabilities(isLivePhotoCaptureSupported: photoOutput.isLivePhotoCaptureSupported,
+                                           isFlashSupported: photoOutput.supportedFlashModes.contains(.on))
+    }
+}
+
+extension AVCaptureDevice.FlashMode {
+    init(_ mode: FlashMode) {
+        switch mode {
+        case .auto: self = .auto
+        case .on: self = .on
+        case .off: self = .off
+        }
     }
 }
 
