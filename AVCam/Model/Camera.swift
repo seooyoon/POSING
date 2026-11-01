@@ -43,6 +43,12 @@ protocol Camera: AnyObject, SendableMetatype {
     
     /// Performs a one-time automatic focus and exposure operation.
     func focusAndExpose(at point: CGPoint) async
+
+    /// 길게 누른 자리에 초점 · 노출을 맞추고 잠금
+    func lockFocusAndExposure(at point: CGPoint) async
+
+    /// 밝기(노출 보정, EV) 설정
+    func setExposureBias(_ bias: Float) async
     
     /// A Boolean value that indicates whether to capture Live Photos when capturing stills.
     var isLivePhotoEnabled: Bool { get set }

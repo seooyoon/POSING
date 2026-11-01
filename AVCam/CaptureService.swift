@@ -435,6 +435,8 @@ actor CaptureService {
     func focusAndExpose(at point: CGPoint) {
         // The point this call receives is in view-space coordinates. Convert this point to device coordinates.
         let devicePoint = videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: point)
+        // 새로 탭하면 AE/AF 잠금은 풀림
+        lockTask?.cancel()
         do {
             // Perform a user-initiated focus and expose.
             try focusAndExpose(at: devicePoint, isUserInitiated: true)
@@ -443,6 +445,58 @@ actor CaptureService {
         }
     }
     
+    /// 길게 누른 자리에 초점 · 노출을 맞춘 뒤 잠금 (AE/AF 잠금)
+    func lockFocusAndExposure(at point: CGPoint) {
+        let devicePoint = videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: point)
+        lockTask?.cancel()
+        do {
+            try focusAndExpose(at: devicePoint, isUserInitiated: true)
+            // 잠근 뒤에는 피사체가 바뀌어도 자동으로 돌아가지 않음
+            let device = currentDevice
+            try device.lockForConfiguration()
+            device.isSubjectAreaChangeMonitoringEnabled = false
+            device.unlockForConfiguration()
+        } catch {
+            logger.debug("Unable to lock focus and exposure. \(error)")
+        }
+        // 초점 · 노출이 맞춰질 시간을 두고 고정
+        lockTask = Task {
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled else { return }
+            lockCurrentFocusAndExposure()
+        }
+    }
+    private var lockTask: Task<Void, Never>?
+
+    private func lockCurrentFocusAndExposure() {
+        let device = currentDevice
+        do {
+            try device.lockForConfiguration()
+            if device.isFocusModeSupported(.locked) {
+                device.focusMode = .locked
+            }
+            if device.isExposureModeSupported(.locked) {
+                device.exposureMode = .locked
+            }
+            device.unlockForConfiguration()
+        } catch {
+            logger.debug("Unable to lock focus and exposure. \(error)")
+        }
+    }
+
+    /// 밝기(노출 보정) 설정. 장치가 지원하는 범위로 한 번 더 제한
+    func setExposureBias(_ bias: Float) {
+        let device = currentDevice
+        do {
+            try device.lockForConfiguration()
+            let clamped = min(max(bias, device.minExposureTargetBias), device.maxExposureTargetBias)
+            device.setExposureTargetBias(clamped)
+            device.unlockForConfiguration()
+        } catch {
+            logger.debug("Unable to set exposure bias. \(error)")
+        }
+    }
+
     // Observe notifications of type `subjectAreaDidChangeNotification` for the specified device.
     private func observeSubjectAreaChanges(of device: AVCaptureDevice) {
         // Cancel the previous observation task.
@@ -474,6 +528,10 @@ actor CaptureService {
         if device.isExposurePointOfInterestSupported && device.isExposureModeSupported(exposureMode) {
             device.exposurePointOfInterest = devicePoint
             device.exposureMode = exposureMode
+        }
+        // 새로 탭하면 밝기는 0에서 다시 시작 (기본 카메라와 동일)
+        if isUserInitiated {
+            device.setExposureTargetBias(0)
         }
         // Enable subject-area change monitoring when performing a user-initiated automatic focus and exposure operation.
         // If this method enables change monitoring, when the device's subject area changes, the app calls this method a
