@@ -89,12 +89,13 @@ final class CameraModel: Camera {
         do {
             // Synchronize the state of the model with the persistent state.
             await syncState()
+            // 저장된 비율이 16:9 · 1:1이면 세션을 시작하기 전에 지연 처리를 끔
+            await captureService.setPhotoCropping(photoAspect != .fourThree)
             // Start the capture service to start the flow of data.
             try await captureService.start(with: cameraState)
             observeState()
             status = .running
             updateTorch()
-            applyPhotoAspect()
         } catch {
             logger.error("Failed to start capture service. \(error)")
             status = .failed
@@ -147,6 +148,8 @@ final class CameraModel: Camera {
     func capturePhoto() async {
         // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
         guard !isSwitchingVideoDevices else { return }
+        // 비율을 막 바꿨으면 지연 처리 설정이 끝난 뒤에 찍음 (지연 처리 사진은 자를 수 없음)
+        await photoAspectTask?.value
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
         let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
         if usesScreenFlash {
@@ -234,9 +237,16 @@ final class CameraModel: Camera {
         }
     }
 
+    private var photoAspectTask: Task<Void, Never>?
+
     private func applyPhotoAspect() {
         let isCropping = photoAspect != .fourThree
-        Task { await captureService.setPhotoCropping(isCropping) }
+        let previous = photoAspectTask
+        photoAspectTask = Task {
+            // 빠르게 여러 번 바꿔도 순서대로 적용
+            await previous?.value
+            await captureService.setPhotoCropping(isCropping)
+        }
     }
 
     /// 비디오 모드에서만 플래시 값대로 조명을 켬
