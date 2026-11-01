@@ -16,6 +16,7 @@ class PreviewCameraModel: Camera {
     var qualityPrioritization = QualityPrioritization.quality
     var shouldFlashScreen = false
     var isHDRVideoSupported = false
+    var isLensSmudged = false
     var isHDRVideoEnabled = false
     
     struct PreviewSourceStub: PreviewSource {

@@ -23,6 +23,9 @@ actor CaptureService {
     @Published var isHDRVideoEnabled = false
     /// A Boolean value that indicates whether capture controls are in a fullscreen appearance.
     @Published var isShowingFullscreenControls = false
+
+    /// 렌즈 얼룩 감지 결과 (iOS 26). 렌즈 · 형식이 지원하지 않으면 계속 false
+    @Published private(set) var isLensSmudged = false
     
     /// A type that connects a preview destination with the capture session.
     nonisolated let previewSource: PreviewSource
@@ -156,6 +159,8 @@ actor CaptureService {
                 setHDRVideoEnabled(isHDRVideoEnabled)
             }
             
+            // 렌즈 얼룩 감지는 세션 시작 전에 켬
+            enableLensSmudgeDetection(for: defaultCamera)
             // Configure controls to use with the Camera Control.
             configureControls(for: defaultCamera)
             // Monitor the system-preferred camera state.
@@ -273,6 +278,12 @@ actor CaptureService {
     ///
     /// - Parameter `captureMode`: The capture mode to enable.
     func setCaptureMode(_ captureMode: CaptureMode) throws {
+        try applyCaptureMode(captureMode)
+        // 형식이 바뀌면 얼룩 감지가 꺼지므로, 새 형식이 적용된 뒤 다시 켬
+        refreshLensSmudgeDetection()
+    }
+
+    private func applyCaptureMode(_ captureMode: CaptureMode) throws {
         // Update the internal capture mode value before performing the session configuration.
         self.captureMode = captureMode
         
@@ -329,6 +340,12 @@ actor CaptureService {
     
     // Changes the device the service uses for video capture.
     private func changeCaptureDevice(to device: AVCaptureDevice) {
+        applyCaptureDevice(device)
+        // 새 카메라 형식이 적용된 뒤 얼룩 감지를 다시 켬
+        refreshLensSmudgeDetection()
+    }
+
+    private func applyCaptureDevice(_ device: AVCaptureDevice) {
         // The service must have a valid video input prior to calling this method.
         guard let currentInput = activeVideoInput else { fatalError() }
         
@@ -427,6 +444,48 @@ actor CaptureService {
         return previewLayer
     }
     
+    // MARK: - 렌즈 얼룩 감지
+
+    /// 얼룩 감지 간격. 계속 돌리면 배터리를 쓰므로 일정 간격으로만
+    private static let smudgeDetectionInterval = CMTime(value: 30, timescale: 1)
+
+    /// 지원하는 렌즈 · 형식이면 얼룩 감지를 켜고 결과를 관찰.
+    /// begin/commitConfiguration 안이나 세션 시작 전에 불러야 함
+    private func enableLensSmudgeDetection(for device: AVCaptureDevice) {
+        smudgeObservation = nil
+        isLensSmudged = false
+        guard device.activeFormat.isCameraLensSmudgeDetectionSupported else { return }
+        do {
+            try device.lockForConfiguration()
+            device.setCameraLensSmudgeDetectionEnabled(true, detectionInterval: Self.smudgeDetectionInterval)
+            device.unlockForConfiguration()
+        } catch {
+            logger.debug("Unable to enable lens smudge detection. \(error)")
+            return
+        }
+        smudgeObservation = device.observe(\.cameraLensSmudgeDetectionStatus, options: [.new]) { [weak self] device, _ in
+            let status = device.cameraLensSmudgeDetectionStatus
+            Task { await self?.updateLensSmudge(status) }
+        }
+    }
+    private var smudgeObservation: NSKeyValueObservation?
+
+    /// 세션이 도는 중에 다시 켤 때는 구성 묶음 안에서
+    private func refreshLensSmudgeDetection() {
+        captureSession.beginConfiguration()
+        defer { captureSession.commitConfiguration() }
+        enableLensSmudgeDetection(for: currentDevice)
+    }
+
+    private func updateLensSmudge(_ status: AVCaptureCameraLensSmudgeDetectionStatus) {
+        switch status {
+        case .smudged: isLensSmudged = true
+        case .smudgeNotDetected, .disabled: isLensSmudged = false
+        // 결과가 아직 안정되지 않으면 이전 값 유지
+        default: break
+        }
+    }
+
     // MARK: - Automatic focus and exposure
     
     /// Performs a one-time automatic focus and expose operation.
