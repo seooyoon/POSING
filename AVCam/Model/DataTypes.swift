@@ -96,6 +96,7 @@ struct Movie: Sendable {
 struct PhotoFeatures {
     let isLivePhotoEnabled: Bool
     let qualityPrioritization: QualityPrioritization
+    let flashMode: AVCaptureDevice.FlashMode
 }
 
 /// A structure that represents the capture capabilities of `CaptureService` in
@@ -104,11 +105,15 @@ struct CaptureCapabilities {
 
     let isLivePhotoCaptureSupported: Bool
     let isHDRSupported: Bool
+    /// 사진 출력이 플래시를 지원 (전면에서 지원하지 않으면 화면 플래시로 대신함)
+    let isFlashSupported: Bool
     
     init(isLivePhotoCaptureSupported: Bool = false,
-         isHDRSupported: Bool = false) {
+         isHDRSupported: Bool = false,
+         isFlashSupported: Bool = false) {
         self.isLivePhotoCaptureSupported = isLivePhotoCaptureSupported
         self.isHDRSupported = isHDRSupported
+        self.isFlashSupported = isFlashSupported
     }
     
     static let unknown = CaptureCapabilities()

@@ -27,6 +27,8 @@ actor CaptureService {
     /// 배율 버튼 · 다이얼 · 접사 상태
     @Published private(set) var zoomState = ZoomState.unavailable
     private let zoomController = ZoomController()
+    /// 노출 보정 · 비디오 조명
+    private let lightController = LightController()
 
     /// 렌즈 얼룩 감지 결과 (iOS 26). 렌즈 · 형식이 지원하지 않으면 계속 false
     @Published private(set) var isLensSmudged = false
@@ -167,6 +169,7 @@ actor CaptureService {
             enableLensSmudgeDetection(for: defaultCamera)
             updateOutputMirroring()
             zoomController.attach(to: defaultCamera)
+            lightController.attach(to: defaultCamera)
             // Configure controls to use with the Camera Control.
             configureControls(for: defaultCamera)
             // Monitor the system-preferred camera state.
@@ -370,6 +373,7 @@ actor CaptureService {
             // Attempt to connect a new input and device to the capture session.
             activeVideoInput = try addInput(for: device)
             zoomController.attach(to: device)
+            lightController.attach(to: device)
             updateOutputMirroring()
             // Configure capture controls for new device selection.
             configureControls(for: device)
@@ -585,15 +589,13 @@ actor CaptureService {
     /// 모드 · 카메라 전환 시 AE/AF 잠금과 밝기를 풀고 연속 자동으로 되돌림
     private func resetFocusAndExposure() {
         lockTask?.cancel()
-        let device = currentDevice
         do {
             try focusAndExpose(at: CGPoint(x: 0.5, y: 0.5), isUserInitiated: false)
-            try device.lockForConfiguration()
-            device.setExposureTargetBias(0)
-            device.unlockForConfiguration()
         } catch {
             logger.debug("Unable to reset focus and exposure. \(error)")
         }
+        // 초점 밝기만 풀고 더보기 메뉴 노출은 유지
+        lightController.resetFocusBias()
     }
 
     private func lockCurrentFocusAndExposure() {
@@ -612,17 +614,19 @@ actor CaptureService {
         }
     }
 
-    /// 밝기(노출 보정) 설정. 장치가 지원하는 범위로 한 번 더 제한
+    /// 초점 표시 옆 밝기
     func setExposureBias(_ bias: Float) {
-        let device = currentDevice
-        do {
-            try device.lockForConfiguration()
-            let clamped = min(max(bias, device.minExposureTargetBias), device.maxExposureTargetBias)
-            device.setExposureTargetBias(clamped)
-            device.unlockForConfiguration()
-        } catch {
-            logger.debug("Unable to set exposure bias. \(error)")
-        }
+        lightController.setFocusBias(bias)
+    }
+
+    /// 더보기 메뉴 노출 (전체 밝기 고정)
+    func setExposureCompensation(_ value: Float) {
+        lightController.setCompensation(value)
+    }
+
+    /// 비디오 모드 플래시 = 조명
+    func setTorchMode(_ mode: FlashMode) {
+        lightController.setTorch(AVCaptureDevice.TorchMode(mode))
     }
 
     // Observe notifications of type `subjectAreaDidChangeNotification` for the specified device.
@@ -657,10 +661,6 @@ actor CaptureService {
             device.exposurePointOfInterest = devicePoint
             device.exposureMode = exposureMode
         }
-        // 새로 탭하면 밝기는 0에서 다시 시작 (기본 카메라와 동일)
-        if isUserInitiated {
-            device.setExposureTargetBias(0)
-        }
         // Enable subject-area change monitoring when performing a user-initiated automatic focus and exposure operation.
         // If this method enables change monitoring, when the device's subject area changes, the app calls this method a
         // second time and resets the device to continuous automatic focus and exposure.
@@ -668,6 +668,10 @@ actor CaptureService {
         
         // Release the lock.
         device.unlockForConfiguration()
+        // 새로 탭하면 초점 밝기는 0에서 다시 시작 (기본 카메라와 동일). 더보기 메뉴 노출은 유지
+        if isUserInitiated {
+            lightController.resetFocusBias()
+        }
     }
     
     // MARK: - Photo capture

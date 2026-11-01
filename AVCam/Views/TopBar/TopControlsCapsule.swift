@@ -4,7 +4,7 @@
 //
 //  상단 오른쪽 묶음: 플래시 · LIVE · •••
 //  기본 카메라의 야간 모드 아이콘은 만들 수 없어서 뺐다 (CLAUDE.md 4절 3번).
-//  비디오 모드에서는 LIVE가 없다.
+//  비디오 모드에서는 LIVE가 없고, 플래시는 조명(전면은 조명이 없어 숨김).
 //
 
 import SwiftUI
@@ -12,13 +12,17 @@ import SwiftUI
 struct TopControlsCapsule<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
+    @Binding var isShowingMoreMenu: Bool
 
     var body: some View {
         HStack(spacing: 18) {
-            Button {
-                // 플래시 자동 → 켬 → 끔은 4단계에서 연결
-            } label: {
-                Image(systemName: "bolt.slash")
+            if !(camera.captureMode == .video && camera.zoom.isFrontCamera) {
+                Button {
+                    camera.flashMode = camera.flashMode.next
+                } label: {
+                    Image(systemName: camera.flashMode.symbolName)
+                        .foregroundStyle(camera.flashMode == .on ? Color.cameraYellow : .white)
+                }
             }
 
             if camera.captureMode == .photo {
@@ -31,9 +35,10 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
             }
 
             Button {
-                // 더보기 메뉴는 4단계에서 연결
+                isShowingMoreMenu.toggle()
             } label: {
                 MoreIcon()
+                    .foregroundStyle(isShowingMoreMenu ? Color.cameraYellow : .white)
             }
         }
         .buttonStyle(.plain)
@@ -54,8 +59,8 @@ private struct MoreIcon: View {
 
 #Preview {
     VStack {
-        TopControlsCapsule(camera: PreviewCameraModel(captureMode: .photo))
-        TopControlsCapsule(camera: PreviewCameraModel(captureMode: .video))
+        TopControlsCapsule(camera: PreviewCameraModel(captureMode: .photo), isShowingMoreMenu: .constant(false))
+        TopControlsCapsule(camera: PreviewCameraModel(captureMode: .video), isShowingMoreMenu: .constant(true))
     }
     .padding()
     .background(.gray)

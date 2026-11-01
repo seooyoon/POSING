@@ -7,6 +7,7 @@ An object that provides the interface to the features of the camera.
 
 import SwiftUI
 import Combine
+import AVFoundation
 
 /// An object that provides the interface to the features of the camera.
 ///
@@ -53,6 +54,13 @@ final class CameraModel: Camera {
     private(set) var isLensSmudged = false
 
     private(set) var zoom = ZoomState.unavailable
+
+    private(set) var countdown: Int?
+    private var countdownTask: Task<Void, Never>?
+
+    private(set) var isScreenFlashing = false
+    /// 지금 카메라의 사진 출력이 플래시를 지원
+    private var isFlashSupported = false
     
     /// An object that saves captured media to a person's Photos library.
     private let mediaLibrary = MediaLibrary()
@@ -82,6 +90,7 @@ final class CameraModel: Camera {
             try await captureService.start(with: cameraState)
             observeState()
             status = .running
+            updateTorch()
         } catch {
             logger.error("Failed to start capture service. \(error)")
             status = .failed
@@ -106,6 +115,7 @@ final class CameraModel: Camera {
         didSet {
             // 같은 모드를 다시 넣으면(끝에서 더 밀기 등) 세션을 다시 구성하지 않음
             guard status == .running, captureMode != oldValue else { return }
+            cancelCountdown()
             Task {
                 isSwitchingModes = true
                 defer { isSwitchingModes = false }
@@ -113,6 +123,7 @@ final class CameraModel: Camera {
                 try? await captureService.setCaptureMode(captureMode)
                 // Update the persistent state value.
                 cameraState.captureMode = captureMode
+                updateTorch()
             }
         }
     }
@@ -128,13 +139,82 @@ final class CameraModel: Camera {
     
     /// Captures a photo and writes it to the user's Photos library.
     func capturePhoto() async {
+        // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
+        let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
+        if usesScreenFlash {
+            await showScreenFlash()
+        }
         do {
-            let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoEnabled, qualityPrioritization: qualityPrioritization)
+            let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoEnabled,
+                                              qualityPrioritization: qualityPrioritization,
+                                              flashMode: AVCaptureDevice.FlashMode(flashMode))
             let photo = try await captureService.capturePhoto(with: photoFeatures)
+            if usesScreenFlash { hideScreenFlash() }
             try await mediaLibrary.save(photo: photo)
         } catch {
+            if usesScreenFlash { hideScreenFlash() }
             self.error = error
         }
+    }
+
+    func shutterPressed() async {
+        if countdownTask != nil {
+            cancelCountdown()
+            return
+        }
+        guard timerDuration != .off else {
+            await capturePhoto()
+            return
+        }
+        countdownTask = Task {
+            for remaining in stride(from: timerDuration.rawValue, to: 0, by: -1) {
+                countdown = remaining
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+            }
+            countdown = nil
+            countdownTask = nil
+            await capturePhoto()
+        }
+    }
+
+    private func cancelCountdown() {
+        countdownTask?.cancel()
+        countdownTask = nil
+        countdown = nil
+    }
+
+    var flashMode = FlashMode.saved {
+        didSet {
+            flashMode.save()
+            updateTorch()
+        }
+    }
+
+    var timerDuration = TimerDuration.saved {
+        didSet { timerDuration.save() }
+    }
+
+    var exposureCompensation: Float = 0 {
+        didSet {
+            Task { await captureService.setExposureCompensation(exposureCompensation) }
+        }
+    }
+
+    /// 비디오 모드에서만 플래시 값대로 조명을 켬
+    private func updateTorch() {
+        let mode = captureMode == .video ? flashMode : .off
+        Task { await captureService.setTorchMode(mode) }
+    }
+
+    private func showScreenFlash() async {
+        withAnimation(.easeIn(duration: 0.15)) { isScreenFlashing = true }
+        // 화면이 밝아지고 노출이 맞춰질 시간
+        try? await Task.sleep(for: .milliseconds(400))
+    }
+
+    private func hideScreenFlash() {
+        withAnimation(.easeOut(duration: 0.3)) { isScreenFlashing = false }
     }
     
     /// A Boolean value that indicates whether to capture Live Photos when capturing stills.
@@ -244,6 +324,9 @@ final class CameraModel: Camera {
             // Await updates to the capabilities that the capture service advertises.
             for await capabilities in await captureService.$captureCapabilities.values {
                 isHDRVideoSupported = capabilities.isHDRSupported
+                if captureMode == .photo {
+                    isFlashSupported = capabilities.isFlashSupported
+                }
                 cameraState.isVideoHDRSupported = capabilities.isHDRSupported
             }
         }

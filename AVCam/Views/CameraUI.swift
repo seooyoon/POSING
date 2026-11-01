@@ -15,10 +15,11 @@ struct CameraUI<CameraModel: Camera>: View {
     let layout: CameraLayout
 
     @State private var panelHeight: CGFloat = 0
+    @State private var isShowingMoreMenu = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            TopBar(camera: camera, layers: layers)
+            TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu)
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.topBarCenterY)
 
@@ -66,10 +67,39 @@ struct CameraUI<CameraModel: Camera>: View {
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.bottomRowCenterY)
 
+            // 타이머 카운트다운: 미리보기 가운데
+            TimerCountdownView(countdown: camera.countdown)
+                .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
+
+            // 더보기 메뉴: 판 바깥을 탭하면 닫힘
+            if isShowingMoreMenu {
+                Color.clear
+                    .contentShape(.rect)
+                    .frame(width: layout.size.width, height: layout.size.height)
+                    .onTapGesture { isShowingMoreMenu = false }
+                VStack {
+                    Spacer()
+                    MoreMenu(camera: camera, isPresented: $isShowingMoreMenu)
+                }
+                .padding(8)
+                .frame(width: layout.size.width, height: layout.size.height)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+
+            // 전면 화면 플래시
+            Color.white
+                .frame(width: layout.size.width, height: layout.size.height)
+                .opacity(camera.isScreenFlashing ? 1 : 0)
+                .allowsHitTesting(false)
+
             StatusOverlayView(status: camera.status)
                 .frame(width: layout.size.width, height: layout.size.height)
         }
         .animation(.easeOut(duration: 0.2), value: layers.openPanel)
+        .animation(.spring(duration: 0.35), value: isShowingMoreMenu)
+        // 모드를 바꾸거나 녹화를 시작하면 메뉴를 닫음
+        .onChange(of: camera.captureMode) { isShowingMoreMenu = false }
+        .onChange(of: camera.captureActivity.isRecording) { isShowingMoreMenu = false }
     }
 
     private var isShowingLiveBadge: Bool {

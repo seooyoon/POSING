@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D0D1E996ACA9255E443123A1 /* CaptureOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */; };
+		9A6844DC13704CB2DDF30B5F /* CaptureOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */; };
+		8D6D71119B49F88872EF0850 /* LightController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A290DCFC09981F31DF05ED /* LightController.swift */; };
+		313F414D4A7351E09ADBDF16 /* LightController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A290DCFC09981F31DF05ED /* LightController.swift */; };
+		BD3076C17930F23325F6C966 /* MoreMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B13FC1A1CC545BA5FCC5B1 /* MoreMenu.swift */; };
+		7726866022D45E7D49F72178 /* MoreMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B13FC1A1CC545BA5FCC5B1 /* MoreMenu.swift */; };
+		608DD7CFFE1D373986C1905A /* ExposureRuler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CCB3395AF40EA0DBE1BB08 /* ExposureRuler.swift */; };
+		89D2A2DFFEFF31FE06433C18 /* ExposureRuler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CCB3395AF40EA0DBE1BB08 /* ExposureRuler.swift */; };
+		7A38E342AE2A3E6764662BE9 /* TimerCountdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEAD424EAD5CF1033AC9C430 /* TimerCountdownView.swift */; };
+		80F0B22AC31032397F32DDEB /* TimerCountdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEAD424EAD5CF1033AC9C430 /* TimerCountdownView.swift */; };
 		723B219DDB5F1EDF07036CF6 /* ZoomState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641B2AA4EED9A22B617719E7 /* ZoomState.swift */; };
 		C520B789CB407D89E36C2442 /* ZoomState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641B2AA4EED9A22B617719E7 /* ZoomState.swift */; };
 		B0A351EE4C977F6F9BBAFC7D /* ZoomController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ABC64C77391D7868395728A /* ZoomController.swift */; };
@@ -175,6 +185,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureOptions.swift; sourceTree = "<group>"; };
+		A9A290DCFC09981F31DF05ED /* LightController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightController.swift; sourceTree = "<group>"; };
+		21B13FC1A1CC545BA5FCC5B1 /* MoreMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreMenu.swift; sourceTree = "<group>"; };
+		A1CCB3395AF40EA0DBE1BB08 /* ExposureRuler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExposureRuler.swift; sourceTree = "<group>"; };
+		DEAD424EAD5CF1033AC9C430 /* TimerCountdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCountdownView.swift; sourceTree = "<group>"; };
 		641B2AA4EED9A22B617719E7 /* ZoomState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomState.swift; sourceTree = "<group>"; };
 		7ABC64C77391D7868395728A /* ZoomController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomController.swift; sourceTree = "<group>"; };
 		F4863A582BC3114D07046F4E /* ZoomControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomControl.swift; sourceTree = "<group>"; };
@@ -294,6 +309,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2420DD78B0F6636B2B54FFB5 /* MoreMenu */ = {
+			isa = PBXGroup;
+			children = (
+				A1CCB3395AF40EA0DBE1BB08 /* ExposureRuler.swift */,
+				21B13FC1A1CC545BA5FCC5B1 /* MoreMenu.swift */,
+			);
+			path = MoreMenu;
+			sourceTree = "<group>";
+		};
 		B4D67BAFD8F08DEF967D9ADD /* Zoom */ = {
 			isa = PBXGroup;
 			children = (
@@ -404,6 +428,7 @@
 		C400F46528DFDDD800861093 /* Overlays */ = {
 			isa = PBXGroup;
 			children = (
+				DEAD424EAD5CF1033AC9C430 /* TimerCountdownView.swift */,
 				AB726D3EC9306348CD8E8CAF /* LensSmudgeBanner.swift */,
 				4652B55DF25411DCD7BEDAAC /* LevelOverlay.swift */,
 				5EEC0F84AA4A3116773F339A /* GridOverlay.swift */,
@@ -439,6 +464,7 @@
 		C470F0EF2899E2FB004D4515 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */,
 				B4D67BAFD8F08DEF967D9ADD /* Zoom */,
 				B2F52665D3000F1E9742A08C /* Focus */,
 				82AF8F5FF2942F982D1751B1 /* Layers */,
@@ -454,6 +480,7 @@
 		C472D847285BD4A40082244A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				2420DD78B0F6636B2B54FFB5 /* MoreMenu */,
 				EA5CE56085A6998525CB6082 /* Settings */,
 				8188C915800E6ED312833522 /* Panels */,
 				C0469DF54D5FEE553D15739F /* Layers */,
@@ -472,6 +499,7 @@
 		C47390512BC3464500EC7B9D /* Capture */ = {
 			isa = PBXGroup;
 			children = (
+				A9A290DCFC09981F31DF05ED /* LightController.swift */,
 				7ABC64C77391D7868395728A /* ZoomController.swift */,
 				C4E15AB02898660900827683 /* PhotoCapture.swift */,
 				C4EA0DBF2891EFC20085A584 /* MovieCapture.swift */,
@@ -701,6 +729,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9A6844DC13704CB2DDF30B5F /* CaptureOptions.swift in Sources */,
+				313F414D4A7351E09ADBDF16 /* LightController.swift in Sources */,
+				7726866022D45E7D49F72178 /* MoreMenu.swift in Sources */,
+				89D2A2DFFEFF31FE06433C18 /* ExposureRuler.swift in Sources */,
+				80F0B22AC31032397F32DDEB /* TimerCountdownView.swift in Sources */,
 				C520B789CB407D89E36C2442 /* ZoomState.swift in Sources */,
 				4C25431F8893B16C8253B787 /* ZoomController.swift in Sources */,
 				08ED819EB703A59E7D301494 /* ZoomControl.swift in Sources */,
@@ -774,6 +807,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0D1E996ACA9255E443123A1 /* CaptureOptions.swift in Sources */,
+				8D6D71119B49F88872EF0850 /* LightController.swift in Sources */,
+				BD3076C17930F23325F6C966 /* MoreMenu.swift in Sources */,
+				608DD7CFFE1D373986C1905A /* ExposureRuler.swift in Sources */,
+				7A38E342AE2A3E6764662BE9 /* TimerCountdownView.swift in Sources */,
 				723B219DDB5F1EDF07036CF6 /* ZoomState.swift in Sources */,
 				B0A351EE4C977F6F9BBAFC7D /* ZoomController.swift in Sources */,
 				6092CC23B07075E0EDDD87BF /* ZoomControl.swift in Sources */,

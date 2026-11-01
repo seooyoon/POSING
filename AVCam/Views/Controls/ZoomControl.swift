@@ -125,6 +125,8 @@ struct FrontFieldOfViewButton<CameraModel: Camera>: View {
                 .background(.black.opacity(0.4), in: .circle)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("전면 화각")
+        .accessibilityValue(isWide ? "넓게" : "가깝게")
         .sensoryFeedback(.selection, trigger: isWide)
     }
 }

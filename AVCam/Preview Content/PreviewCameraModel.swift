@@ -20,6 +20,12 @@ class PreviewCameraModel: Camera {
     // 시뮬레이터에는 렌즈가 없어서 배율 버튼만 반응
     private(set) var zoom = ZoomState(displayFactor: 1, range: 0.5...25, presets: ZoomState.presetValues)
     var isHDRVideoEnabled = false
+    var flashMode = FlashMode.auto
+    var timerDuration = TimerDuration.off
+    var exposureCompensation: Float = 0
+    private(set) var countdown: Int?
+    private(set) var isScreenFlashing = false
+    private var countdownTask: Task<Void, Never>?
     
     struct PreviewSourceStub: PreviewSource {
         // Stubbed out for test purposes.
@@ -58,8 +64,11 @@ class PreviewCameraModel: Camera {
         }
     }
     
+    // 시뮬레이터에서도 전면 화각 버튼을 확인: 후면 ↔ 전면 상태만 바꿈 (전면은 '가깝게'로 시작)
     func switchVideoDevices() {
-        logger.debug("Device switching isn't implemented in PreviewCamera.")
+        zoom = zoom.isFrontCamera
+            ? ZoomState(displayFactor: 1, range: 0.5...25, presets: ZoomState.presetValues)
+            : ZoomState(isFrontCamera: true, isFrontWide: false)
     }
     
     // 시뮬레이터 셔터 흉내: 화면을 깜빡이고 샘플 이미지를 썸네일로 보여줌 (05_TECH_NOTES 13절)
@@ -69,6 +78,30 @@ class PreviewCameraModel: Camera {
             shouldFlashScreen = false
         }
         thumbnail = UIImage(named: "photo_mode")?.cgImage
+    }
+
+    // 시뮬레이터에서도 타이머 화면을 확인
+    func shutterPressed() async {
+        if countdownTask != nil {
+            countdownTask?.cancel()
+            countdownTask = nil
+            countdown = nil
+            return
+        }
+        guard timerDuration != .off else {
+            capturePhoto()
+            return
+        }
+        countdownTask = Task {
+            for remaining in stride(from: timerDuration.rawValue, to: 0, by: -1) {
+                countdown = remaining
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+            }
+            countdown = nil
+            countdownTask = nil
+            capturePhoto()
+        }
     }
 
     // 시뮬레이터 녹화 흉내: 녹화 중 화면(빨간 시간 · 숨는 버튼)을 확인하는 용도
