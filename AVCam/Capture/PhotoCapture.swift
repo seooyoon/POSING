@@ -62,9 +62,9 @@ final class PhotoCapture: OutputService {
         // Create a new settings object to configure the photo capture.
         var photoSettings = AVCapturePhotoSettings()
         
-        // Capture photos in HEIF format when the device supports it.
-        if photoOutput.availablePhotoCodecTypes.contains(.hevc) {
-            photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+        // 형식 버튼에서 고른 HEIF / JPEG (지원하지 않으면 기본값)
+        if photoOutput.availablePhotoCodecTypes.contains(features.codec) {
+            photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: features.codec])
         }
         
         /// Set the format of the preview image to capture. The `photoSettings` object returns the available
@@ -76,7 +76,7 @@ final class PhotoCapture: OutputService {
         /// Set the largest dimensions that the photo output supports.
         /// `CaptureService` automatically updates the photo output's `maxPhotoDimensions`
         /// when the capture pipeline changes.
-        photoSettings.maxPhotoDimensions = photoOutput.maxPhotoDimensions
+        photoSettings.maxPhotoDimensions = features.maxDimensions ?? photoOutput.maxPhotoDimensions
         
         // Set the movie URL if the photo output supports Live Photo capture.
         photoSettings.livePhotoMovieFileURL = features.isLivePhotoEnabled ? URL.movieFileURL : nil
@@ -130,7 +130,8 @@ final class PhotoCapture: OutputService {
     ///
     func updateConfiguration(for device: AVCaptureDevice) {
         // Enable all supported features.
-        photoOutput.maxPhotoDimensions = device.activeFormat.supportedMaxPhotoDimensions.last ?? .zero
+        // 목록 순서는 보장되지 않으므로 픽셀 면적이 가장 큰 크기를 출력 최대로
+        photoOutput.maxPhotoDimensions = Self.sortedByArea(device.activeFormat.supportedMaxPhotoDimensions).last ?? .zero
         photoOutput.isLivePhotoCaptureEnabled = photoOutput.isLivePhotoCaptureSupported
         photoOutput.maxPhotoQualityPrioritization = .quality
         photoOutput.isResponsiveCaptureEnabled = photoOutput.isResponsiveCaptureSupported
@@ -141,7 +142,12 @@ final class PhotoCapture: OutputService {
     
     private func updateCapabilities(for device: AVCaptureDevice) {
         capabilities = CaptureCapabilities(isLivePhotoCaptureSupported: photoOutput.isLivePhotoCaptureSupported,
-                                           isFlashSupported: photoOutput.supportedFlashModes.contains(.on))
+                                           isFlashSupported: photoOutput.supportedFlashModes.contains(.on),
+                                           photoDimensions: Self.sortedByArea(device.activeFormat.supportedMaxPhotoDimensions))
+    }
+
+    private static func sortedByArea(_ dimensions: [CMVideoDimensions]) -> [CMVideoDimensions] {
+        dimensions.sorted { Int($0.width) * Int($0.height) < Int($1.width) * Int($1.height) }
     }
 }
 

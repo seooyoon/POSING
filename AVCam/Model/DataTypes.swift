@@ -99,6 +99,10 @@ struct PhotoFeatures {
     let flashMode: AVCaptureDevice.FlashMode
     /// 저장 전에 가운데를 잘라낼 비율 (긴 변 / 짧은 변). nil이면 원본 4:3
     let cropRatio: CGFloat?
+    /// HEIF(.hevc) 또는 JPEG
+    let codec: AVVideoCodecType
+    /// 사진 크기. nil이면 출력 최대 크기
+    let maxDimensions: CMVideoDimensions?
 }
 
 /// A structure that represents the capture capabilities of `CaptureService` in
@@ -109,13 +113,17 @@ struct CaptureCapabilities {
     let isHDRSupported: Bool
     /// 사진 출력이 플래시를 지원 (전면에서 지원하지 않으면 화면 플래시로 대신함)
     let isFlashSupported: Bool
+    /// 지금 카메라가 찍을 수 있는 사진 크기 (작은 것부터)
+    let photoDimensions: [CMVideoDimensions]
     
     init(isLivePhotoCaptureSupported: Bool = false,
          isHDRSupported: Bool = false,
-         isFlashSupported: Bool = false) {
+         isFlashSupported: Bool = false,
+         photoDimensions: [CMVideoDimensions] = []) {
         self.isLivePhotoCaptureSupported = isLivePhotoCaptureSupported
         self.isHDRSupported = isHDRSupported
         self.isFlashSupported = isFlashSupported
+        self.photoDimensions = photoDimensions
     }
     
     static let unknown = CaptureCapabilities()

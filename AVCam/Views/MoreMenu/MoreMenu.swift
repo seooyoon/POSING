@@ -66,13 +66,13 @@ struct MoreMenu<CameraModel: Camera>: View {
                 camera.flashMode = camera.flashMode.next
             }
         case .live:
-            // 비율이 4:3이 아니면 LIVE 꺼짐 표시, 누를 수 없음
+            // 비율이 4:3이 아니거나 48MP면 LIVE 꺼짐 표시, 누를 수 없음
             MoreMenuButton(title: "LIVE", isActive: camera.isLivePhotoActive) {
                 Image(systemName: camera.isLivePhotoActive ? "livephoto" : "livephoto.slash")
             } action: {
                 camera.isLivePhotoEnabled.toggle()
             }
-            .disabled(camera.photoAspect != .fourThree)
+            .disabled(!camera.isLivePhotoAvailable)
         case .timer:
             MoreMenuButton(title: camera.timerDuration.title, isActive: camera.timerDuration != .off) {
                 Image(systemName: "timer")

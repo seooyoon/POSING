@@ -55,12 +55,15 @@ final class CameraModel: Camera {
 
     private(set) var zoom = ZoomState.unavailable
 
-    private(set) var countdown: Int?
-    private var countdownTask: Task<Void, Never>?
+    private let captureTimer = CaptureTimer()
+    var countdown: Int? { captureTimer.countdown }
 
     private(set) var isScreenFlashing = false
     /// 지금 카메라의 사진 출력이 플래시를 지원
     private var isFlashSupported = false
+    /// 지금 카메라가 찍을 수 있는 사진 크기
+    private var photoDimensions: [CMVideoDimensions] = []
+    private(set) var availableResolutions: [Int] = []
     
     /// An object that saves captured media to a person's Photos library.
     private let mediaLibrary = MediaLibrary()
@@ -86,12 +89,13 @@ final class CameraModel: Camera {
         do {
             // Synchronize the state of the model with the persistent state.
             await syncState()
+            // 저장된 비율이 16:9 · 1:1이면 세션을 시작하기 전에 지연 처리를 끔
+            await captureService.setPhotoCropping(photoAspect != .fourThree)
             // Start the capture service to start the flow of data.
             try await captureService.start(with: cameraState)
             observeState()
             status = .running
             updateTorch()
-            applyPhotoAspect()
         } catch {
             logger.error("Failed to start capture service. \(error)")
             status = .failed
@@ -116,7 +120,7 @@ final class CameraModel: Camera {
         didSet {
             // 같은 모드를 다시 넣으면(끝에서 더 밀기 등) 세션을 다시 구성하지 않음
             guard status == .running, captureMode != oldValue else { return }
-            cancelCountdown()
+            captureTimer.cancel()
             Task {
                 isSwitchingModes = true
                 defer { isSwitchingModes = false }
@@ -134,12 +138,20 @@ final class CameraModel: Camera {
         isSwitchingVideoDevices = true
         defer { isSwitchingVideoDevices = false }
         await captureService.selectNextVideoDevice()
+        // 전환 직후 셔터를 눌러도 새 카메라의 플래시 · 해상도 값을 쓰도록 바로 맞춤
+        applyPhotoCapabilities(await captureService.captureCapabilities)
     }
     
     // MARK: - Photo capture
     
     /// Captures a photo and writes it to the user's Photos library.
     func capturePhoto() async {
+        // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
+        guard !isSwitchingVideoDevices else { return }
+        // 비율을 막 바꿨으면 지연 처리 설정이 끝난 뒤에 찍음 (지연 처리 사진은 자를 수 없음)
+        await photoAspectTask?.value
+        // 기다리는 사이 카메라 전환이 시작됐으면 찍지 않음
+        guard !isSwitchingVideoDevices else { return }
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
         let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
         if usesScreenFlash {
@@ -149,7 +161,9 @@ final class CameraModel: Camera {
             let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoActive,
                                               qualityPrioritization: qualityPrioritization,
                                               flashMode: AVCaptureDevice.FlashMode(flashMode),
-                                              cropRatio: photoAspect.cropLongToShort)
+                                              cropRatio: photoAspect.cropLongToShort,
+                                              codec: photoCodec == .heif ? .hevc : .jpeg,
+                                              maxDimensions: activeDimensions)
             let photo = try await captureService.capturePhoto(with: photoFeatures)
             if usesScreenFlash { hideScreenFlash() }
             try await mediaLibrary.save(photo: photo)
@@ -160,30 +174,9 @@ final class CameraModel: Camera {
     }
 
     func shutterPressed() async {
-        if countdownTask != nil {
-            cancelCountdown()
-            return
+        await captureTimer.shutterPressed(duration: timerDuration) { [weak self] in
+            await self?.capturePhoto()
         }
-        guard timerDuration != .off else {
-            await capturePhoto()
-            return
-        }
-        countdownTask = Task {
-            for remaining in stride(from: timerDuration.rawValue, to: 0, by: -1) {
-                countdown = remaining
-                try? await Task.sleep(for: .seconds(1))
-                if Task.isCancelled { return }
-            }
-            countdown = nil
-            countdownTask = nil
-            await capturePhoto()
-        }
-    }
-
-    private func cancelCountdown() {
-        countdownTask?.cancel()
-        countdownTask = nil
-        countdown = nil
     }
 
     var flashMode = FlashMode.saved {
@@ -210,9 +203,31 @@ final class CameraModel: Camera {
         }
     }
 
+    var photoCodec = PhotoCodec.saved {
+        didSet { photoCodec.save() }
+    }
+
+    var photoResolution = PhotoResolution.saved {
+        didSet { PhotoResolution.save(photoResolution) }
+    }
+
+    /// 고른 해상도에 맞는 장치 사진 크기
+    private var activeDimensions: CMVideoDimensions? {
+        photoDimensions.last {
+            PhotoResolution.megapixels(width: $0.width, height: $0.height) == activeResolution
+        }
+    }
+
+    private var photoAspectTask: Task<Void, Never>?
+
     private func applyPhotoAspect() {
         let isCropping = photoAspect != .fourThree
-        Task { await captureService.setPhotoCropping(isCropping) }
+        let previous = photoAspectTask
+        photoAspectTask = Task {
+            // 빠르게 여러 번 바꿔도 순서대로 적용
+            await previous?.value
+            await captureService.setPhotoCropping(isCropping)
+        }
     }
 
     /// 비디오 모드에서만 플래시 값대로 조명을 켬
@@ -310,6 +325,14 @@ final class CameraModel: Camera {
         }
     }
     
+    /// 사진 모드일 때만 사진 출력 값(플래시 · 해상도)을 받음
+    private func applyPhotoCapabilities(_ capabilities: CaptureCapabilities) {
+        guard captureMode == .photo else { return }
+        isFlashSupported = capabilities.isFlashSupported
+        photoDimensions = capabilities.photoDimensions
+        availableResolutions = PhotoResolution.available(in: capabilities.photoDimensions)
+    }
+
     // MARK: - Internal state observations
     
     // Set up camera's state observations.
@@ -338,9 +361,7 @@ final class CameraModel: Camera {
             // Await updates to the capabilities that the capture service advertises.
             for await capabilities in await captureService.$captureCapabilities.values {
                 isHDRVideoSupported = capabilities.isHDRSupported
-                if captureMode == .photo {
-                    isFlashSupported = capabilities.isFlashSupported
-                }
+                applyPhotoCapabilities(capabilities)
                 cameraState.isVideoHDRSupported = capabilities.isHDRSupported
             }
         }
