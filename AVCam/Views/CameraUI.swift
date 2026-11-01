@@ -14,6 +14,8 @@ struct CameraUI<CameraModel: Camera>: View {
     let layers: LayerState
     let layout: CameraLayout
 
+    @State private var panelHeight: CGFloat = 0
+
     var body: some View {
         ZStack(alignment: .topLeading) {
             TopBar(camera: camera, layers: layers)
@@ -24,18 +26,21 @@ struct CameraUI<CameraModel: Camera>: View {
             if let kind = layers.openPanel {
                 LayerPanel(layers: layers, kind: kind)
                     .frame(width: layout.size.width)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { panelHeight = $0 }
                     .offset(y: layout.safeTop + CameraLayout.topBarHeight)
                     .transition(.offset(y: -12).combined(with: .opacity))
             }
 
             // 사진을 찍는 순간 미리보기 위쪽 가운데에 LIVE 표시
             LiveBadge()
-                .opacity(camera.captureMode == .photo && camera.captureActivity.isLivePhoto ? 1 : 0)
+                .opacity(isShowingLiveBadge ? 1 : 0)
                 .position(x: layout.centerX, y: layout.previewRect.minY + 24)
 
-            // 렌즈가 더러우면 미리보기 위쪽 가운데에 안내 (기본 카메라와 같은 자리)
+            // 렌즈가 더러우면 미리보기 위쪽 가운데에 안내 (기본 카메라와 같은 자리).
+            // 패널이 열리면 패널 바로 아래로, LIVE 표시가 뜨는 동안은 잠깐 숨김
             LensSmudgeBanner(isSmudged: camera.isLensSmudged)
-                .position(x: layout.centerX, y: layout.previewRect.minY + 24)
+                .opacity(isShowingLiveBadge ? 0 : 1)
+                .position(x: layout.centerX, y: smudgeBannerCenterY)
 
             // 배율 버튼 · 다이얼 (버튼 줄이 아래쪽, 다이얼은 위로 펼쳐짐)
             if camera.zoom.isAvailable {
@@ -65,6 +70,15 @@ struct CameraUI<CameraModel: Camera>: View {
                 .frame(width: layout.size.width, height: layout.size.height)
         }
         .animation(.easeOut(duration: 0.2), value: layers.openPanel)
+    }
+
+    private var isShowingLiveBadge: Bool {
+        camera.captureMode == .photo && camera.captureActivity.isLivePhoto
+    }
+
+    private var smudgeBannerCenterY: CGFloat {
+        guard layers.openPanel != nil else { return layout.previewRect.minY + 24 }
+        return layout.safeTop + CameraLayout.topBarHeight + panelHeight + 24
     }
 }
 
