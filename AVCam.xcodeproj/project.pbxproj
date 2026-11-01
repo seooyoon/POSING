@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E131271699D2569D08FF725D /* FocusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7148EBBF0262074BDC208C /* FocusModel.swift */; };
+		0064DEF42DFC150056B708F9 /* FocusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7148EBBF0262074BDC208C /* FocusModel.swift */; };
+		C2C4FE4CBE471ED51C8E5782 /* LevelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C191F78887792D18B014E0 /* LevelModel.swift */; };
+		713E4032BF3B30FEE48450B9 /* LevelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C191F78887792D18B014E0 /* LevelModel.swift */; };
+		14AB2CDB0B9C798F5C59C64B /* FocusOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0158C694A13ADB1F8EC8896C /* FocusOverlay.swift */; };
+		706663169C89D711BCDB17BC /* FocusOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0158C694A13ADB1F8EC8896C /* FocusOverlay.swift */; };
+		4364499DB8A8E7F4A355E214 /* GridOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEC0F84AA4A3116773F339A /* GridOverlay.swift */; };
+		1E496EB889F8D51A4BF2C91C /* GridOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EEC0F84AA4A3116773F339A /* GridOverlay.swift */; };
+		FEBC488631C97156010935A7 /* LevelOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4652B55DF25411DCD7BEDAAC /* LevelOverlay.swift */; };
+		FAB52C0388FD46C8BA531931 /* LevelOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4652B55DF25411DCD7BEDAAC /* LevelOverlay.swift */; };
 		42DD4BEFB7D4387803B68409 /* ImageDownsampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2688DC64FE3113DCE0D76295 /* ImageDownsampler.swift */; };
 		3829152E991C885401F0DDDF /* ImageDownsampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2688DC64FE3113DCE0D76295 /* ImageDownsampler.swift */; };
 		2A541CC7CD9C7B4D3F802E0B /* SettingsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9059D449D23E9AAA157BE1E /* SettingsKeys.swift */; };
@@ -155,6 +165,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DB7148EBBF0262074BDC208C /* FocusModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModel.swift; sourceTree = "<group>"; };
+		77C191F78887792D18B014E0 /* LevelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelModel.swift; sourceTree = "<group>"; };
+		0158C694A13ADB1F8EC8896C /* FocusOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusOverlay.swift; sourceTree = "<group>"; };
+		5EEC0F84AA4A3116773F339A /* GridOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridOverlay.swift; sourceTree = "<group>"; };
+		4652B55DF25411DCD7BEDAAC /* LevelOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelOverlay.swift; sourceTree = "<group>"; };
 		2688DC64FE3113DCE0D76295 /* ImageDownsampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDownsampler.swift; sourceTree = "<group>"; };
 		A9059D449D23E9AAA157BE1E /* SettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsKeys.swift; sourceTree = "<group>"; };
 		B91107F86D7D19E69ECF71DD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -264,6 +279,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B2F52665D3000F1E9742A08C /* Focus */ = {
+			isa = PBXGroup;
+			children = (
+				77C191F78887792D18B014E0 /* LevelModel.swift */,
+				DB7148EBBF0262074BDC208C /* FocusModel.swift */,
+			);
+			path = Focus;
+			sourceTree = "<group>";
+		};
 		EA5CE56085A6998525CB6082 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -357,6 +381,9 @@
 		C400F46528DFDDD800861093 /* Overlays */ = {
 			isa = PBXGroup;
 			children = (
+				4652B55DF25411DCD7BEDAAC /* LevelOverlay.swift */,
+				5EEC0F84AA4A3116773F339A /* GridOverlay.swift */,
+				0158C694A13ADB1F8EC8896C /* FocusOverlay.swift */,
 				C4DFD84728C5665E005B74F0 /* LiveBadge.swift */,
 				C4C686222892E33E0038EDE1 /* RecordingTimeView.swift */,
 				C4DFD84528C3ED3D005B74F0 /* StatusOverlayView.swift */,
@@ -386,6 +413,7 @@
 		C470F0EF2899E2FB004D4515 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				B2F52665D3000F1E9742A08C /* Focus */,
 				82AF8F5FF2942F982D1751B1 /* Layers */,
 				C4F82CC9285AE13B005D427A /* Camera.swift */,
 				C4DFD84328C3E173005B74F0 /* DataTypes.swift */,
@@ -645,6 +673,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0064DEF42DFC150056B708F9 /* FocusModel.swift in Sources */,
+				713E4032BF3B30FEE48450B9 /* LevelModel.swift in Sources */,
+				706663169C89D711BCDB17BC /* FocusOverlay.swift in Sources */,
+				1E496EB889F8D51A4BF2C91C /* GridOverlay.swift in Sources */,
+				FAB52C0388FD46C8BA531931 /* LevelOverlay.swift in Sources */,
 				3829152E991C885401F0DDDF /* ImageDownsampler.swift in Sources */,
 				1E55336251FEF6A520C4CCE7 /* SettingsKeys.swift in Sources */,
 				3A8F0BD26774CBAAC969E4CE /* SettingsView.swift in Sources */,
@@ -708,6 +741,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E131271699D2569D08FF725D /* FocusModel.swift in Sources */,
+				C2C4FE4CBE471ED51C8E5782 /* LevelModel.swift in Sources */,
+				14AB2CDB0B9C798F5C59C64B /* FocusOverlay.swift in Sources */,
+				4364499DB8A8E7F4A355E214 /* GridOverlay.swift in Sources */,
+				FEBC488631C97156010935A7 /* LevelOverlay.swift in Sources */,
 				42DD4BEFB7D4387803B68409 /* ImageDownsampler.swift in Sources */,
 				2A541CC7CD9C7B4D3F802E0B /* SettingsKeys.swift in Sources */,
 				E0CC2A232441B2F3CD8E7636 /* SettingsView.swift in Sources */,
