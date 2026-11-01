@@ -23,17 +23,26 @@ struct ZoomControl<CameraModel: Camera>: View {
     @State private var collapseTask: Task<Void, Never>?
 
     var body: some View {
+        // 제스처는 바뀌지 않는 바깥 ZStack에 한 번만 붙임 (펼쳐지는 중에도 밀기가 끊기지 않게).
+        // 터치 영역은 안쪽 내용 모양을 따르므로, 접혀 있을 때는 버튼 줄만 터치를 받음
         ZStack(alignment: .bottom) {
             if isDialShown {
                 // 다이얼이 펼쳐지면 영역 전체에서 밀기를 받음
-                withDialGestures(ZoomDial(zoom: camera.zoom).contentShape(.rect))
+                ZoomDial(zoom: camera.zoom)
+                    .contentShape(.rect)
                     .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .bottom)))
             } else {
-                // 접혀 있을 때는 버튼 줄만 터치를 받고, 나머지는 미리보기로 넘김
-                withDialGestures(buttons)
+                buttons
                     .transition(.opacity)
             }
         }
+        .gesture(dialDrag)
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: AppDefaults.zoomDialLongPressDuration).onEnded { _ in
+                showDial()
+                scheduleCollapse()
+            }
+        )
         .frame(height: Self.height, alignment: .bottom)
         .sensoryFeedback(.selection, trigger: camera.zoom.activePreset)
         .animation(.easeOut(duration: 0.2), value: isDialShown)
@@ -48,18 +57,6 @@ struct ZoomControl<CameraModel: Camera>: View {
         .padding(3)
         .background(.black.opacity(0.3), in: .capsule)
         .contentShape(.capsule)
-    }
-
-    /// 좌우로 밀기 · 길게 누르기 → 다이얼
-    private func withDialGestures<Content: View>(_ content: Content) -> some View {
-        content
-            .gesture(dialDrag)
-            .simultaneousGesture(
-                LongPressGesture(minimumDuration: 0.4).onEnded { _ in
-                    showDial()
-                    scheduleCollapse()
-                }
-            )
     }
 
     private func presetButton(_ preset: CGFloat) -> some View {
@@ -108,6 +105,27 @@ struct ZoomControl<CameraModel: Camera>: View {
             guard !Task.isCancelled else { return }
             isDialShown = false
         }
+    }
+}
+
+/// 전면 카메라 화각 버튼: 가깝게일 때 바깥 화살표(누르면 넓게), 넓게일 때 안쪽 화살표
+struct FrontFieldOfViewButton<CameraModel: Camera>: View {
+
+    @State var camera: CameraModel
+
+    var body: some View {
+        let isWide = camera.zoom.isFrontWide
+        Button {
+            Task { await camera.setFrontWide(!isWide) }
+        } label: {
+            Image(systemName: isWide ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(.black.opacity(0.4), in: .circle)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: isWide)
     }
 }
 

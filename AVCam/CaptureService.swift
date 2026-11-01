@@ -165,6 +165,7 @@ actor CaptureService {
             
             // 렌즈 얼룩 감지는 세션 시작 전에 켬
             enableLensSmudgeDetection(for: defaultCamera)
+            updateOutputMirroring()
             zoomController.attach(to: defaultCamera)
             // Configure controls to use with the Camera Control.
             configureControls(for: defaultCamera)
@@ -310,6 +311,7 @@ actor CaptureService {
             if isHDRVideoEnabled {
                 setHDRVideoEnabled(true)
             }
+            updateOutputMirroring()
         }
 
         // Update the advertised capabilities after reconfiguration.
@@ -368,6 +370,7 @@ actor CaptureService {
             // Attempt to connect a new input and device to the capture session.
             activeVideoInput = try addInput(for: device)
             zoomController.attach(to: device)
+            updateOutputMirroring()
             // Configure capture controls for new device selection.
             configureControls(for: device)
             // Configure a new rotation coordinator for the new device.
@@ -461,8 +464,28 @@ actor CaptureService {
         zoomController.setZoom(displayFactor, animated: animated)
     }
 
+    private func refreshZoom() {
+        zoomController.refresh()
+    }
+
     func setAutoMacroEnabled(_ isEnabled: Bool) {
         zoomController.setAutoMacroEnabled(isEnabled)
+    }
+
+    func setFrontWide(_ isWide: Bool) {
+        zoomController.setFrontWide(isWide)
+    }
+
+    // MARK: - 전면 카메라 좌우 반전
+
+    /// 전면 카메라 사진 · 영상은 화면에 보인 그대로(거울 반전) 저장 (docs/02_UI.md 9절)
+    private func updateOutputMirroring() {
+        let isFront = currentDevice.position == .front
+        for output in [photoCapture.output, movieCapture.output] as [AVCaptureOutput] {
+            guard let connection = output.connection(with: .video), connection.isVideoMirroringSupported else { continue }
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = isFront
+        }
     }
 
     // MARK: - 렌즈 얼룩 감지
@@ -543,8 +566,12 @@ actor CaptureService {
         // 초점 · 노출 조정이 끝난 뒤에 고정 (장면마다 걸리는 시간이 달라 상태를 확인)
         lockTask = Task {
             let device = currentDevice
-            // 조정이 시작될 틈을 잠깐 줌
-            try? await Task.sleep(for: .milliseconds(150))
+            // 조정이 시작되기를 잠깐 기다림 (이미 맞아 있으면 시작하지 않을 수 있음)
+            for _ in 0..<6 where !(device.isAdjustingFocus || device.isAdjustingExposure) {
+                try? await Task.sleep(for: .milliseconds(50))
+                if Task.isCancelled { return }
+            }
+            // 시작된 조정이 끝날 때까지 기다림 (최대 2초)
             for _ in 0..<40 where device.isAdjustingFocus || device.isAdjustingExposure {
                 try? await Task.sleep(for: .milliseconds(50))
                 if Task.isCancelled { return }
@@ -660,6 +687,12 @@ actor CaptureService {
         try await movieCapture.stopRecording()
     }
 
+    /// 촬영 중 HDR 전환. 형식이 바뀌므로 렌즈 얼룩 감지를 다시 켠다
+    func changeHDRVideo(_ isEnabled: Bool) {
+        setHDRVideoEnabled(isEnabled)
+        refreshLensSmudgeDetection()
+    }
+
     /// Sets whether the app captures HDR video.
     func setHDRVideoEnabled(_ isEnabled: Bool) {
         // Bracket the following configuration in a begin/commit configuration pair.
@@ -706,6 +739,10 @@ actor CaptureService {
             .assign(to: &$captureActivity)
         zoomController.$state
             .assign(to: &$zoomState)
+        // 배율 KVO는 액터 안에서 다시 읽음
+        zoomController.onDeviceChange = { [weak self] in
+            Task { await self?.refreshZoom() }
+        }
     }
     
     /// Observe when capture control enter and exit a fullscreen appearance.

@@ -76,6 +76,9 @@ protocol Camera: AnyObject, SendableMetatype {
 
     /// 꽃 버튼: 자동 접사 전환 켜기/끄기
     func setAutoMacroEnabled(_ isEnabled: Bool) async
+
+    /// 전면 화각 버튼: 넓게 ↔ 가깝게
+    func setFrontWide(_ isWide: Bool) async
     
     /// A Boolean value that indicates whether camera enables HDR video recording.
     var isHDRVideoEnabled: Bool { get set }
