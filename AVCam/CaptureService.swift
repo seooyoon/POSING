@@ -126,6 +126,8 @@ actor CaptureService {
 
             // Enable using AirPods as a high-quality lapel microphone.
             captureSession.configuresApplicationAudioSessionForBluetoothHighQualityRecording = true
+            // 마이크가 켜져 있어도 햅틱이 울리게 함 (기본값은 녹음 중 햅틱 차단)
+            try? AVAudioSession.sharedInstance().setAllowHapticsAndSystemSoundsDuringRecording(true)
 
             // Add inputs for the default camera and microphone devices.
             activeVideoInput = try addInput(for: defaultCamera)
