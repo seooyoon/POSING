@@ -35,6 +35,8 @@ struct CameraPreview: UIViewRepresentable {
         
         init() {
             super.init(frame: .zero)
+            // 16:9 · 1:1 사진은 4:3 영상을 가운데 기준으로 채워 보여줌 (저장본 자르기와 같은 범위)
+            previewLayer.videoGravity = .resizeAspectFill
     #if targetEnvironment(simulator)
             // The capture APIs require running on a real device. If running
             // in Simulator, display a static image to represent the video feed.

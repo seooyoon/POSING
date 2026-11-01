@@ -676,7 +676,19 @@ actor CaptureService {
     
     // MARK: - Photo capture
     func capturePhoto(with features: PhotoFeatures) async throws -> Photo {
-        try await photoCapture.capturePhoto(with: features)
+        let photo = try await photoCapture.capturePhoto(with: features)
+        // 비율이 4:3이 아니면 가운데를 잘라 저장 (지연 처리 사진은 자를 수 없어 원본)
+        guard let ratio = features.cropRatio, !photo.isProxy else { return photo }
+        return Photo(data: PhotoCropper.crop(photo.data, longToShort: ratio),
+                     isProxy: false,
+                     livePhotoMovieURL: nil)
+    }
+
+    /// 16:9 · 1:1이면 자동 지연 처리를 끔
+    func setPhotoCropping(_ isCropping: Bool) {
+        captureSession.beginConfiguration()
+        defer { captureSession.commitConfiguration() }
+        photoCapture.allowsDeferredDelivery = !isCropping
     }
     
     // MARK: - Movie capture

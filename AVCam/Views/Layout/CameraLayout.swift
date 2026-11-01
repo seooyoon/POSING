@@ -24,23 +24,38 @@ struct CameraLayout {
     /// 상단 안전 영역 (다이내믹 아일랜드)
     let safeTop: CGFloat
     let captureMode: CaptureMode
+    let photoAspect: PhotoAspect
 
-    init(proxy: GeometryProxy, captureMode: CaptureMode) {
+    init(proxy: GeometryProxy, captureMode: CaptureMode, photoAspect: PhotoAspect = .fourThree) {
         let insets = proxy.safeAreaInsets
         size = CGSize(width: proxy.size.width + insets.leading + insets.trailing,
                       height: proxy.size.height + insets.top + insets.bottom)
         safeTop = insets.top
         self.captureMode = captureMode
+        self.photoAspect = photoAspect
     }
 
     var centerX: CGFloat { size.width / 2 }
 
     var topBarCenterY: CGFloat { safeTop + Self.topBarHeight / 2 }
 
-    /// 사진 모드: 상단 바 아래 4:3
-    var photoPreviewRect: CGRect {
+    /// 4:3 사진 미리보기 자리: 상단 바 아래. 셔터 · 하단 줄의 기준 (비율을 바꿔도 셔터는 그대로)
+    var standardPhotoRect: CGRect {
         CGRect(x: 0, y: safeTop + Self.topBarHeight,
                width: size.width, height: size.width * photoAspectRatio.height / photoAspectRatio.width)
+    }
+
+    /// 사진 모드: 4:3은 상단 바 아래, 16:9는 비디오처럼 안전 영역 바로 아래, 1:1은 4:3 자리 가운데
+    var photoPreviewRect: CGRect {
+        let height = size.width * photoAspect.portraitHeightRatio
+        switch photoAspect {
+        case .fourThree:
+            return standardPhotoRect
+        case .sixteenNine:
+            return CGRect(x: 0, y: safeTop, width: size.width, height: height)
+        case .square:
+            return CGRect(x: 0, y: standardPhotoRect.midY - height / 2, width: size.width, height: height)
+        }
     }
 
     /// 비디오 모드: 안전 영역 바로 아래부터 16:9, 상단 바가 미리보기 위에 겹침
@@ -54,7 +69,7 @@ struct CameraLayout {
     }
 
     /// 셔터와 하단 줄은 모드가 바뀌어도 같은 자리 (기본 카메라와 동일)
-    var shutterCenterY: CGFloat { photoPreviewRect.maxY + Self.shutterOffset }
+    var shutterCenterY: CGFloat { standardPhotoRect.maxY + Self.shutterOffset }
 
     var bottomRowCenterY: CGFloat { shutterCenterY + Self.bottomRowOffset }
 

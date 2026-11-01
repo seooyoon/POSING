@@ -18,4 +18,6 @@ enum SettingsKeys {
     static let flashMode = "flashMode"
     /// 타이머 초 (0 = 끔)
     static let timerDuration = "timerDuration"
+    /// 사진 비율 (4:3 · 16:9 · 1:1)
+    static let photoAspect = "photoAspect"
 }

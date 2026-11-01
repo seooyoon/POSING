@@ -25,7 +25,7 @@ struct CameraView<CameraModel: Camera>: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode)
+            let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
             ZStack(alignment: .topLeading) {
                 // 카메라 화면은 다크 고정 (docs/02_UI.md 10절)
                 Color.black
@@ -37,6 +37,7 @@ struct CameraView<CameraModel: Camera>: View {
                 .clipped()
                 .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
+                .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                 // 미리보기 위 표시 (아래 → 위): MY · 포즈 레이어 → 격자 · 중심점 → 수평계 · 초점 (docs/02_UI.md 5절)
                 // 모두 화면에만 그리고 저장본에는 없음
                 Group {
@@ -49,6 +50,7 @@ struct CameraView<CameraModel: Camera>: View {
                 .clipped()
                 .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
+                .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                 // 카메라 화면 UI
                 CameraUI(camera: camera, layers: layers, layout: layout)
             }
