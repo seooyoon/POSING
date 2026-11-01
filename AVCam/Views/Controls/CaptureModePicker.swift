@@ -34,10 +34,23 @@ struct CaptureModePicker<CameraModel: Camera>: View {
         }
         .padding(4)
         .glassEffect(.regular, in: .capsule)
+        // 캡슐도 미리보기처럼 좌우로 밀어 모드 전환
+        .simultaneousGesture(swipeGesture)
         .animation(.easeInOut(duration: 0.2), value: camera.captureMode)
         .disabled(camera.captureActivity.isRecording)
         // 녹화 중에는 기본 카메라처럼 숨김
         .opacity(camera.captureActivity.isRecording ? 0 : 1)
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 20)
+            .onEnded { value in
+                guard !camera.captureActivity.isRecording,
+                      abs(value.translation.width) > abs(value.translation.height)
+                else { return }
+                let direction: SwipeDirection = value.translation.width < 0 ? .left : .right
+                camera.captureMode = Self.mode(after: camera.captureMode, swipe: direction)
+            }
     }
 
     private func segment(for mode: CaptureMode) -> some View {
