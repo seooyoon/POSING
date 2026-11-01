@@ -67,6 +67,15 @@ protocol Camera: AnyObject, SendableMetatype {
 
     /// 렌즈에 얼룩이 감지됨 (iOS 26 렌즈 얼룩 감지)
     var isLensSmudged: Bool { get }
+
+    /// 배율 버튼 · 다이얼 · 접사 상태
+    var zoom: ZoomState { get }
+
+    /// 표시 배율 설정 (0.5×~25×)
+    func setZoom(_ displayFactor: CGFloat, animated: Bool) async
+
+    /// 꽃 버튼: 자동 접사 전환 켜기/끄기
+    func setAutoMacroEnabled(_ isEnabled: Bool) async
     
     /// A Boolean value that indicates whether camera enables HDR video recording.
     var isHDRVideoEnabled: Bool { get set }
