@@ -22,6 +22,9 @@ final class ZoomController {
     private var observations: [NSKeyValueObservation] = []
     private var isAutoMacroEnabled = true
 
+    /// KVO는 아무 스레드에서나 오므로 직접 갱신하지 않고 CaptureService 액터로 넘김
+    var onDeviceChange: (@Sendable () -> Void)?
+
     /// 카메라가 바뀔 때마다 연결. 접사 전환은 다시 자동으로
     func attach(to device: AVCaptureDevice) {
         self.device = device
@@ -32,10 +35,10 @@ final class ZoomController {
         }
         observations = [
             device.observe(\.videoZoomFactor, options: [.new]) { [weak self] _, _ in
-                self?.refresh()
+                self?.onDeviceChange?()
             },
             device.observe(\.activePrimaryConstituent, options: [.new]) { [weak self] _, _ in
-                self?.refresh()
+                self?.onDeviceChange?()
             },
         ]
         refresh()
@@ -72,7 +75,7 @@ final class ZoomController {
 
     /// 꽃 버튼: 끄면 배율을 바꿀 때만 렌즈가 바뀌어 가까워도 초광각으로 넘어가지 않음
     func setAutoMacroEnabled(_ isEnabled: Bool) {
-        guard let device, device.isVirtualDevice else { return }
+        guard let device, supportsMacroSwitching(device) else { return }
         do {
             try device.lockForConfiguration()
             if isEnabled {
@@ -88,7 +91,13 @@ final class ZoomController {
         refresh()
     }
 
-    private func refresh() {
+    /// 렌즈 자동 전환을 바꿀 수 있는 카메라인지
+    private func supportsMacroSwitching(_ device: AVCaptureDevice) -> Bool {
+        device.isVirtualDevice && device.activePrimaryConstituentDeviceSwitchingBehavior != .unsupported
+    }
+
+    /// CaptureService 액터 안에서만 부른다
+    func refresh() {
         guard let device else {
             state = .unavailable
             return
@@ -114,7 +123,8 @@ final class ZoomController {
             range: range,
             presets: ZoomState.presetValues.filter { range.contains($0) },
             isMacroActive: isUltraWideActive && display >= 0.99,
-            isAutoMacroEnabled: isAutoMacroEnabled
+            isAutoMacroEnabled: isAutoMacroEnabled,
+            supportsMacroSwitching: supportsMacroSwitching(device)
         )
     }
 }

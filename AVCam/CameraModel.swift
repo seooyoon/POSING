@@ -192,7 +192,7 @@ final class CameraModel: Camera {
         didSet {
             guard status == .running, captureMode == .video else { return }
             Task {
-                await captureService.setHDRVideoEnabled(isHDRVideoEnabled)
+                await captureService.changeHDRVideo(isHDRVideoEnabled)
                 // Update the persistent state value.
                 cameraState.isVideoHDREnabled = isHDRVideoEnabled
             }
