@@ -14,6 +14,12 @@ struct CameraView<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
     @State private var layers = LayerState()
+    @State private var focus = FocusModel()
+    @State private var level = LevelModel()
+    /// 길게 누르기 위치 (onLongPressGesture는 위치를 주지 않아 따로 기록)
+    @State private var touchLocation: CGPoint = .zero
+    /// 지금 미는 방향. 위아래 = 밝기, 좌우 = 모드 전환
+    @State private var dragAxis: Axis?
 
     var body: some View {
         GeometryReader { proxy in
@@ -29,12 +35,18 @@ struct CameraView<CameraModel: Camera>: View {
                 .clipped()
                 .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
-                // 포즈 · MY 레이어: 미리보기와 같은 자리에 화면으로만 겹침
-                LayerOverlay(layers: layers)
-                    .frame(width: layout.previewRect.width, height: layout.previewRect.height)
-                    .clipped()
-                    .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
-                    .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
+                // 미리보기 위 표시 (아래 → 위): MY · 포즈 레이어 → 격자 · 중심점 → 수평계 · 초점 (docs/02_UI.md 5절)
+                // 모두 화면에만 그리고 저장본에는 없음
+                Group {
+                    LayerOverlay(layers: layers)
+                    GridOverlay()
+                    LevelOverlay(level: level)
+                    FocusOverlay(focus: focus)
+                }
+                .frame(width: layout.previewRect.width, height: layout.previewRect.height)
+                .clipped()
+                .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
+                .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 // 카메라 화면 UI
                 CameraUI(camera: camera, layers: layers, layout: layout)
             }
@@ -42,6 +54,9 @@ struct CameraView<CameraModel: Camera>: View {
             // 카메라 화면만 다크 고정. 설정 화면 · 사진 피커는 아이폰 설정을 따름 (docs/02_UI.md 10절)
             .environment(\.colorScheme, .dark)
         }
+        // 모드 · 카메라가 바뀌면 초점 표시를 지움
+        .onChange(of: camera.captureMode) { focus.clear() }
+        .onChange(of: camera.isSwitchingVideoDevices) { focus.clear() }
         // MY 꾹 누르기 → 사진 고르기
         .myPhotoPicker(isPresented: $layers.isPickingMY, layers: layers)
         // 초기화 꾹 누르기 → 설정 화면
@@ -74,24 +89,53 @@ struct CameraView<CameraModel: Camera>: View {
                     }
                 }
             }
-            // Focus and expose at the tapped point.
+            // 탭 → 초점 · 노출 + 노란 사각형
             .onTapGesture { location in
+                focus.tap(at: location)
                 Task { await camera.focusAndExpose(at: location) }
             }
-            // 미리보기를 좌우로 밀어 모드 전환 (기본 카메라와 같은 방향)
-            .simultaneousGesture(swipeGesture)
+            // 길게 누르기 → AE/AF 잠금
+            .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
+                focus.lock(at: touchLocation)
+                Task { await camera.lockFocusAndExposure(at: touchLocation) }
+            }
+            .simultaneousGesture(touchTracker)
+            // 위아래로 밀면 밝기, 좌우로 밀면 모드 전환 (기본 카메라와 같은 방향)
+            .simultaneousGesture(dragGesture)
             /// The value of `shouldFlashScreen` changes briefly to `true` when capture
             /// starts, and then immediately changes to `false`. Use this change to
             /// flash the screen to provide visual feedback when capturing photos.
             .opacity(camera.shouldFlashScreen ? 0 : 1)
     }
 
-    private var swipeGesture: some Gesture {
-        DragGesture(minimumDistance: 50)
+    private var touchTracker: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                touchLocation = value.startLocation
+            }
+    }
+
+    private var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                if dragAxis == nil {
+                    dragAxis = abs(value.translation.height) > abs(value.translation.width) ? .vertical : .horizontal
+                }
+                // 초점 표시가 있을 때만 밝기 조절
+                guard dragAxis == .vertical,
+                      let bias = focus.adjustBias(byDragging: value.translation.height)
+                else { return }
+                Task { await camera.setExposureBias(bias) }
+            }
             .onEnded { value in
-                guard !camera.captureActivity.isRecording else { return }
-                // 세로로 쓸어내린 건 모드 전환이 아님
-                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                defer {
+                    dragAxis = nil
+                    focus.endAdjusting()
+                }
+                guard dragAxis == .horizontal,
+                      abs(value.translation.width) >= 50,
+                      !camera.captureActivity.isRecording
+                else { return }
                 let direction: SwipeDirection = value.translation.width < 0 ? .left : .right
                 camera.captureMode = CaptureModePicker<CameraModel>.mode(after: camera.captureMode, swipe: direction)
             }

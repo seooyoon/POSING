@@ -153,6 +153,14 @@ final class CameraModel: Camera {
     func focusAndExpose(at point: CGPoint) async {
         await captureService.focusAndExpose(at: point)
     }
+
+    func lockFocusAndExposure(at point: CGPoint) async {
+        await captureService.lockFocusAndExposure(at: point)
+    }
+
+    func setExposureBias(_ bias: Float) async {
+        await captureService.setExposureBias(bias)
+    }
     
     /// Sets the `showCaptureFeedback` state to indicate that capture is underway.
     private func flashScreen() {

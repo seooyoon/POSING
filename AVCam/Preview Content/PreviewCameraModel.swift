@@ -81,6 +81,11 @@ class PreviewCameraModel: Camera {
     func focusAndExpose(at point: CGPoint) {
         logger.debug("Focus and expose isn't implemented in PreviewCamera.")
     }
+
+    // 시뮬레이터에는 카메라가 없어서 화면 표시만 반응
+    func lockFocusAndExposure(at point: CGPoint) {}
+
+    func setExposureBias(_ bias: Float) {}
     
     private func capabilities(for mode: CaptureMode) -> CaptureCapabilities {
         switch mode {
