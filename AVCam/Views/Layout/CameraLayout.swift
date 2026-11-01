@@ -57,4 +57,7 @@ struct CameraLayout {
     var shutterCenterY: CGFloat { photoPreviewRect.maxY + Self.shutterOffset }
 
     var bottomRowCenterY: CGFloat { shutterCenterY + Self.bottomRowOffset }
+
+    /// 배율 버튼 줄: 미리보기 아래쪽 안. 비디오(미리보기가 셔터 뒤까지 내려감)도 셔터 위에 오게
+    var zoomRowCenterY: CGFloat { min(previewRect.maxY, shutterCenterY - 50) - 30 }
 }

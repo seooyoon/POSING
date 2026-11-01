@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		723B219DDB5F1EDF07036CF6 /* ZoomState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641B2AA4EED9A22B617719E7 /* ZoomState.swift */; };
+		C520B789CB407D89E36C2442 /* ZoomState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 641B2AA4EED9A22B617719E7 /* ZoomState.swift */; };
+		B0A351EE4C977F6F9BBAFC7D /* ZoomController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ABC64C77391D7868395728A /* ZoomController.swift */; };
+		4C25431F8893B16C8253B787 /* ZoomController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ABC64C77391D7868395728A /* ZoomController.swift */; };
+		6092CC23B07075E0EDDD87BF /* ZoomControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4863A582BC3114D07046F4E /* ZoomControl.swift */; };
+		08ED819EB703A59E7D301494 /* ZoomControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4863A582BC3114D07046F4E /* ZoomControl.swift */; };
+		D14008D057ED05ABC51961A4 /* ZoomDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BAB7CE31FD71BED54FC105 /* ZoomDial.swift */; };
+		687094C6BEFD193819C466B5 /* ZoomDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63BAB7CE31FD71BED54FC105 /* ZoomDial.swift */; };
 		D25E5AE157BA3F5203CE23CD /* LensSmudgeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB726D3EC9306348CD8E8CAF /* LensSmudgeBanner.swift */; };
 		C97C2780FDE13C7943F5C06B /* LensSmudgeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB726D3EC9306348CD8E8CAF /* LensSmudgeBanner.swift */; };
 		E131271699D2569D08FF725D /* FocusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7148EBBF0262074BDC208C /* FocusModel.swift */; };
@@ -167,6 +175,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		641B2AA4EED9A22B617719E7 /* ZoomState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomState.swift; sourceTree = "<group>"; };
+		7ABC64C77391D7868395728A /* ZoomController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomController.swift; sourceTree = "<group>"; };
+		F4863A582BC3114D07046F4E /* ZoomControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomControl.swift; sourceTree = "<group>"; };
+		63BAB7CE31FD71BED54FC105 /* ZoomDial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomDial.swift; sourceTree = "<group>"; };
 		AB726D3EC9306348CD8E8CAF /* LensSmudgeBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LensSmudgeBanner.swift; sourceTree = "<group>"; };
 		DB7148EBBF0262074BDC208C /* FocusModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModel.swift; sourceTree = "<group>"; };
 		77C191F78887792D18B014E0 /* LevelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelModel.swift; sourceTree = "<group>"; };
@@ -282,6 +294,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B4D67BAFD8F08DEF967D9ADD /* Zoom */ = {
+			isa = PBXGroup;
+			children = (
+				641B2AA4EED9A22B617719E7 /* ZoomState.swift */,
+			);
+			path = Zoom;
+			sourceTree = "<group>";
+		};
 		B2F52665D3000F1E9742A08C /* Focus */ = {
 			isa = PBXGroup;
 			children = (
@@ -409,6 +429,8 @@
 		C400F46C28E00C3500861093 /* Controls */ = {
 			isa = PBXGroup;
 			children = (
+				63BAB7CE31FD71BED54FC105 /* ZoomDial.swift */,
+				F4863A582BC3114D07046F4E /* ZoomControl.swift */,
 				924ADFED8583383799BA90CB /* CaptureModePicker.swift */,
 			);
 			path = Controls;
@@ -417,6 +439,7 @@
 		C470F0EF2899E2FB004D4515 /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				B4D67BAFD8F08DEF967D9ADD /* Zoom */,
 				B2F52665D3000F1E9742A08C /* Focus */,
 				82AF8F5FF2942F982D1751B1 /* Layers */,
 				C4F82CC9285AE13B005D427A /* Camera.swift */,
@@ -449,6 +472,7 @@
 		C47390512BC3464500EC7B9D /* Capture */ = {
 			isa = PBXGroup;
 			children = (
+				7ABC64C77391D7868395728A /* ZoomController.swift */,
 				C4E15AB02898660900827683 /* PhotoCapture.swift */,
 				C4EA0DBF2891EFC20085A584 /* MovieCapture.swift */,
 				C472D845285BBFA60082244A /* DeviceLookup.swift */,
@@ -677,6 +701,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C520B789CB407D89E36C2442 /* ZoomState.swift in Sources */,
+				4C25431F8893B16C8253B787 /* ZoomController.swift in Sources */,
+				08ED819EB703A59E7D301494 /* ZoomControl.swift in Sources */,
+				687094C6BEFD193819C466B5 /* ZoomDial.swift in Sources */,
 				C97C2780FDE13C7943F5C06B /* LensSmudgeBanner.swift in Sources */,
 				0064DEF42DFC150056B708F9 /* FocusModel.swift in Sources */,
 				713E4032BF3B30FEE48450B9 /* LevelModel.swift in Sources */,
@@ -746,6 +774,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				723B219DDB5F1EDF07036CF6 /* ZoomState.swift in Sources */,
+				B0A351EE4C977F6F9BBAFC7D /* ZoomController.swift in Sources */,
+				6092CC23B07075E0EDDD87BF /* ZoomControl.swift in Sources */,
+				D14008D057ED05ABC51961A4 /* ZoomDial.swift in Sources */,
 				D25E5AE157BA3F5203CE23CD /* LensSmudgeBanner.swift in Sources */,
 				E131271699D2569D08FF725D /* FocusModel.swift in Sources */,
 				C2C4FE4CBE471ED51C8E5782 /* LevelModel.swift in Sources */,
