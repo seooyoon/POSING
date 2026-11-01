@@ -77,8 +77,8 @@ struct CameraView<CameraModel: Camera>: View {
                     switch camera.captureMode {
                     case .photo:
                         sound = .cameraShutter
-                        // Capture a photo when pressing a hardware button.
-                        await camera.capturePhoto()
+                        // 카메라 컨트롤 · 음량 버튼도 셔터와 같이 타이머를 따름
+                        await camera.shutterPressed()
                     case .video:
                         sound = camera.captureActivity.isRecording ?
                             .endVideoRecording : .beginVideoRecording

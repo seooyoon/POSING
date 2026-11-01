@@ -11,6 +11,7 @@ struct TopBar<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
     let layers: LayerState
+    @Binding var isShowingMoreMenu: Bool
 
     /// 초기화 탭 햅틱 트리거
     @State private var resetCount = 0
@@ -46,7 +47,7 @@ struct TopBar<CameraModel: Camera>: View {
                     layers.togglePanel(.my)
                 }
                 Spacer(minLength: 0)
-                TopControlsCapsule(camera: camera)
+                TopControlsCapsule(camera: camera, isShowingMoreMenu: $isShowingMoreMenu)
             }
         }
         .padding(.horizontal, CameraLayout.sideInset)
@@ -109,6 +110,6 @@ struct PosingButton: View {
 }
 
 #Preview {
-    TopBar(camera: PreviewCameraModel(status: .running), layers: LayerState())
+    TopBar(camera: PreviewCameraModel(status: .running), layers: LayerState(), isShowingMoreMenu: .constant(false))
         .background(.gray)
 }

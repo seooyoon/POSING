@@ -36,7 +36,8 @@ struct CaptureButton<CameraModel: Camera>: View {
         case .photo:
             PhotoCaptureButton {
                 Task {
-                    await camera.capturePhoto()
+                    // 타이머가 켜져 있으면 카운트다운
+                    await camera.shutterPressed()
                 }
             }
         case .video:
