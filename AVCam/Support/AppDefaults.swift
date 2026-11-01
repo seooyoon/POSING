@@ -35,6 +35,12 @@ enum AppDefaults {
     /// 카메라 목록은 바깥 탭 또는 카메라 버튼 다시 탭으로 닫힘
     static let closesCameraListOnOutsideTap = true
 
+    // MARK: - 사진 형식
+
+    /// 처음 형식 · 해상도 (기본 카메라 참고 화면 `JPEG 24`)
+    static let photoCodec = PhotoCodec.jpeg
+    static let photoResolution = 24
+
     // MARK: - 화면 표시
 
     /// 3x3 격자 기본값

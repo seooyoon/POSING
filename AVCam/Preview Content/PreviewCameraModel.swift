@@ -24,6 +24,10 @@ class PreviewCameraModel: Camera {
     var timerDuration = TimerDuration.off
     var exposureCompensation: Float = 0
     var photoAspect = PhotoAspect.fourThree
+    var photoCodec = PhotoCodec.jpeg
+    var photoResolution = 24
+    // 시뮬레이터: 아이폰 16 Pro 후면처럼
+    let availableResolutions = PhotoResolution.values
     private(set) var countdown: Int?
     private(set) var isScreenFlashing = false
     private var countdownTask: Task<Void, Never>?

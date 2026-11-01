@@ -61,6 +61,9 @@ final class CameraModel: Camera {
     private(set) var isScreenFlashing = false
     /// 지금 카메라의 사진 출력이 플래시를 지원
     private var isFlashSupported = false
+    /// 지금 카메라가 찍을 수 있는 사진 크기
+    private var photoDimensions: [CMVideoDimensions] = []
+    private(set) var availableResolutions: [Int] = []
     
     /// An object that saves captured media to a person's Photos library.
     private let mediaLibrary = MediaLibrary()
@@ -134,12 +137,16 @@ final class CameraModel: Camera {
         isSwitchingVideoDevices = true
         defer { isSwitchingVideoDevices = false }
         await captureService.selectNextVideoDevice()
+        // 전환 직후 셔터를 눌러도 새 카메라의 플래시 · 해상도 값을 쓰도록 바로 맞춤
+        applyPhotoCapabilities(await captureService.captureCapabilities)
     }
     
     // MARK: - Photo capture
     
     /// Captures a photo and writes it to the user's Photos library.
     func capturePhoto() async {
+        // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
+        guard !isSwitchingVideoDevices else { return }
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
         let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
         if usesScreenFlash {
@@ -149,7 +156,9 @@ final class CameraModel: Camera {
             let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoActive,
                                               qualityPrioritization: qualityPrioritization,
                                               flashMode: AVCaptureDevice.FlashMode(flashMode),
-                                              cropRatio: photoAspect.cropLongToShort)
+                                              cropRatio: photoAspect.cropLongToShort,
+                                              codec: photoCodec == .heif ? .hevc : .jpeg,
+                                              maxDimensions: activeDimensions)
             let photo = try await captureService.capturePhoto(with: photoFeatures)
             if usesScreenFlash { hideScreenFlash() }
             try await mediaLibrary.save(photo: photo)
@@ -207,6 +216,21 @@ final class CameraModel: Camera {
         didSet {
             photoAspect.save()
             applyPhotoAspect()
+        }
+    }
+
+    var photoCodec = PhotoCodec.saved {
+        didSet { photoCodec.save() }
+    }
+
+    var photoResolution = PhotoResolution.saved {
+        didSet { PhotoResolution.save(photoResolution) }
+    }
+
+    /// 고른 해상도에 맞는 장치 사진 크기
+    private var activeDimensions: CMVideoDimensions? {
+        photoDimensions.last {
+            PhotoResolution.megapixels(width: $0.width, height: $0.height) == activeResolution
         }
     }
 
@@ -310,6 +334,17 @@ final class CameraModel: Camera {
         }
     }
     
+    /// 사진 모드일 때만 사진 출력 값(플래시 · 해상도)을 받음
+    private func applyPhotoCapabilities(_ capabilities: CaptureCapabilities) {
+        guard captureMode == .photo else { return }
+        isFlashSupported = capabilities.isFlashSupported
+        photoDimensions = capabilities.photoDimensions
+        // 같은 MP 크기가 여러 개면 하나로
+        availableResolutions = Array(Set(capabilities.photoDimensions.map {
+            PhotoResolution.megapixels(width: $0.width, height: $0.height)
+        })).sorted()
+    }
+
     // MARK: - Internal state observations
     
     // Set up camera's state observations.
@@ -338,9 +373,7 @@ final class CameraModel: Camera {
             // Await updates to the capabilities that the capture service advertises.
             for await capabilities in await captureService.$captureCapabilities.values {
                 isHDRVideoSupported = capabilities.isHDRSupported
-                if captureMode == .photo {
-                    isFlashSupported = capabilities.isFlashSupported
-                }
+                applyPhotoCapabilities(capabilities)
                 cameraState.isVideoHDRSupported = capabilities.isHDRSupported
             }
         }

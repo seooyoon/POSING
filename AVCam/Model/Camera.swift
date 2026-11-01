@@ -79,6 +79,15 @@ protocol Camera: AnyObject, SendableMetatype {
 
     /// 사진 비율 (4:3 → 16:9 → 1:1)
     var photoAspect: PhotoAspect { get set }
+
+    /// 사진 형식 (HEIF ↔ JPEG)
+    var photoCodec: PhotoCodec { get set }
+
+    /// 고른 사진 해상도(MP). 실제로 찍히는 값은 `activeResolution`
+    var photoResolution: Int { get set }
+
+    /// 지금 카메라가 찍을 수 있는 해상도(MP, 작은 것부터)
+    var availableResolutions: [Int] { get }
     
     /// A Boolean value that indicates whether to show visual feedback when capture begins.
     var shouldFlashScreen: Bool { get }
@@ -118,8 +127,24 @@ protocol Camera: AnyObject, SendableMetatype {
 }
 
 extension Camera {
-    /// 실제로 LIVE로 찍히는지. 비율이 4:3이 아니면 LIVE 자동 끔 (CLAUDE.md 6절)
+    /// LIVE를 쓸 수 있는지. 비율이 4:3이 아니거나(CLAUDE.md 6절) 48MP면 자동 끔
+    var isLivePhotoAvailable: Bool {
+        photoAspect == .fourThree && activeResolution <= PhotoResolution.maxWithLivePhoto
+    }
+
+    /// 실제로 LIVE로 찍히는지
     var isLivePhotoActive: Bool {
-        isLivePhotoEnabled && photoAspect == .fourThree
+        isLivePhotoEnabled && isLivePhotoAvailable
+    }
+
+    /// 실제로 찍히는 해상도: 고른 값 이하에서 가장 큰 값 (전면 등 지원하지 않으면 낮아짐)
+    var activeResolution: Int {
+        availableResolutions.last { $0 <= photoResolution } ?? availableResolutions.first ?? photoResolution
+    }
+
+    /// 형식 버튼 해상도 숫자: 12 → 24 → 48 → 12 (지원하는 값만)
+    func nextResolution() -> Int {
+        guard let index = availableResolutions.firstIndex(of: activeResolution) else { return photoResolution }
+        return availableResolutions[(index + 1) % availableResolutions.count]
     }
 }

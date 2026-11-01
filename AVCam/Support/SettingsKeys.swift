@@ -20,4 +20,8 @@ enum SettingsKeys {
     static let timerDuration = "timerDuration"
     /// 사진 비율 (4:3 · 16:9 · 1:1)
     static let photoAspect = "photoAspect"
+    /// 사진 형식 (HEIF · JPEG)
+    static let photoCodec = "photoCodec"
+    /// 사진 해상도 MP (12 · 24 · 48)
+    static let photoResolution = "photoResolution"
 }

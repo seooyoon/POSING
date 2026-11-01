@@ -62,9 +62,9 @@ final class PhotoCapture: OutputService {
         // Create a new settings object to configure the photo capture.
         var photoSettings = AVCapturePhotoSettings()
         
-        // Capture photos in HEIF format when the device supports it.
-        if photoOutput.availablePhotoCodecTypes.contains(.hevc) {
-            photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+        // 형식 버튼에서 고른 HEIF / JPEG (지원하지 않으면 기본값)
+        if photoOutput.availablePhotoCodecTypes.contains(features.codec) {
+            photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: features.codec])
         }
         
         /// Set the format of the preview image to capture. The `photoSettings` object returns the available
@@ -76,7 +76,7 @@ final class PhotoCapture: OutputService {
         /// Set the largest dimensions that the photo output supports.
         /// `CaptureService` automatically updates the photo output's `maxPhotoDimensions`
         /// when the capture pipeline changes.
-        photoSettings.maxPhotoDimensions = photoOutput.maxPhotoDimensions
+        photoSettings.maxPhotoDimensions = features.maxDimensions ?? photoOutput.maxPhotoDimensions
         
         // Set the movie URL if the photo output supports Live Photo capture.
         photoSettings.livePhotoMovieFileURL = features.isLivePhotoEnabled ? URL.movieFileURL : nil
@@ -141,7 +141,8 @@ final class PhotoCapture: OutputService {
     
     private func updateCapabilities(for device: AVCaptureDevice) {
         capabilities = CaptureCapabilities(isLivePhotoCaptureSupported: photoOutput.isLivePhotoCaptureSupported,
-                                           isFlashSupported: photoOutput.supportedFlashModes.contains(.on))
+                                           isFlashSupported: photoOutput.supportedFlashModes.contains(.on),
+                                           photoDimensions: device.activeFormat.supportedMaxPhotoDimensions)
     }
 }
 

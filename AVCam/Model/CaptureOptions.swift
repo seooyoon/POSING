@@ -47,8 +47,12 @@ enum TimerDuration: Int, CaseIterable, Sendable {
     case ten = 10
 
     var next: TimerDuration {
-        let all = Self.allCases
-        return all[(all.firstIndex(of: self)! + 1) % all.count]
+        switch self {
+        case .off: .three
+        case .three: .five
+        case .five: .ten
+        case .ten: .off
+        }
     }
 
     var title: String {
@@ -90,8 +94,11 @@ enum PhotoAspect: String, CaseIterable, Sendable {
     case square
 
     var next: PhotoAspect {
-        let all = Self.allCases
-        return all[(all.firstIndex(of: self)! + 1) % all.count]
+        switch self {
+        case .fourThree: .sixteenNine
+        case .sixteenNine: .square
+        case .square: .fourThree
+        }
     }
 
     var label: String {
@@ -126,5 +133,47 @@ enum PhotoAspect: String, CaseIterable, Sendable {
 
     func save() {
         UserDefaults.standard.set(rawValue, forKey: SettingsKeys.photoAspect)
+    }
+}
+
+/// 사진 형식 버튼 (docs/01_SPEC.md 7절): HEIF ↔ JPEG
+enum PhotoCodec: String, CaseIterable, Sendable {
+    case heif
+    case jpeg
+
+    var label: String { self == .heif ? "HEIF" : "JPEG" }
+
+    var next: PhotoCodec { self == .heif ? .jpeg : .heif }
+
+    static var saved: PhotoCodec {
+        PhotoCodec(rawValue: UserDefaults.standard.string(forKey: SettingsKeys.photoCodec) ?? "") ?? AppDefaults.photoCodec
+    }
+
+    func save() {
+        UserDefaults.standard.set(rawValue, forKey: SettingsKeys.photoCodec)
+    }
+}
+
+/// 사진 해상도(MP): 12 → 24 → 48. 기기가 지원하는 값만
+enum PhotoResolution {
+
+    static let values = [12, 24, 48]
+
+    /// 48MP는 LIVE를 끔 (LIVE 영상과 함께 쓸 수 있는지 확실하지 않아서)
+    static let maxWithLivePhoto = 24
+
+    /// 장치 사진 크기 → 12 / 24 / 48 중 가장 가까운 값
+    static func megapixels(width: Int32, height: Int32) -> Int {
+        let mp = Double(width) * Double(height) / 1_000_000
+        return values.min { abs(Double($0) - mp) < abs(Double($1) - mp) } ?? 12
+    }
+
+    static var saved: Int {
+        let value = UserDefaults.standard.integer(forKey: SettingsKeys.photoResolution)
+        return values.contains(value) ? value : AppDefaults.photoResolution
+    }
+
+    static func save(_ value: Int) {
+        UserDefaults.standard.set(value, forKey: SettingsKeys.photoResolution)
     }
 }
