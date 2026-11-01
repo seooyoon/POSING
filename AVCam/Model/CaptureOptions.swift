@@ -82,3 +82,49 @@ enum ExposureCompensation {
         return (value > 0 ? "+" : "-") + text
     }
 }
+
+/// 사진 비율: 4:3 → 16:9 → 1:1 (docs/01_SPEC.md 9절). 촬영은 항상 4:3으로 하고 저장 전에 가운데를 자름
+enum PhotoAspect: String, CaseIterable, Sendable {
+    case fourThree
+    case sixteenNine
+    case square
+
+    var next: PhotoAspect {
+        let all = Self.allCases
+        return all[(all.firstIndex(of: self)! + 1) % all.count]
+    }
+
+    var label: String {
+        switch self {
+        case .fourThree: "4:3"
+        case .sixteenNine: "16:9"
+        case .square: "1:1"
+        }
+    }
+
+    /// 세로 화면 미리보기의 높이 / 너비
+    var portraitHeightRatio: CGFloat {
+        switch self {
+        case .fourThree: 4.0 / 3
+        case .sixteenNine: 16.0 / 9
+        case .square: 1
+        }
+    }
+
+    /// 저장 사진의 긴 변 / 짧은 변. 4:3이면 자르지 않음 (nil)
+    var cropLongToShort: CGFloat? {
+        switch self {
+        case .fourThree: nil
+        case .sixteenNine: 16.0 / 9
+        case .square: 1
+        }
+    }
+
+    static var saved: PhotoAspect {
+        PhotoAspect(rawValue: UserDefaults.standard.string(forKey: SettingsKeys.photoAspect) ?? "") ?? .fourThree
+    }
+
+    func save() {
+        UserDefaults.standard.set(rawValue, forKey: SettingsKeys.photoAspect)
+    }
+}

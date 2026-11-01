@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		555BFEEAA63608EEB952BF7C /* PhotoCropper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */; };
+		122A2A8ACC04B449B1BEB614 /* PhotoCropper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */; };
 		D0D1E996ACA9255E443123A1 /* CaptureOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */; };
 		9A6844DC13704CB2DDF30B5F /* CaptureOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */; };
 		8D6D71119B49F88872EF0850 /* LightController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A290DCFC09981F31DF05ED /* LightController.swift */; };
@@ -185,6 +187,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCropper.swift; sourceTree = "<group>"; };
 		2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureOptions.swift; sourceTree = "<group>"; };
 		A9A290DCFC09981F31DF05ED /* LightController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightController.swift; sourceTree = "<group>"; };
 		21B13FC1A1CC545BA5FCC5B1 /* MoreMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreMenu.swift; sourceTree = "<group>"; };
@@ -499,6 +502,7 @@
 		C47390512BC3464500EC7B9D /* Capture */ = {
 			isa = PBXGroup;
 			children = (
+				79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */,
 				A9A290DCFC09981F31DF05ED /* LightController.swift */,
 				7ABC64C77391D7868395728A /* ZoomController.swift */,
 				C4E15AB02898660900827683 /* PhotoCapture.swift */,
@@ -729,6 +733,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				122A2A8ACC04B449B1BEB614 /* PhotoCropper.swift in Sources */,
 				9A6844DC13704CB2DDF30B5F /* CaptureOptions.swift in Sources */,
 				313F414D4A7351E09ADBDF16 /* LightController.swift in Sources */,
 				7726866022D45E7D49F72178 /* MoreMenu.swift in Sources */,
@@ -807,6 +812,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				555BFEEAA63608EEB952BF7C /* PhotoCropper.swift in Sources */,
 				D0D1E996ACA9255E443123A1 /* CaptureOptions.swift in Sources */,
 				8D6D71119B49F88872EF0850 /* LightController.swift in Sources */,
 				BD3076C17930F23325F6C966 /* MoreMenu.swift in Sources */,

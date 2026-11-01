@@ -23,6 +23,7 @@ class PreviewCameraModel: Camera {
     var flashMode = FlashMode.auto
     var timerDuration = TimerDuration.off
     var exposureCompensation: Float = 0
+    var photoAspect = PhotoAspect.fourThree
     private(set) var countdown: Int?
     private(set) var isScreenFlashing = false
     private var countdownTask: Task<Void, Never>?

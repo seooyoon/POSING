@@ -91,6 +91,7 @@ final class CameraModel: Camera {
             observeState()
             status = .running
             updateTorch()
+            applyPhotoAspect()
         } catch {
             logger.error("Failed to start capture service. \(error)")
             status = .failed
@@ -145,9 +146,10 @@ final class CameraModel: Camera {
             await showScreenFlash()
         }
         do {
-            let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoEnabled,
+            let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoActive,
                                               qualityPrioritization: qualityPrioritization,
-                                              flashMode: AVCaptureDevice.FlashMode(flashMode))
+                                              flashMode: AVCaptureDevice.FlashMode(flashMode),
+                                              cropRatio: photoAspect.cropLongToShort)
             let photo = try await captureService.capturePhoto(with: photoFeatures)
             if usesScreenFlash { hideScreenFlash() }
             try await mediaLibrary.save(photo: photo)
@@ -199,6 +201,18 @@ final class CameraModel: Camera {
         didSet {
             Task { await captureService.setExposureCompensation(exposureCompensation) }
         }
+    }
+
+    var photoAspect = PhotoAspect.saved {
+        didSet {
+            photoAspect.save()
+            applyPhotoAspect()
+        }
+    }
+
+    private func applyPhotoAspect() {
+        let isCropping = photoAspect != .fourThree
+        Task { await captureService.setPhotoCropping(isCropping) }
     }
 
     /// 비디오 모드에서만 플래시 값대로 조명을 켬

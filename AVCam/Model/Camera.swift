@@ -76,6 +76,9 @@ protocol Camera: AnyObject, SendableMetatype {
 
     /// 전면 화면 플래시 중 (화면 전체를 하얗게)
     var isScreenFlashing: Bool { get }
+
+    /// 사진 비율 (4:3 → 16:9 → 1:1)
+    var photoAspect: PhotoAspect { get set }
     
     /// A Boolean value that indicates whether to show visual feedback when capture begins.
     var shouldFlashScreen: Bool { get }
@@ -112,4 +115,11 @@ protocol Camera: AnyObject, SendableMetatype {
     
     /// Synchronize the state of the camera with the persisted values.
     func syncState() async
+}
+
+extension Camera {
+    /// 실제로 LIVE로 찍히는지. 비율이 4:3이 아니면 LIVE 자동 끔 (CLAUDE.md 6절)
+    var isLivePhotoActive: Bool {
+        isLivePhotoEnabled && photoAspect == .fourThree
+    }
 }

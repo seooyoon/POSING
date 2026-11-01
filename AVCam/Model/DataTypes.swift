@@ -97,6 +97,8 @@ struct PhotoFeatures {
     let isLivePhotoEnabled: Bool
     let qualityPrioritization: QualityPrioritization
     let flashMode: AVCaptureDevice.FlashMode
+    /// 저장 전에 가운데를 잘라낼 비율 (긴 변 / 짧은 변). nil이면 원본 4:3
+    let cropRatio: CGFloat?
 }
 
 /// A structure that represents the capture capabilities of `CaptureService` in
