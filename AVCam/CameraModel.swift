@@ -100,7 +100,8 @@ final class CameraModel: Camera {
     /// A value that indicates the mode of capture for the camera.
     var captureMode = CaptureMode.photo {
         didSet {
-            guard status == .running else { return }
+            // 같은 모드를 다시 넣으면(끝에서 더 밀기 등) 세션을 다시 구성하지 않음
+            guard status == .running, captureMode != oldValue else { return }
             Task {
                 isSwitchingModes = true
                 defer { isSwitchingModes = false }
