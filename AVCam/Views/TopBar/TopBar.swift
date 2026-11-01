@@ -24,7 +24,7 @@ struct TopBar<CameraModel: Camera>: View {
                 RecordingTimeView(time: camera.captureActivity.currentTime)
                 Spacer()
             } else {
-                FormatButton(captureMode: camera.captureMode)
+                FormatButton(camera: camera)
                 // 초기화 · 포즈 · MY: 따로 떨어진 버튼 3개 (docs/01_SPEC.md 2절)
                 PosingButton(title: "초기화", onLongPress: {
                     layers.isShowingSettings = true

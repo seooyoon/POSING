@@ -3,33 +3,39 @@
 //  포징
 //
 //  상단 왼쪽 형식 버튼. 사진 `JPEG 24`, 비디오 `HD 해상도 30 FPS`.
-//  지금은 표시만 하고, 사진 형식 전환은 4단계 · 비디오 설정은 5단계에서 연결한다.
+//  사진: 글자(HEIF/JPEG)를 누르면 형식, 숫자를 누르면 해상도 12 → 24 → 48 (지원하는 값만). 비디오 설정은 5단계.
 //
 
 import SwiftUI
 
-struct FormatButton: View {
+struct FormatButton<CameraModel: Camera>: View {
 
-    let captureMode: CaptureMode
+    @State var camera: CameraModel
 
     var body: some View {
-        Button {
-            // 4단계(사진 형식) · 5단계(비디오 해상도 · FPS)에서 연결
-        } label: {
-            label
-                .topBarCapsule()
-        }
-        .buttonStyle(.plain)
+        label
+            .topBarCapsule()
+            .sensoryFeedback(.selection, trigger: camera.photoCodec)
+            .sensoryFeedback(.selection, trigger: camera.photoResolution)
     }
 
     @ViewBuilder
     private var label: some View {
-        switch captureMode {
+        switch camera.captureMode {
         case .photo:
-            // JPEG 옆에 작은 아래첨자 해상도
+            // 형식 옆에 작은 아래첨자 해상도. 둘을 따로 누름
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("JPEG")
-                small("24", baseline: -4)
+                Text(camera.photoCodec.label)
+                    .contentShape(.rect)
+                    .onTapGesture { camera.photoCodec = camera.photoCodec.next }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel("사진 형식 \(camera.photoCodec.label)")
+                small("\(camera.activeResolution)", baseline: -4)
+                    // 숫자가 작아서 누르는 범위를 조금 넓힘 (폭은 그대로)
+                    .contentShape(Rectangle().inset(by: -8))
+                    .onTapGesture { camera.photoResolution = camera.nextResolution() }
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel("해상도 \(camera.activeResolution)메가픽셀")
             }
         case .video:
             // HD 해상도 · 30 FPS (작은 위첨자)
@@ -55,8 +61,8 @@ struct FormatButton: View {
 
 #Preview {
     VStack {
-        FormatButton(captureMode: .photo)
-        FormatButton(captureMode: .video)
+        FormatButton(camera: PreviewCameraModel(captureMode: .photo))
+        FormatButton(camera: PreviewCameraModel(captureMode: .video))
     }
     .padding()
     .background(.gray)
