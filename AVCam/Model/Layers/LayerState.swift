@@ -84,6 +84,11 @@ final class LayerState {
         openPanel = openPanel == kind ? nil : kind
     }
 
+    /// 미리보기를 탭하면 열린 패널만 닫음 (선택한 레이어는 그대로)
+    func closePanel() {
+        openPanel = nil
+    }
+
     func toggle(_ item: LayerItem, in kind: LayerKind) {
         self[kind].toggle(item)
         loadImage(of: item, in: kind)

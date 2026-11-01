@@ -93,8 +93,9 @@ struct CameraView<CameraModel: Camera>: View {
                     }
                 }
             }
-            // 탭 → 초점 · 노출 + 노란 사각형
+            // 탭 → 초점 · 노출 + 노란 사각형. 포즈 · MY 패널이 열려 있으면 같이 닫음
             .onTapGesture { location in
+                layers.closePanel()
                 focus.tap(at: location)
                 Task { await camera.focusAndExpose(at: location) }
             }
