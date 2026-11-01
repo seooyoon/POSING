@@ -166,6 +166,10 @@ final class CameraModel: Camera {
         await captureService.setAutoMacroEnabled(isEnabled)
     }
 
+    func setFrontWide(_ isWide: Bool) async {
+        await captureService.setFrontWide(isWide)
+    }
+
     func lockFocusAndExposure(at point: CGPoint) async {
         await captureService.lockFocusAndExposure(at: point)
     }

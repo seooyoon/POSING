@@ -97,6 +97,10 @@ class PreviewCameraModel: Camera {
     func setAutoMacroEnabled(_ isEnabled: Bool) {
         zoom.isAutoMacroEnabled = isEnabled
     }
+
+    func setFrontWide(_ isWide: Bool) {
+        zoom.isFrontWide = isWide
+    }
     
     private func capabilities(for mode: CaptureMode) -> CaptureCapabilities {
         switch mode {

@@ -15,6 +15,8 @@ final class ZoomController {
 
     /// 버튼을 누를 때 부드럽게 바뀌는 속도
     private static let rampRate: Float = 12
+    /// 전면 '가깝게' 배율 (기본 카메라 셀카 기본 화각). '넓게'는 장치 최소 배율. 실기기 확인
+    private static let frontCloseZoomFactor: CGFloat = 1.25
 
     private var device: AVCaptureDevice?
     private var observations: [NSKeyValueObservation] = []
@@ -24,6 +26,10 @@ final class ZoomController {
     func attach(to device: AVCaptureDevice) {
         self.device = device
         isAutoMacroEnabled = true
+        // 전면은 기본 카메라처럼 '가깝게'로 시작
+        if device.position == .front {
+            setZoomFactor(Self.frontCloseZoomFactor, on: device, animated: false)
+        }
         observations = [
             device.observe(\.videoZoomFactor, options: [.new]) { [weak self] _, _ in
                 self?.refresh()
@@ -39,14 +45,24 @@ final class ZoomController {
         guard let device, state.isAvailable else { return }
         let multiplier = device.displayVideoZoomFactorMultiplier
         let maxFactor = min(device.maxAvailableVideoZoomFactor, ZoomState.maxDisplayFactor / multiplier)
-        let factor = min(max(displayFactor / multiplier, device.minAvailableVideoZoomFactor), maxFactor)
+        setZoomFactor(min(displayFactor / multiplier, maxFactor), on: device, animated: animated)
+    }
+
+    /// 전면 화각 버튼
+    func setFrontWide(_ isWide: Bool) {
+        guard let device, device.position == .front else { return }
+        setZoomFactor(isWide ? device.minAvailableVideoZoomFactor : Self.frontCloseZoomFactor, on: device, animated: true)
+    }
+
+    private func setZoomFactor(_ factor: CGFloat, on device: AVCaptureDevice, animated: Bool) {
+        let clamped = min(max(factor, device.minAvailableVideoZoomFactor), device.maxAvailableVideoZoomFactor)
         do {
             try device.lockForConfiguration()
             if animated {
-                device.ramp(toVideoZoomFactor: factor, withRate: Self.rampRate)
+                device.ramp(toVideoZoomFactor: clamped, withRate: Self.rampRate)
             } else {
                 device.cancelVideoZoomRamp()
-                device.videoZoomFactor = factor
+                device.videoZoomFactor = clamped
             }
             device.unlockForConfiguration()
         } catch {
@@ -73,8 +89,18 @@ final class ZoomController {
     }
 
     private func refresh() {
-        // 렌즈가 하나인 카메라(전면 등)는 배율 버튼 없음. 전면 화각 버튼은 #16에서
-        guard let device, device.isVirtualDevice, device.position == .back else {
+        guard let device else {
+            state = .unavailable
+            return
+        }
+        // 전면은 배율 버튼 · 다이얼 없이 화각 버튼만
+        if device.position == .front {
+            state = ZoomState(isFrontCamera: true,
+                              isFrontWide: device.videoZoomFactor < Self.frontCloseZoomFactor - 0.01)
+            return
+        }
+        // 렌즈가 하나인 후면 카메라는 배율 버튼 없음
+        guard device.isVirtualDevice else {
             state = .unavailable
             return
         }

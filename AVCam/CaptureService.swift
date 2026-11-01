@@ -165,6 +165,7 @@ actor CaptureService {
             
             // 렌즈 얼룩 감지는 세션 시작 전에 켬
             enableLensSmudgeDetection(for: defaultCamera)
+            updateOutputMirroring()
             zoomController.attach(to: defaultCamera)
             // Configure controls to use with the Camera Control.
             configureControls(for: defaultCamera)
@@ -310,6 +311,7 @@ actor CaptureService {
             if isHDRVideoEnabled {
                 setHDRVideoEnabled(true)
             }
+            updateOutputMirroring()
         }
 
         // Update the advertised capabilities after reconfiguration.
@@ -368,6 +370,7 @@ actor CaptureService {
             // Attempt to connect a new input and device to the capture session.
             activeVideoInput = try addInput(for: device)
             zoomController.attach(to: device)
+            updateOutputMirroring()
             // Configure capture controls for new device selection.
             configureControls(for: device)
             // Configure a new rotation coordinator for the new device.
@@ -463,6 +466,22 @@ actor CaptureService {
 
     func setAutoMacroEnabled(_ isEnabled: Bool) {
         zoomController.setAutoMacroEnabled(isEnabled)
+    }
+
+    func setFrontWide(_ isWide: Bool) {
+        zoomController.setFrontWide(isWide)
+    }
+
+    // MARK: - 전면 카메라 좌우 반전
+
+    /// 전면 카메라 사진 · 영상은 화면에 보인 그대로(거울 반전) 저장 (docs/02_UI.md 9절)
+    private func updateOutputMirroring() {
+        let isFront = currentDevice.position == .front
+        for output in [photoCapture.output, movieCapture.output] as [AVCaptureOutput] {
+            guard let connection = output.connection(with: .video), connection.isVideoMirroringSupported else { continue }
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = isFront
+        }
     }
 
     // MARK: - 렌즈 얼룩 감지
