@@ -55,8 +55,8 @@ final class CameraModel: Camera {
 
     private(set) var zoom = ZoomState.unavailable
 
-    private(set) var countdown: Int?
-    private var countdownTask: Task<Void, Never>?
+    private let captureTimer = CaptureTimer()
+    var countdown: Int? { captureTimer.countdown }
 
     private(set) var isScreenFlashing = false
     /// 지금 카메라의 사진 출력이 플래시를 지원
@@ -120,7 +120,7 @@ final class CameraModel: Camera {
         didSet {
             // 같은 모드를 다시 넣으면(끝에서 더 밀기 등) 세션을 다시 구성하지 않음
             guard status == .running, captureMode != oldValue else { return }
-            cancelCountdown()
+            captureTimer.cancel()
             Task {
                 isSwitchingModes = true
                 defer { isSwitchingModes = false }
@@ -150,6 +150,8 @@ final class CameraModel: Camera {
         guard !isSwitchingVideoDevices else { return }
         // 비율을 막 바꿨으면 지연 처리 설정이 끝난 뒤에 찍음 (지연 처리 사진은 자를 수 없음)
         await photoAspectTask?.value
+        // 기다리는 사이 카메라 전환이 시작됐으면 찍지 않음
+        guard !isSwitchingVideoDevices else { return }
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
         let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
         if usesScreenFlash {
@@ -172,30 +174,9 @@ final class CameraModel: Camera {
     }
 
     func shutterPressed() async {
-        if countdownTask != nil {
-            cancelCountdown()
-            return
+        await captureTimer.shutterPressed(duration: timerDuration) { [weak self] in
+            await self?.capturePhoto()
         }
-        guard timerDuration != .off else {
-            await capturePhoto()
-            return
-        }
-        countdownTask = Task {
-            for remaining in stride(from: timerDuration.rawValue, to: 0, by: -1) {
-                countdown = remaining
-                try? await Task.sleep(for: .seconds(1))
-                if Task.isCancelled { return }
-            }
-            countdown = nil
-            countdownTask = nil
-            await capturePhoto()
-        }
-    }
-
-    private func cancelCountdown() {
-        countdownTask?.cancel()
-        countdownTask = nil
-        countdown = nil
     }
 
     var flashMode = FlashMode.saved {
@@ -349,10 +330,7 @@ final class CameraModel: Camera {
         guard captureMode == .photo else { return }
         isFlashSupported = capabilities.isFlashSupported
         photoDimensions = capabilities.photoDimensions
-        // 같은 MP 크기가 여러 개면 하나로
-        availableResolutions = Array(Set(capabilities.photoDimensions.map {
-            PhotoResolution.megapixels(width: $0.width, height: $0.height)
-        })).sorted()
+        availableResolutions = PhotoResolution.available(in: capabilities.photoDimensions)
     }
 
     // MARK: - Internal state observations

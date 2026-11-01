@@ -28,9 +28,9 @@ class PreviewCameraModel: Camera {
     var photoResolution = 24
     // 시뮬레이터: 아이폰 16 Pro 후면처럼
     let availableResolutions = PhotoResolution.values
-    private(set) var countdown: Int?
+    private let captureTimer = CaptureTimer()
+    var countdown: Int? { captureTimer.countdown }
     private(set) var isScreenFlashing = false
-    private var countdownTask: Task<Void, Never>?
     
     struct PreviewSourceStub: PreviewSource {
         // Stubbed out for test purposes.
@@ -87,25 +87,8 @@ class PreviewCameraModel: Camera {
 
     // 시뮬레이터에서도 타이머 화면을 확인
     func shutterPressed() async {
-        if countdownTask != nil {
-            countdownTask?.cancel()
-            countdownTask = nil
-            countdown = nil
-            return
-        }
-        guard timerDuration != .off else {
-            capturePhoto()
-            return
-        }
-        countdownTask = Task {
-            for remaining in stride(from: timerDuration.rawValue, to: 0, by: -1) {
-                countdown = remaining
-                try? await Task.sleep(for: .seconds(1))
-                if Task.isCancelled { return }
-            }
-            countdown = nil
-            countdownTask = nil
-            capturePhoto()
+        await captureTimer.shutterPressed(duration: timerDuration) { [weak self] in
+            self?.capturePhoto()
         }
     }
 
