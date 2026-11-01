@@ -24,6 +24,10 @@ actor CaptureService {
     /// A Boolean value that indicates whether capture controls are in a fullscreen appearance.
     @Published var isShowingFullscreenControls = false
 
+    /// 배율 버튼 · 다이얼 · 접사 상태
+    @Published private(set) var zoomState = ZoomState.unavailable
+    private let zoomController = ZoomController()
+
     /// 렌즈 얼룩 감지 결과 (iOS 26). 렌즈 · 형식이 지원하지 않으면 계속 false
     @Published private(set) var isLensSmudged = false
     
@@ -161,6 +165,7 @@ actor CaptureService {
             
             // 렌즈 얼룩 감지는 세션 시작 전에 켬
             enableLensSmudgeDetection(for: defaultCamera)
+            zoomController.attach(to: defaultCamera)
             // Configure controls to use with the Camera Control.
             configureControls(for: defaultCamera)
             // Monitor the system-preferred camera state.
@@ -279,6 +284,8 @@ actor CaptureService {
     /// - Parameter `captureMode`: The capture mode to enable.
     func setCaptureMode(_ captureMode: CaptureMode) throws {
         try applyCaptureMode(captureMode)
+        // 화면의 초점 표시가 지워지므로 장치 잠금 · 밝기도 같이 풀기
+        resetFocusAndExposure()
         // 형식이 바뀌면 얼룩 감지가 꺼지므로, 새 형식이 적용된 뒤 다시 켬
         refreshLensSmudgeDetection()
     }
@@ -341,6 +348,8 @@ actor CaptureService {
     // Changes the device the service uses for video capture.
     private func changeCaptureDevice(to device: AVCaptureDevice) {
         applyCaptureDevice(device)
+        // 새 카메라는 잠금 없이 연속 자동으로 시작
+        resetFocusAndExposure()
         // 새 카메라 형식이 적용된 뒤 얼룩 감지를 다시 켬
         refreshLensSmudgeDetection()
     }
@@ -358,6 +367,7 @@ actor CaptureService {
         do {
             // Attempt to connect a new input and device to the capture session.
             activeVideoInput = try addInput(for: device)
+            zoomController.attach(to: device)
             // Configure capture controls for new device selection.
             configureControls(for: device)
             // Configure a new rotation coordinator for the new device.
@@ -444,6 +454,17 @@ actor CaptureService {
         return previewLayer
     }
     
+    // MARK: - 배율 · 접사
+
+    /// 표시 배율로 설정. 버튼은 부드럽게(animated), 다이얼 · 두 손가락은 바로
+    func setZoom(_ displayFactor: CGFloat, animated: Bool) {
+        zoomController.setZoom(displayFactor, animated: animated)
+    }
+
+    func setAutoMacroEnabled(_ isEnabled: Bool) {
+        zoomController.setAutoMacroEnabled(isEnabled)
+    }
+
     // MARK: - 렌즈 얼룩 감지
 
     /// 얼룩 감지 간격. 계속 돌리면 배터리를 쓰므로 일정 간격으로만
@@ -519,13 +540,34 @@ actor CaptureService {
             logger.debug("Unable to lock focus and exposure. \(error)")
         }
         // 초점 · 노출이 맞춰질 시간을 두고 고정
+        // 초점 · 노출 조정이 끝난 뒤에 고정 (장면마다 걸리는 시간이 달라 상태를 확인)
         lockTask = Task {
-            try? await Task.sleep(for: .milliseconds(700))
+            let device = currentDevice
+            // 조정이 시작될 틈을 잠깐 줌
+            try? await Task.sleep(for: .milliseconds(150))
+            for _ in 0..<40 where device.isAdjustingFocus || device.isAdjustingExposure {
+                try? await Task.sleep(for: .milliseconds(50))
+                if Task.isCancelled { return }
+            }
             guard !Task.isCancelled else { return }
             lockCurrentFocusAndExposure()
         }
     }
     private var lockTask: Task<Void, Never>?
+
+    /// 모드 · 카메라 전환 시 AE/AF 잠금과 밝기를 풀고 연속 자동으로 되돌림
+    private func resetFocusAndExposure() {
+        lockTask?.cancel()
+        let device = currentDevice
+        do {
+            try focusAndExpose(at: CGPoint(x: 0.5, y: 0.5), isUserInitiated: false)
+            try device.lockForConfiguration()
+            device.setExposureTargetBias(0)
+            device.unlockForConfiguration()
+        } catch {
+            logger.debug("Unable to reset focus and exposure. \(error)")
+        }
+    }
 
     private func lockCurrentFocusAndExposure() {
         let device = currentDevice
@@ -662,6 +704,8 @@ actor CaptureService {
     private func observeOutputServices() {
         Publishers.Merge(photoCapture.$captureActivity, movieCapture.$captureActivity)
             .assign(to: &$captureActivity)
+        zoomController.$state
+            .assign(to: &$zoomState)
     }
     
     /// Observe when capture control enter and exit a fullscreen appearance.

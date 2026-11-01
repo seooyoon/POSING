@@ -37,6 +37,18 @@ struct CameraUI<CameraModel: Camera>: View {
             LensSmudgeBanner(isSmudged: camera.isLensSmudged)
                 .position(x: layout.centerX, y: layout.previewRect.minY + 24)
 
+            // 배율 버튼 · 다이얼 (버튼 줄이 아래쪽, 다이얼은 위로 펼쳐짐)
+            if camera.zoom.isAvailable {
+                ZoomControl(camera: camera)
+                    .frame(width: layout.size.width)
+                    .position(x: layout.centerX, y: layout.zoomRowCenterY + 20 - ZoomControl<CameraModel>.height / 2)
+            }
+            // 접사 중이거나 접사 전환을 꺼 두면 왼쪽 아래 꽃 버튼
+            if camera.zoom.showsMacroButton {
+                MacroButton(camera: camera)
+                    .position(x: CameraLayout.sideInset + 22, y: layout.zoomRowCenterY)
+            }
+
             CaptureButton(camera: camera)
                 .position(x: layout.centerX, y: layout.shutterCenterY)
 

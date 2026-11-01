@@ -51,6 +51,8 @@ final class CameraModel: Camera {
     private(set) var isHDRVideoSupported = false
 
     private(set) var isLensSmudged = false
+
+    private(set) var zoom = ZoomState.unavailable
     
     /// An object that saves captured media to a person's Photos library.
     private let mediaLibrary = MediaLibrary()
@@ -156,6 +158,14 @@ final class CameraModel: Camera {
         await captureService.focusAndExpose(at: point)
     }
 
+    func setZoom(_ displayFactor: CGFloat, animated: Bool) async {
+        await captureService.setZoom(displayFactor, animated: animated)
+    }
+
+    func setAutoMacroEnabled(_ isEnabled: Bool) async {
+        await captureService.setAutoMacroEnabled(isEnabled)
+    }
+
     func lockFocusAndExposure(at point: CGPoint) async {
         await captureService.lockFocusAndExposure(at: point)
     }
@@ -234,6 +244,13 @@ final class CameraModel: Camera {
             }
         }
         
+        Task {
+            // 배율 · 접사 상태 (카메라 컨트롤 버튼으로 바꿔도 따라옴)
+            for await zoom in await captureService.$zoomState.values {
+                self.zoom = zoom
+            }
+        }
+
         Task {
             // 렌즈 얼룩 감지 결과
             for await isLensSmudged in await captureService.$isLensSmudged.values {

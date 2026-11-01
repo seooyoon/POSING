@@ -17,6 +17,8 @@ class PreviewCameraModel: Camera {
     var shouldFlashScreen = false
     var isHDRVideoSupported = false
     var isLensSmudged = false
+    // 시뮬레이터에는 렌즈가 없어서 배율 버튼만 반응
+    private(set) var zoom = ZoomState(displayFactor: 1, range: 0.5...25, presets: ZoomState.presetValues)
     var isHDRVideoEnabled = false
     
     struct PreviewSourceStub: PreviewSource {
@@ -87,6 +89,14 @@ class PreviewCameraModel: Camera {
     func lockFocusAndExposure(at point: CGPoint) {}
 
     func setExposureBias(_ bias: Float) {}
+
+    func setZoom(_ displayFactor: CGFloat, animated: Bool) {
+        zoom.displayFactor = min(max(displayFactor, zoom.range.lowerBound), zoom.range.upperBound)
+    }
+
+    func setAutoMacroEnabled(_ isEnabled: Bool) {
+        zoom.isAutoMacroEnabled = isEnabled
+    }
     
     private func capabilities(for mode: CaptureMode) -> CaptureCapabilities {
         switch mode {
