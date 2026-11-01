@@ -13,12 +13,20 @@ struct PoseOrderView: View {
 
     @State private var editMode = EditMode.inactive
 
+    /// 끌어서 정렬은 편집을 눌렀을 때만
+    private var moveAction: ((IndexSet, Int) -> Void)? {
+        guard editMode.isEditing else { return nil }
+        return { source, destination in
+            layers.movePoses(from: source, to: destination)
+        }
+    }
+
     var body: some View {
         List {
             ForEach(Array(layers.pose.items.enumerated()), id: \.element.id) { index, item in
                 SettingsThumbnailRow(image: item.thumbnail, title: "\(index + 1)")
             }
-            .onMove(perform: layers.movePoses)
+            .onMove(perform: moveAction)
         }
         .listStyle(.insetGrouped)
         .navigationTitle("포즈 목록")

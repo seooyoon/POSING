@@ -13,6 +13,14 @@ struct MYListView: View {
     @Bindable var layers: LayerState
 
     @State private var editMode = EditMode.inactive
+
+    /// 끌어서 정렬은 편집을 눌렀을 때만
+    private var moveAction: ((IndexSet, Int) -> Void)? {
+        guard editMode.isEditing else { return nil }
+        return { source, destination in
+            layers.moveMY(from: source, to: destination)
+        }
+    }
     @State private var isPicking = false
 
     var body: some View {
@@ -29,7 +37,7 @@ struct MYListView: View {
                 ForEach(layers.my.items) { item in
                     SettingsThumbnailRow(image: item.thumbnail)
                 }
-                .onMove(perform: layers.moveMY)
+                .onMove(perform: moveAction)
                 .onDelete(perform: layers.deleteMY)
             } footer: {
                 if layers.my.items.isEmpty {
