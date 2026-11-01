@@ -64,6 +64,9 @@ protocol Camera: AnyObject, SendableMetatype {
     
     /// A Boolean that indicates whether the camera supports HDR video recording.
     var isHDRVideoSupported: Bool { get }
+
+    /// 렌즈에 얼룩이 감지됨 (iOS 26 렌즈 얼룩 감지)
+    var isLensSmudged: Bool { get }
     
     /// A Boolean value that indicates whether camera enables HDR video recording.
     var isHDRVideoEnabled: Bool { get set }

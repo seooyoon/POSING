@@ -49,6 +49,8 @@ final class CameraModel: Camera {
     
     /// A Boolean that indicates whether the camera supports HDR video recording.
     private(set) var isHDRVideoSupported = false
+
+    private(set) var isLensSmudged = false
     
     /// An object that saves captured media to a person's Photos library.
     private let mediaLibrary = MediaLibrary()
@@ -232,6 +234,15 @@ final class CameraModel: Camera {
             }
         }
         
+        Task {
+            // 렌즈 얼룩 감지 결과
+            for await isLensSmudged in await captureService.$isLensSmudged.values {
+                withAnimation {
+                    self.isLensSmudged = isLensSmudged
+                }
+            }
+        }
+
         Task {
             // Await updates to a person's interaction with the Camera Control HUD.
             for await isShowingFullscreenControls in await captureService.$isShowingFullscreenControls.values {

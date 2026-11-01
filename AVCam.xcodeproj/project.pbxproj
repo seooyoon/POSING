@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D25E5AE157BA3F5203CE23CD /* LensSmudgeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB726D3EC9306348CD8E8CAF /* LensSmudgeBanner.swift */; };
+		C97C2780FDE13C7943F5C06B /* LensSmudgeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB726D3EC9306348CD8E8CAF /* LensSmudgeBanner.swift */; };
 		E131271699D2569D08FF725D /* FocusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7148EBBF0262074BDC208C /* FocusModel.swift */; };
 		0064DEF42DFC150056B708F9 /* FocusModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB7148EBBF0262074BDC208C /* FocusModel.swift */; };
 		C2C4FE4CBE471ED51C8E5782 /* LevelModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C191F78887792D18B014E0 /* LevelModel.swift */; };
@@ -165,6 +167,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AB726D3EC9306348CD8E8CAF /* LensSmudgeBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LensSmudgeBanner.swift; sourceTree = "<group>"; };
 		DB7148EBBF0262074BDC208C /* FocusModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModel.swift; sourceTree = "<group>"; };
 		77C191F78887792D18B014E0 /* LevelModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelModel.swift; sourceTree = "<group>"; };
 		0158C694A13ADB1F8EC8896C /* FocusOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusOverlay.swift; sourceTree = "<group>"; };
@@ -381,6 +384,7 @@
 		C400F46528DFDDD800861093 /* Overlays */ = {
 			isa = PBXGroup;
 			children = (
+				AB726D3EC9306348CD8E8CAF /* LensSmudgeBanner.swift */,
 				4652B55DF25411DCD7BEDAAC /* LevelOverlay.swift */,
 				5EEC0F84AA4A3116773F339A /* GridOverlay.swift */,
 				0158C694A13ADB1F8EC8896C /* FocusOverlay.swift */,
@@ -673,6 +677,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C97C2780FDE13C7943F5C06B /* LensSmudgeBanner.swift in Sources */,
 				0064DEF42DFC150056B708F9 /* FocusModel.swift in Sources */,
 				713E4032BF3B30FEE48450B9 /* LevelModel.swift in Sources */,
 				706663169C89D711BCDB17BC /* FocusOverlay.swift in Sources */,
@@ -741,6 +746,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D25E5AE157BA3F5203CE23CD /* LensSmudgeBanner.swift in Sources */,
 				E131271699D2569D08FF725D /* FocusModel.swift in Sources */,
 				C2C4FE4CBE471ED51C8E5782 /* LevelModel.swift in Sources */,
 				14AB2CDB0B9C798F5C59C64B /* FocusOverlay.swift in Sources */,

@@ -33,6 +33,10 @@ struct CameraUI<CameraModel: Camera>: View {
                 .opacity(camera.captureMode == .photo && camera.captureActivity.isLivePhoto ? 1 : 0)
                 .position(x: layout.centerX, y: layout.previewRect.minY + 24)
 
+            // 렌즈가 더러우면 미리보기 위쪽 가운데에 안내 (기본 카메라와 같은 자리)
+            LensSmudgeBanner(isSmudged: camera.isLensSmudged)
+                .position(x: layout.centerX, y: layout.previewRect.minY + 24)
+
             CaptureButton(camera: camera)
                 .position(x: layout.centerX, y: layout.shutterCenterY)
 
