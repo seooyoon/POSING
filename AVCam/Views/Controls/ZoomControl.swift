@@ -111,6 +111,27 @@ struct ZoomControl<CameraModel: Camera>: View {
     }
 }
 
+/// 전면 카메라 화각 버튼: 가깝게일 때 바깥 화살표(누르면 넓게), 넓게일 때 안쪽 화살표
+struct FrontFieldOfViewButton<CameraModel: Camera>: View {
+
+    @State var camera: CameraModel
+
+    var body: some View {
+        let isWide = camera.zoom.isFrontWide
+        Button {
+            Task { await camera.setFrontWide(!isWide) }
+        } label: {
+            Image(systemName: isWide ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(.black.opacity(0.4), in: .circle)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: isWide)
+    }
+}
+
 /// 왼쪽 아래 꽃 버튼. 접사 중이면 노란색, 누르면 자동 접사 전환을 끄고(빗금) 다시 누르면 켬
 struct MacroButton<CameraModel: Camera>: View {
 

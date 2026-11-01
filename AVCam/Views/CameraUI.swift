@@ -43,6 +43,11 @@ struct CameraUI<CameraModel: Camera>: View {
                     .frame(width: layout.size.width)
                     .position(x: layout.centerX, y: layout.zoomRowCenterY + 20 - ZoomControl<CameraModel>.height / 2)
             }
+            // 전면 카메라는 배율 버튼 자리에 화각 버튼
+            if camera.zoom.isFrontCamera {
+                FrontFieldOfViewButton(camera: camera)
+                    .position(x: layout.centerX, y: layout.zoomRowCenterY)
+            }
             // 접사 중이거나 접사 전환을 꺼 두면 왼쪽 아래 꽃 버튼
             if camera.zoom.showsMacroButton {
                 MacroButton(camera: camera)
