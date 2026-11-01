@@ -35,7 +35,7 @@ struct CameraUI<CameraModel: Camera>: View {
             // 사진을 찍는 순간 미리보기 위쪽 가운데에 LIVE 표시
             LiveBadge()
                 .opacity(isShowingLiveBadge ? 1 : 0)
-                .position(x: layout.centerX, y: layout.previewRect.minY + 24)
+                .position(x: layout.centerX, y: previewTopY + 24)
 
             // 렌즈가 더러우면 미리보기 위쪽 가운데에 안내 (기본 카메라와 같은 자리).
             // 패널이 열리면 패널 바로 아래로, LIVE 표시가 뜨는 동안은 잠깐 숨김
@@ -106,8 +106,13 @@ struct CameraUI<CameraModel: Camera>: View {
         camera.captureMode == .photo && camera.captureActivity.isLivePhoto
     }
 
+    /// 미리보기 위쪽 끝. 비디오 · 16:9 사진은 미리보기가 상단 바 뒤까지 올라가므로 상단 바 아래부터
+    private var previewTopY: CGFloat {
+        max(layout.previewRect.minY, layout.safeTop + CameraLayout.topBarHeight)
+    }
+
     private var smudgeBannerCenterY: CGFloat {
-        guard layers.openPanel != nil else { return layout.previewRect.minY + 24 }
+        guard layers.openPanel != nil else { return previewTopY + 24 }
         return layout.safeTop + CameraLayout.topBarHeight + panelHeight + 24
     }
 }

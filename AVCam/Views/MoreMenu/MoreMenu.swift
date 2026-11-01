@@ -66,11 +66,13 @@ struct MoreMenu<CameraModel: Camera>: View {
                 camera.flashMode = camera.flashMode.next
             }
         case .live:
-            MoreMenuButton(title: "LIVE", isActive: camera.isLivePhotoEnabled) {
-                Image(systemName: camera.isLivePhotoEnabled ? "livephoto" : "livephoto.slash")
+            // 비율이 4:3이 아니면 LIVE 꺼짐 표시, 누를 수 없음
+            MoreMenuButton(title: "LIVE", isActive: camera.isLivePhotoActive) {
+                Image(systemName: camera.isLivePhotoActive ? "livephoto" : "livephoto.slash")
             } action: {
                 camera.isLivePhotoEnabled.toggle()
             }
+            .disabled(camera.photoAspect != .fourThree)
         case .timer:
             MoreMenuButton(title: camera.timerDuration.title, isActive: camera.timerDuration != .off) {
                 Image(systemName: "timer")
@@ -91,10 +93,11 @@ struct MoreMenu<CameraModel: Camera>: View {
                 Image(systemName: "circle.grid.3x3")
             } action: {}
         case .ratio:
-            // 비율 전환은 #23에서 연결
-            MoreMenuButton(title: "비율") {
-                RatioIcon(text: "4:3")
-            } action: {}
+            MoreMenuButton(title: "비율", isActive: camera.photoAspect != .fourThree) {
+                RatioIcon(text: camera.photoAspect.label)
+            } action: {
+                camera.photoAspect = camera.photoAspect.next
+            }
         }
     }
 

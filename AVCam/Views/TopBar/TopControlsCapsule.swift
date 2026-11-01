@@ -29,9 +29,11 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
                 Button {
                     camera.isLivePhotoEnabled.toggle()
                 } label: {
-                    Image(systemName: camera.isLivePhotoEnabled ? "livephoto" : "livephoto.slash")
-                        .foregroundStyle(camera.isLivePhotoEnabled ? Color.cameraYellow : .white)
+                    Image(systemName: camera.isLivePhotoActive ? "livephoto" : "livephoto.slash")
+                        .foregroundStyle(camera.isLivePhotoActive ? Color.cameraYellow : .white)
                 }
+                // 비율이 4:3이 아니면 LIVE 자동 끔 (꺼짐 표시)
+                .disabled(camera.photoAspect != .fourThree)
             }
 
             Button {
