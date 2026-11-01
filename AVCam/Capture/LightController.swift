@@ -19,6 +19,10 @@ final class LightController {
 
     /// 카메라가 바뀔 때마다 연결. 초점 밝기는 풀고 메뉴 노출 · 조명은 다시 적용
     func attach(to device: AVCaptureDevice) {
+        // 전면에는 조명이 없어 새 기기에서 끌 수 없으므로, 이전 기기 조명을 먼저 끔
+        if let previous = self.device, previous !== device {
+            turnOffTorch(on: previous)
+        }
         self.device = device
         focusBias = 0
         applyBias()
@@ -54,6 +58,17 @@ final class LightController {
             device.unlockForConfiguration()
         } catch {
             logger.debug("Unable to set exposure bias. \(error)")
+        }
+    }
+
+    private func turnOffTorch(on device: AVCaptureDevice) {
+        guard device.hasTorch, device.torchMode != .off else { return }
+        do {
+            try device.lockForConfiguration()
+            device.torchMode = .off
+            device.unlockForConfiguration()
+        } catch {
+            logger.debug("Unable to turn off torch. \(error)")
         }
     }
 

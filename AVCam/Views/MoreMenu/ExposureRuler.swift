@@ -61,7 +61,8 @@ struct ExposureRuler: View {
     }
 
     private var drag: some Gesture {
-        DragGesture(minimumDistance: 0)
+        // 0이면 두 번 탭이 밀기로 먹히므로 조금 움직여야 밀기로 인식
+        DragGesture(minimumDistance: 4)
             .onChanged { gesture in
                 let start = dragStartValue ?? value
                 dragStartValue = start
