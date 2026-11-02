@@ -166,10 +166,15 @@ struct CaptureModePicker<CameraModel: Camera>: View {
                 if longPressTask == nil, !isExpanded, !hasMoved {
                     startLongPress()
                 }
-                if !hasMoved, abs(value.translation.width) > moveThreshold {
+                let translation = value.translation
+                if !hasMoved, hypot(translation.width, translation.height) > moveThreshold {
+                    // 어느 방향이든 움직이면 탭 · 꾹 누르기가 아님
                     hasMoved = true
-                    // 누른 채 옆으로 밀면 바로 모드 줄로 펼쳐 손가락을 따라가게 함
-                    if !isExpanded { expand(at: value.translation.width) }
+                    cancelLongPress()
+                    // 옆으로 밀 때만 바로 모드 줄로 펼쳐 손가락을 따라가게 함
+                    if !isExpanded, abs(translation.width) > abs(translation.height) {
+                        expand(at: translation.width)
+                    }
                 }
                 if isExpanded {
                     let start = expandTranslation ?? value.translation.width
