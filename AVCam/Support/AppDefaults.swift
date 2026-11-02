@@ -28,7 +28,7 @@ enum AppDefaults {
 
     // MARK: - 버튼 동작
 
-    /// 꾹 누르기 인식 시간 (초). 인식되는 순간 햅틱
+    /// 꾹 누르기 인식 시간 (초). 햅틱 없음
     static let longPressDuration = 0.5
     /// 배율 버튼 길게 누르기 → 다이얼 (기본 카메라처럼 조금 더 빠름)
     static let zoomDialLongPressDuration = 0.4
@@ -40,6 +40,13 @@ enum AppDefaults {
     /// 처음 형식 · 해상도 (기본 카메라 참고 화면 `JPEG 24`)
     static let photoCodec = PhotoCodec.jpeg
     static let photoResolution = 24
+
+    // MARK: - 노출 감도 (기본 카메라처럼 천천히)
+
+    /// 초점 옆 해 아이콘을 이만큼(pt) 밀면 밝기 1 EV
+    static let focusBiasPointsPerEV = 200.0
+    /// 더보기 메뉴 노출 눈금을 이만큼(pt) 밀면 1/3 EV
+    static let exposureRulerPointsPerStep = 30.0
 
     // MARK: - 화면 표시
 

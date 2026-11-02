@@ -21,6 +21,15 @@ enum FlashMode: String, CaseIterable, Sendable {
         }
     }
 
+    /// 빠른 설정 판 글자
+    var title: String {
+        switch self {
+        case .auto: "자동"
+        case .on: "켬"
+        case .off: "끔"
+        }
+    }
+
     var symbolName: String {
         switch self {
         case .auto: "bolt.badge.automatic"

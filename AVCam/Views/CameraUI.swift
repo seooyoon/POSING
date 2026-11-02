@@ -16,10 +16,15 @@ struct CameraUI<CameraModel: Camera>: View {
 
     @State private var panelHeight: CGFloat = 0
     @State private var isShowingMoreMenu = false
+    /// 상단 빠른 설정 판 (형식 버튼 · 오른쪽 묶음 꾹 누르기)
+    @State private var quickSettings: QuickSettingsKind?
+    /// LIVE를 켜고 끈 직후 잠깐 보이는 표시 (true = LIVE, false = LIVE 끔)
+    @State private var liveNotice: Bool?
+    @State private var liveNoticeTask: Task<Void, Never>?
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu)
+            TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings)
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.topBarCenterY)
 
@@ -32,9 +37,10 @@ struct CameraUI<CameraModel: Camera>: View {
                     .transition(.offset(y: -12).combined(with: .opacity))
             }
 
-            // 사진을 찍는 순간 미리보기 위쪽 가운데에 LIVE 표시
-            LiveBadge()
+            // LIVE를 켜고 끄거나 LIVE 사진을 찍는 순간 미리보기 위쪽 가운데에 표시
+            LiveBadge(isOn: liveNotice ?? true)
                 .opacity(isShowingLiveBadge ? 1 : 0)
+                .allowsHitTesting(false)
                 .position(x: layout.centerX, y: previewTopY + 24)
 
             // 렌즈가 더러우면 미리보기 위쪽 가운데에 안내 (기본 카메라와 같은 자리).
@@ -88,6 +94,18 @@ struct CameraUI<CameraModel: Camera>: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
+            // 빠른 설정 판: 상단 바 위로 내려옴. 판 바깥을 탭하면 닫힘
+            if let kind = quickSettings {
+                Color.clear
+                    .contentShape(.rect)
+                    .frame(width: layout.size.width, height: layout.size.height)
+                    .onTapGesture { quickSettings = nil }
+                QuickSettingsView(camera: camera, kind: kind)
+                    .frame(width: layout.size.width - 20)
+                    .offset(x: 10, y: layout.safeTop + 4)
+                    .transition(.offset(y: -12).combined(with: .opacity))
+            }
+
             // 전면 화면 플래시
             Color.white
                 .frame(width: layout.size.width, height: layout.size.height)
@@ -99,13 +117,35 @@ struct CameraUI<CameraModel: Camera>: View {
         }
         .animation(.easeOut(duration: 0.2), value: layers.openPanel)
         .animation(.spring(duration: 0.35), value: isShowingMoreMenu)
+        .animation(.easeOut(duration: 0.2), value: quickSettings)
         // 모드를 바꾸거나 녹화를 시작하면 메뉴를 닫음
-        .onChange(of: camera.captureMode) { isShowingMoreMenu = false }
-        .onChange(of: camera.captureActivity.isRecording) { isShowingMoreMenu = false }
+        .onChange(of: camera.captureMode) {
+            isShowingMoreMenu = false
+            quickSettings = nil
+        }
+        .onChange(of: camera.captureActivity.isRecording) {
+            isShowingMoreMenu = false
+            quickSettings = nil
+        }
+        .onChange(of: camera.isLivePhotoActive) { _, isActive in
+            guard camera.captureMode == .photo else { return }
+            showLiveNotice(isActive)
+        }
     }
 
     private var isShowingLiveBadge: Bool {
-        camera.captureMode == .photo && camera.captureActivity.isLivePhoto
+        camera.captureMode == .photo && (camera.captureActivity.isLivePhoto || liveNotice != nil)
+    }
+
+    /// LIVE 켬 · 끔을 1.5초 동안 보여줌
+    private func showLiveNotice(_ isOn: Bool) {
+        liveNoticeTask?.cancel()
+        withAnimation(.easeOut(duration: 0.15)) { liveNotice = isOn }
+        liveNoticeTask = Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.2)) { liveNotice = nil }
+        }
     }
 
     /// 미리보기 위쪽 끝. 비디오 · 16:9 사진은 미리보기가 상단 바 뒤까지 올라가므로 상단 바 아래부터

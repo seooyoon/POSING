@@ -44,7 +44,8 @@ struct CameraView<CameraModel: Camera>: View {
                     LayerOverlay(layers: layers)
                     GridOverlay()
                     LevelOverlay(level: level)
-                    FocusOverlay(focus: focus)
+                    FocusOverlay(focus: focus,
+                                 topInset: max(0, layout.safeTop + CameraLayout.topBarHeight - layout.previewRect.minY))
                 }
                 .frame(width: layout.previewRect.width, height: layout.previewRect.height)
                 .clipped()

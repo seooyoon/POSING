@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A6EC6038C95987583F534679 /* QuickSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */; };
+		0A2218DE53B144AC3B56F6A3 /* QuickSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */; };
 		B84A97739ADFA006BD43133B /* CaptureTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */; };
 		5DC36A618CF5A9ADD1E0B04F /* CaptureTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */; };
 		555BFEEAA63608EEB952BF7C /* PhotoCropper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */; };
@@ -189,6 +191,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSettingsPanel.swift; sourceTree = "<group>"; };
 		52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureTimer.swift; sourceTree = "<group>"; };
 		79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCropper.swift; sourceTree = "<group>"; };
 		2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureOptions.swift; sourceTree = "<group>"; };
@@ -400,6 +403,7 @@
 		D2B9199F440A88BA88C64E6D /* TopBar */ = {
 			isa = PBXGroup;
 			children = (
+				0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */,
 				0B0063626F1EF5F032807509 /* TopBar.swift */,
 				65B96B8301F38C212F5E4933 /* FormatButton.swift */,
 				AF0279F909B8F714BC268C14 /* TopControlsCapsule.swift */,
@@ -737,6 +741,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A2218DE53B144AC3B56F6A3 /* QuickSettingsPanel.swift in Sources */,
 				5DC36A618CF5A9ADD1E0B04F /* CaptureTimer.swift in Sources */,
 				122A2A8ACC04B449B1BEB614 /* PhotoCropper.swift in Sources */,
 				9A6844DC13704CB2DDF30B5F /* CaptureOptions.swift in Sources */,
@@ -817,6 +822,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A6EC6038C95987583F534679 /* QuickSettingsPanel.swift in Sources */,
 				B84A97739ADFA006BD43133B /* CaptureTimer.swift in Sources */,
 				555BFEEAA63608EEB952BF7C /* PhotoCropper.swift in Sources */,
 				D0D1E996ACA9255E443123A1 /* CaptureOptions.swift in Sources */,

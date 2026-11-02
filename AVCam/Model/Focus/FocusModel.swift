@@ -15,7 +15,7 @@ final class FocusModel {
     /// 밝기 조절 범위 (EV). 장치 범위로는 CaptureService에서 한 번 더 제한
     static let biasRange: ClosedRange<Float> = -2...2
     /// 손가락을 이만큼(pt) 움직이면 1 EV
-    private static let pointsPerEV: CGFloat = 120
+    private static let pointsPerEV = CGFloat(AppDefaults.focusBiasPointsPerEV)
     /// 탭 후 사각형이 흐려지기까지 (초)
     private static let dimDelay: Duration = .seconds(2)
     /// 잠금이 아닐 때 표시가 사라지기까지 (초)

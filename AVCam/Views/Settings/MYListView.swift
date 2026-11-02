@@ -37,8 +37,7 @@ struct MYListView: View {
                 ForEach(layers.my.items) { item in
                     HStack(spacing: 12) {
                         SettingsThumbnailRow(image: item.thumbnail)
-                        TextField("이름", text: nameBinding(for: item))
-                            .submitLabel(.done)
+                        MYNameField(name: item.name) { layers.renameMY(item.id, to: $0) }
                     }
                 }
                 .onMove(perform: moveAction)
@@ -58,13 +57,29 @@ struct MYListView: View {
         // 카메라 화면에서 MY 꾹 누르기와 같은 동작
         .myPhotoPicker(isPresented: $isPicking, layers: layers)
     }
+}
 
-    /// 입력하는 대로 저장. 10자를 넘는 입력은 받지 않음
-    private func nameBinding(for item: LayerItem) -> Binding<String> {
-        Binding {
-            layers.my.items.first { $0.id == item.id }?.name ?? ""
-        } set: { name in
-            layers.renameMY(item.id, to: name)
-        }
+/// MY 사진 이름 입력칸. 10자를 넘는 입력은 즉시 되돌려 칸에도 보이지 않음
+private struct MYNameField: View {
+
+    let onChange: (String) -> Void
+    @State private var text: String
+
+    init(name: String, onChange: @escaping (String) -> Void) {
+        self.onChange = onChange
+        _text = State(initialValue: name)
+    }
+
+    var body: some View {
+        TextField("이름", text: $text)
+            .submitLabel(.done)
+            .onChange(of: text) { oldValue, newValue in
+                // 넘치는 입력(가운데 끼워 넣기 · 붙여넣기 포함)은 받지 않고 이전 이름으로
+                guard newValue.count <= MYLibrary.maxNameLength else {
+                    text = oldValue
+                    return
+                }
+                onChange(newValue)
+            }
     }
 }

@@ -4,7 +4,7 @@
 //
 //  배율 버튼 `.5 · 1 · 2 · 5` (docs/02_UI.md 6절). 현재 버튼만 어두운 원 + 노란 글씨 + `×`,
 //  버튼 사이 배율이면 그 자리에 실제 값. 길게 누르거나 좌우로 밀면 다이얼이 펼쳐지고 손을 떼면 1.5초 뒤 접힌다.
-//  두 손가락 확대 · 카메라 컨트롤로 배율이 바뀔 때도 다이얼이 잠깐 보인다.
+//  카메라 컨트롤로 배율이 바뀔 때도 다이얼이 잠깐 보인다 (두 손가락 확대는 다이얼 없이).
 //
 
 import SwiftUI
@@ -58,9 +58,10 @@ struct ZoomControl<CameraModel: Camera>: View {
             )
             .sensoryFeedback(.selection, trigger: camera.zoom.activePreset)
             .animation(.easeOut(duration: 0.2), value: isDialShown)
-            // 두 손가락 확대 · 카메라 컨트롤로 배율이 바뀌어도 다이얼 표시 (배율 버튼은 제외)
+            // 카메라 컨트롤로 배율이 바뀌면 다이얼 표시. 밀고 있는 동안은 prefersMinimizedUI가 켜짐
+            // (두 손가락 확대 · 배율 버튼은 표시하지 않음)
             .onChange(of: camera.zoom.displayFactor) {
-                guard dragStartFactor == nil, Date.now > presetZoomUntil else { return }
+                guard camera.prefersMinimizedUI, dragStartFactor == nil, Date.now > presetZoomUntil else { return }
                 showDial()
                 scheduleCollapse()
             }

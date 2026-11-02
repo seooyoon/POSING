@@ -14,6 +14,8 @@ struct ExposureRuler: View {
 
     /// 눈금 하나(1/3) 사이 간격
     private let tickSpacing: CGFloat = 16
+    /// 1/3 바꾸는 데 미는 거리. 눈금 간격보다 길게 밀어야 바뀜
+    private let pointsPerStep = CGFloat(AppDefaults.exposureRulerPointsPerStep)
     @State private var dragStartValue: Float?
 
     private var tickValues: [Float] {
@@ -67,7 +69,7 @@ struct ExposureRuler: View {
                 let start = dragStartValue ?? value
                 dragStartValue = start
                 // 왼쪽으로 밀면 눈금이 왼쪽으로 → 값이 커짐
-                let delta = Float(-gesture.translation.width / tickSpacing) * ExposureCompensation.step
+                let delta = Float(-gesture.translation.width / pointsPerStep) * ExposureCompensation.step
                 let next = ExposureCompensation.snapped(start + delta)
                 if next != value { value = next }
             }

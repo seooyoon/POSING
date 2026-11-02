@@ -29,12 +29,7 @@ final class ZoomController {
     func attach(to device: AVCaptureDevice) {
         self.device = device
         isAutoMacroEnabled = true
-        // 전면은 기본 카메라처럼 '가깝게'로, 후면 트리플 카메라는 1×로 시작 (장치 기본값은 0.5×)
-        if device.position == .front {
-            setZoomFactor(Self.frontCloseZoomFactor, on: device, animated: false)
-        } else if device.isVirtualDevice {
-            setZoomFactor(1 / device.displayVideoZoomFactorMultiplier, on: device, animated: false)
-        }
+        applyDefaultZoom()
         observations = [
             device.observe(\.videoZoomFactor, options: [.new]) { [weak self] _, _ in
                 self?.onDeviceChange?()
@@ -44,6 +39,17 @@ final class ZoomController {
             },
         ]
         refresh()
+    }
+
+    /// 전면은 기본 카메라처럼 '가깝게', 후면 트리플 카메라는 1× (장치 기본값은 0.5×).
+    /// 모드 전환 · 형식 변경으로 장치 배율이 처음 값으로 돌아갈 때도 부른다
+    func applyDefaultZoom() {
+        guard let device else { return }
+        if device.position == .front {
+            setZoomFactor(Self.frontCloseZoomFactor, on: device, animated: false)
+        } else if device.isVirtualDevice {
+            setZoomFactor(1 / device.displayVideoZoomFactorMultiplier, on: device, animated: false)
+        }
     }
 
     func setZoom(_ displayFactor: CGFloat, animated: Bool) {

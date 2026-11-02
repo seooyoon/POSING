@@ -141,10 +141,4 @@ extension Camera {
     var activeResolution: Int {
         availableResolutions.last { $0 <= photoResolution } ?? availableResolutions.first ?? photoResolution
     }
-
-    /// 형식 버튼 해상도 숫자: 12 → 24 → 48 → 12 (지원하는 값만)
-    func nextResolution() -> Int {
-        guard let index = availableResolutions.firstIndex(of: activeResolution) else { return photoResolution }
-        return availableResolutions[(index + 1) % availableResolutions.count]
-    }
 }
