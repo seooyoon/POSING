@@ -43,11 +43,13 @@ struct CameraUI<CameraModel: Camera>: View {
                 .opacity(isShowingLiveBadge ? 0 : 1)
                 .position(x: layout.centerX, y: smudgeBannerCenterY)
 
-            // 배율 버튼 · 다이얼 (버튼 줄이 아래쪽, 다이얼은 위로 펼쳐짐)
+            // 배율 버튼 · 다이얼 (다이얼 원은 셔터 · 하단 줄 뒤까지 펼쳐짐)
             if camera.zoom.isAvailable {
-                ZoomControl(camera: camera)
+                ZoomControl(camera: camera,
+                            dialRadius: layout.size.width * 0.55,
+                            dialCenterBelowRow: layout.shutterCenterY + 45 - layout.zoomRowCenterY)
                     .frame(width: layout.size.width)
-                    .position(x: layout.centerX, y: layout.zoomRowCenterY + 20 - ZoomControl<CameraModel>.height / 2)
+                    .position(x: layout.centerX, y: layout.zoomRowCenterY + ZoomControl<CameraModel>.rowCenterAboveBottom - ZoomControl<CameraModel>.height / 2)
             }
             // 전면 카메라는 배율 버튼 자리에 화각 버튼
             if camera.zoom.isFrontCamera {
