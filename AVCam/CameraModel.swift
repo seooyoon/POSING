@@ -89,6 +89,9 @@ final class CameraModel: Camera {
         do {
             // Synchronize the state of the model with the persistent state.
             await syncState()
+            // 앱을 처음 열면 마지막 모드와 상관없이 항상 사진 (세션 시작 전이라 didSet은 세션을 건드리지 않음)
+            captureMode = .photo
+            cameraState.captureMode = .photo
             // 저장된 비율이 16:9 · 1:1이면 세션을 시작하기 전에 지연 처리를 끔
             await captureService.setPhotoCropping(photoAspect != .fourThree)
             // Start the capture service to start the flow of data.

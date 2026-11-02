@@ -28,7 +28,7 @@ enum AppDefaults {
 
     // MARK: - 버튼 동작
 
-    /// 꾹 누르기 인식 시간 (초). 인식되는 순간 햅틱
+    /// 꾹 누르기 인식 시간 (초). 햅틱 없음
     static let longPressDuration = 0.5
     /// 배율 버튼 길게 누르기 → 다이얼 (기본 카메라처럼 조금 더 빠름)
     static let zoomDialLongPressDuration = 0.4

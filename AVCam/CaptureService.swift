@@ -154,6 +154,9 @@ actor CaptureService {
 
             // Configure the session preset based on the current capture mode.
             captureSession.sessionPreset = captureMode == .photo ? .photo : .high
+            if captureMode == .photo {
+                selectHighResolutionPhotoFormat(for: defaultCamera)
+            }
 
             // Deferred start brings up the preview first, and prepares the capture outputs a moment
             // later. An app that links the iOS 26 SDK gets this behavior by default; these
@@ -294,6 +297,8 @@ actor CaptureService {
     /// - Parameter `captureMode`: The capture mode to enable.
     func setCaptureMode(_ captureMode: CaptureMode) throws {
         try applyCaptureMode(captureMode)
+        // 프리셋 · 형식이 바뀌면 장치 배율이 0.5×로 돌아가므로 기본 배율(1×)로
+        zoomController.applyDefaultZoom()
         // 화면의 초점 표시가 지워지므로 장치 잠금 · 밝기도 같이 풀기
         resetFocusAndExposure()
         // 형식이 바뀌면 얼룩 감지가 꺼지므로, 새 형식이 적용된 뒤 다시 켬
@@ -313,6 +318,7 @@ actor CaptureService {
         case .photo:
             // The app needs to remove the movie capture output to perform Live Photo capture.
             captureSession.sessionPreset = .photo
+            selectHighResolutionPhotoFormat(for: currentDevice)
             captureSession.removeOutput(movieCapture.output)
         case .video:
             captureSession.sessionPreset = .high
@@ -378,6 +384,9 @@ actor CaptureService {
         do {
             // Attempt to connect a new input and device to the capture session.
             activeVideoInput = try addInput(for: device)
+            if captureMode == .photo {
+                selectHighResolutionPhotoFormat(for: device)
+            }
             zoomController.attach(to: device)
             lightController.attach(to: device)
             updateOutputMirroring()
@@ -741,6 +750,36 @@ actor CaptureService {
         }
     }
     
+    /// 사진 모드 프리셋(.photo) 형식이 48MP를 지원하지 않으면, 같은 크기 · 픽셀 형식에서
+    /// 48MP를 지원하는 형식으로 바꾼다 (프리셋은 inputPriority가 됨). 없으면 그대로
+    private func selectHighResolutionPhotoFormat(for device: AVCaptureDevice) {
+        let highResolutionArea = 40_000_000
+        func maxPhotoArea(_ format: AVCaptureDevice.Format) -> Int {
+            format.supportedMaxPhotoDimensions.map { Int($0.width) * Int($0.height) }.max() ?? 0
+        }
+        let current = device.activeFormat
+        guard maxPhotoArea(current) < highResolutionArea else { return }
+        let size = CMVideoFormatDescriptionGetDimensions(current.formatDescription)
+        let pixelFormat = CMFormatDescriptionGetMediaSubType(current.formatDescription)
+        let candidates = device.formats.filter { format in
+            let candidateSize = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            return candidateSize.width == size.width && candidateSize.height == size.height
+                && CMFormatDescriptionGetMediaSubType(format.formatDescription) == pixelFormat
+                && maxPhotoArea(format) >= highResolutionArea
+        }
+        guard let format = candidates.first(where: \.isHighestPhotoQualitySupported) ?? candidates.first else {
+            logger.info("No 48MP photo format for \(device.localizedName).")
+            return
+        }
+        do {
+            try device.lockForConfiguration()
+            device.activeFormat = format
+            device.unlockForConfiguration()
+        } catch {
+            logger.error("Unable to select 48MP photo format. \(error)")
+        }
+    }
+
     // MARK: - Internal state management
     /// Updates the state of the actor to ensure its advertised capabilities are accurate.
     ///
