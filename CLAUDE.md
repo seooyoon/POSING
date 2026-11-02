@@ -53,7 +53,7 @@
 
 - `docs/03_ROADMAP.md`의 단계 순서대로 한 단계씩 진행한다.
 - 작업 흐름 (Git Convention은 `README.md`):
-  1. GitHub 이슈 생성 (`.github/ISSUE_TEMPLATE` 양식, 제목에 로드맵 단계)
+  1. GitHub 이슈 생성 (`.github/ISSUE_TEMPLATE` 양식). 이슈 · PR 제목은 작업 종류로 시작한다: `[FEAT]` · `[BUG]` · `[CHORE]` · `[DOCS]` (예: `[FEAT] 비율 4:3 · 16:9 · 1:1`). 로드맵 단계는 제목이 아니라 본문 작업 요약에 적는다
   2. `develop`에서 `브랜치종류/#이슈번호-기능설명` 브랜치를 만들고 코드 수정
   3. 빌드가 되는지 확인 (`xcodebuild -scheme <스킴> -destination 'generic/platform=iOS' build` 또는 시뮬레이터 빌드)
   4. 바뀐 파일, 서윤이 실기기에서 확인할 항목, **커밋·푸시 명령어**를 정리해서 전달하고 대기
