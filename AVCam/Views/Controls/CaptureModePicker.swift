@@ -71,6 +71,13 @@ struct CaptureModePicker<CameraModel: Camera>: View {
         .animation(.easeOut(duration: 0.2), value: isExpanded)
         .animation(.easeOut(duration: 0.15), value: highlighted)
         .sensoryFeedback(.selection, trigger: highlighted) { old, new in old != nil && new != nil }
+        // 녹화가 시작되면 꾹 누르기 · 펼친 줄 정리
+        .onChange(of: camera.captureActivity.isRecording) { _, isRecording in
+            guard isRecording else { return }
+            cancelLongPress()
+            highlighted = nil
+            isExpanded = false
+        }
         .disabled(camera.captureActivity.isRecording)
         // 녹화 중에는 기본 카메라처럼 숨김
         .opacity(camera.captureActivity.isRecording ? 0 : 1)

@@ -18,11 +18,13 @@ struct BottomBar<CameraModel: Camera>: View {
             // 모드 줄이 펼쳐지면 기본 카메라처럼 썸네일 · 전환 버튼이 사라짐
             ThumbnailButton(camera: camera)
                 .opacity(isModeStripExpanded ? 0 : 1)
+                .allowsHitTesting(!isModeStripExpanded)
             Spacer()
             CaptureModePicker(camera: camera, isExpanded: $isModeStripExpanded)
             Spacer()
             SwitchCameraButton(camera: camera)
                 .opacity(isModeStripExpanded ? 0 : 1)
+                .allowsHitTesting(!isModeStripExpanded)
         }
         .animation(.easeOut(duration: 0.2), value: isModeStripExpanded)
         // 썸네일 · 전환 버튼 가운데가 화면 끝에서 약 58pt (기본 카메라 기준)
