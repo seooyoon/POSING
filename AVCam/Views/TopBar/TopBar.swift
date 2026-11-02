@@ -69,7 +69,6 @@ struct PosingButton: View {
     var onLongPress: (() -> Void)?
     let action: () -> Void
 
-    @State private var longPressCount = 0
     @State private var isPopped = false
 
     var body: some View {
@@ -90,11 +89,11 @@ struct PosingButton: View {
             // 꾹 누르기는 항상 받아서, 포즈는 꾹 눌렀다 떼도 탭으로 처리되지 않게 함
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
                 guard let onLongPress else { return }
-                longPressCount += 1
+                // 인식되는 순간 바로 햅틱 (화면이 바로 바뀌어 sensoryFeedback은 놓칠 수 있음)
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 popAnimation()
                 onLongPress()
             }
-            .sensoryFeedback(.impact, trigger: longPressCount)
     }
 
     /// 꾹 누르기 인식 시 살짝 커졌다 돌아옴

@@ -104,6 +104,12 @@ final class LayerState {
     /// 새로 추가한 사진을 고른 순서대로 맨 왼쪽에 놓고, 1번을 바로 적용 + MY 패널 열기.
     /// 이미 있던 사진은 중복으로 쌓지 않고 맨 왼쪽으로 옮김
     func addMY(_ newItems: [LayerItem]) {
+        // 이미 있던 사진은 붙여 둔 이름을 그대로 씀
+        let newItems = newItems.map { item in
+            var item = item
+            item.name = my.items.first { $0.id == item.id }?.name ?? ""
+            return item
+        }
         guard let first = newItems.first else { return }
         let newIDs = Set(newItems.map(\.id))
         my.items = newItems + my.items.filter { !newIDs.contains($0.id) }
@@ -125,6 +131,15 @@ final class LayerState {
         MYLibrary.saveOrder(my.items)
     }
 
+    /// MY 사진 이름 (띄어쓰기 포함 최대 10자). 넘치는 입력은 받지 않고 이전 이름 유지
+    func renameMY(_ id: String, to name: String) {
+        guard name.count <= MYLibrary.maxNameLength,
+              let index = my.items.firstIndex(where: { $0.id == id })
+        else { return }
+        my.items[index].name = name
+        MYLibrary.saveNames(my.items)
+    }
+
     /// 선택 중인 사진을 지우면 화면의 MY 레이어도 사라짐
     func deleteMY(at offsets: IndexSet) {
         let removed = offsets.map { my.items[$0] }
@@ -134,6 +149,7 @@ final class LayerState {
         my.items.remove(atOffsets: offsets)
         MYLibrary.delete(removed)
         MYLibrary.saveOrder(my.items)
+        MYLibrary.saveNames(my.items)
     }
 
     // MARK: - 이미지 읽기

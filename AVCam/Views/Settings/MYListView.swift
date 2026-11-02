@@ -2,7 +2,7 @@
 //  MYListView.swift
 //  포징
 //
-//  설정 > MY 목록: 사진 추가 · 끌어서 순서 변경 · 삭제 (docs/01_SPEC.md 6절).
+//  설정 > MY 목록: 사진 추가 · 이름 붙이기 · 끌어서 순서 변경 · 삭제 (docs/01_SPEC.md 6절).
 //  추가한 사진은 맨 위 = 카메라 화면 목록 맨 왼쪽.
 //
 
@@ -35,7 +35,11 @@ struct MYListView: View {
 
             Section {
                 ForEach(layers.my.items) { item in
-                    SettingsThumbnailRow(image: item.thumbnail)
+                    HStack(spacing: 12) {
+                        SettingsThumbnailRow(image: item.thumbnail)
+                        TextField("이름", text: nameBinding(for: item))
+                            .submitLabel(.done)
+                    }
                 }
                 .onMove(perform: moveAction)
                 .onDelete(perform: layers.deleteMY)
@@ -53,5 +57,14 @@ struct MYListView: View {
         .environment(\.editMode, $editMode)
         // 카메라 화면에서 MY 꾹 누르기와 같은 동작
         .myPhotoPicker(isPresented: $isPicking, layers: layers)
+    }
+
+    /// 입력하는 대로 저장. 10자를 넘는 입력은 받지 않음
+    private func nameBinding(for item: LayerItem) -> Binding<String> {
+        Binding {
+            layers.my.items.first { $0.id == item.id }?.name ?? ""
+        } set: { name in
+            layers.renameMY(item.id, to: name)
+        }
     }
 }

@@ -34,8 +34,8 @@ struct ZoomState: Equatable, Sendable {
 
     var isAvailable: Bool { !presets.isEmpty }
 
-    /// 꽃 버튼은 접사 중이거나, 접사 전환을 꺼 둔 동안 보임
-    var showsMacroButton: Bool { supportsMacroSwitching && (isMacroActive || !isAutoMacroEnabled) }
+    /// 꽃 버튼은 접사 중이거나, 접사 전환을 꺼 둔 동안 보임 (접사 중이면 전환을 바꿀 수 있는 카메라)
+    var showsMacroButton: Bool { isMacroActive || (supportsMacroSwitching && !isAutoMacroEnabled) }
 
     /// 지금 배율이 속한 버튼 (지금 배율보다 작거나 같은 버튼 중 가장 큰 것)
     var activePreset: CGFloat? {

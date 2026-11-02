@@ -115,6 +115,17 @@ actor CaptureService {
         // Configure the session and start it.
         try setUpSession()
         captureSession.startRunning()
+        // 세션이 오디오 설정을 다시 잡을 수 있어 시작한 뒤에도 한 번 더
+        allowHapticsDuringRecording()
+    }
+
+    /// 마이크가 켜져 있어도 햅틱이 울리게 함 (기본값은 녹음 중 햅틱 차단)
+    private func allowHapticsDuringRecording() {
+        do {
+            try AVAudioSession.sharedInstance().setAllowHapticsAndSystemSoundsDuringRecording(true)
+        } catch {
+            logger.error("Unable to allow haptics during recording. \(error)")
+        }
     }
     
     // MARK: - Capture setup
@@ -135,12 +146,7 @@ actor CaptureService {
 
             // Enable using AirPods as a high-quality lapel microphone.
             captureSession.configuresApplicationAudioSessionForBluetoothHighQualityRecording = true
-            // 마이크가 켜져 있어도 햅틱이 울리게 함 (기본값은 녹음 중 햅틱 차단)
-            do {
-                try AVAudioSession.sharedInstance().setAllowHapticsAndSystemSoundsDuringRecording(true)
-            } catch {
-                logger.error("Unable to allow haptics during recording. \(error)")
-            }
+            allowHapticsDuringRecording()
 
             // Add inputs for the default camera and microphone devices.
             activeVideoInput = try addInput(for: defaultCamera)

@@ -4,6 +4,7 @@
 //
 //  수평계: 화면 가운데 가로선. 양옆 짧은 선은 고정, 가운데 선은 기울기만큼 돌아가고,
 //  수평(±1°)이 되면 하나로 이어지며 노랗게 바뀐다.
+//  화면이 바닥 · 하늘을 향하면 가운데 흰 십자와 기울기만큼 비켜 난 노란 십자. 겹치면 노란 십자 하나가 된다.
 //
 
 import SwiftUI
@@ -26,10 +27,34 @@ struct LevelOverlay: View {
                 }
                 .animation(.easeOut(duration: 0.15), value: isLevel)
             }
+            if let tilt = level.flatTilt {
+                if !isFlat {
+                    cross(color: .white)
+                }
+                cross(color: .cameraYellow)
+                    .offset(x: isFlat ? 0 : tilt.dx * crossTravel, y: isFlat ? 0 : tilt.dy * crossTravel)
+            }
         }
         .allowsHitTesting(false)
+        // 기울기가 맞으면 햅틱
+        .sensoryFeedback(.impact(weight: .light), trigger: isFlat) { _, new in new }
         .onAppear { level.start() }
         .onDisappear { level.stop() }
+    }
+
+    /// 중력 성분 1당 노란 십자가 움직이는 거리
+    private let crossTravel: CGFloat = 400
+
+    private var isFlat: Bool {
+        guard let tilt = level.flatTilt else { return false }
+        return hypot(tilt.dx, tilt.dy) <= LevelModel.flatTolerance
+    }
+
+    private func cross(color: Color) -> some View {
+        ZStack {
+            Capsule().fill(color).frame(width: 24, height: 1.5)
+            Capsule().fill(color).frame(width: 1.5, height: 24)
+        }
     }
 
     private func segment(width: CGFloat, color: Color) -> some View {
