@@ -4,7 +4,8 @@
 //
 //  수평계: 화면 가운데 가로선. 양옆 짧은 선은 고정, 가운데 선은 기울기만큼 돌아가고,
 //  수평(±1°)이 되면 하나로 이어지며 노랗게 바뀐다.
-//  화면이 바닥 · 하늘을 향하면 가운데 흰 십자와 기울기만큼 비켜 난 노란 십자. 겹치면 노란 십자 하나가 된다.
+//  화면이 바닥 · 하늘을 거의 똑바로 향하면 가운데 흰 십자와 기울기만큼 비켜 난 노란 십자. 겹치면 노란 십자 하나가 된다.
+//  똑바로에서 벗어날수록 흐려지다가 사라진다.
 //
 
 import SwiftUI
@@ -35,9 +36,9 @@ struct LevelOverlay: View {
                     .offset(x: isFlat ? 0 : tilt.dx * crossTravel, y: isFlat ? 0 : tilt.dy * crossTravel)
             }
         }
+        // 십자만 각도에 따라 흐려짐 (가로선 수평계와는 동시에 나오지 않음)
+        .opacity(level.flatTilt == nil ? 1 : level.flatOpacity)
         .allowsHitTesting(false)
-        // 기울기가 맞으면 햅틱
-        .sensoryFeedback(.impact(weight: .light), trigger: isFlat) { _, new in new }
         .onAppear { level.start() }
         .onDisappear { level.stop() }
     }
