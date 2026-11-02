@@ -56,6 +56,8 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
         // 꾹 누르면 기본 카메라처럼 플래시 · LIVE 빠른 설정 판
         .simultaneousGesture(
             LongPressGesture(minimumDuration: AppDefaults.longPressDuration).onEnded { _ in
+                // 전면 비디오는 플래시 · LIVE가 모두 없어 판을 열지 않음
+                guard !(camera.captureMode == .video && camera.zoom.isFrontCamera) else { return }
                 isShowingMoreMenu = false
                 quickSettings = .flashAndLive
             }
