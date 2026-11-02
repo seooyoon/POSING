@@ -3,8 +3,9 @@
 //  포징
 //
 //  하단 가운데 `비디오 | 사진` 캡슐. 선택된 모드는 밝은 판 안에 노란 글씨 (docs/02_UI.md 7절).
-//  탭 · 좌우 밀기로 모드 전환. 꾹 누르면 기본 카메라처럼 모드 줄로 펼쳐지고, 밀어서 고른 뒤 떼면 선택.
-//  타임랩스 · 슬로 모션은 5단계에서 줄에 더한다.
+//  탭하면 누른 쪽 모드. 누른 채 좌우로 밀거나 꾹 누르면 기본 카메라처럼 모드 줄로 펼쳐지고,
+//  가운데 강조 캡슐은 그대로인 채 글자 줄이 손가락을 따라 미끄러진다 (캡슐 안 글자만 노란색).
+//  손을 떼면 캡슐에 가장 가까운 모드로 자리 잡는다. 타임랩스 · 슬로 모션은 5단계에서 줄에 더한다.
 //
 
 import SwiftUI
@@ -27,40 +28,34 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     /// 모드 줄이 펼쳐짐. 펼친 동안 썸네일 · 전환 버튼은 숨김 (BottomBar)
     @Binding var isExpanded: Bool
 
-    /// 펼친 줄에서 손가락 아래 모드
-    @State private var highlighted: CaptureMode?
+    /// 펼친 줄이 손가락을 따라 움직인 거리 (선택된 모드가 가운데일 때 0)
+    @State private var scrollOffset: CGFloat = 0
+    /// 줄이 펼쳐진 순간의 손가락 이동 거리. 그 뒤로 움직인 만큼만 줄이 따라감
+    @State private var expandTranslation: CGFloat?
     @State private var longPressTask: Task<Void, Never>?
     /// 손가락이 움직여 탭이 아닌 밀기가 됨
     @State private var hasMoved = false
-    /// 캡슐 가운데 (화면 좌표). 터치 위치로 모드를 고를 때 기준
+    /// 캡슐 가운데 (화면 좌표). 탭한 쪽 모드를 고를 때 기준
     @State private var centerX: CGFloat = 0
 
     private let segmentSize = CGSize(width: 78, height: 40)
     /// 펼친 줄의 모드 사이 간격 (가운데끼리)
     private let stripSpacing: CGFloat = 110
-    /// 이만큼 움직이면 탭이 아님
+    /// 펼친 줄 폭 (양 끝은 흐려짐)
+    private let stripWidth: CGFloat = 320
+    /// 이만큼 움직이면 탭이 아니라 밀기
     private let moveThreshold: CGFloat = 10
-    /// 이만큼 좌우로 밀면 모드 전환
-    private let swipeThreshold: CGFloat = 20
+    /// 펼친 줄을 이만큼 밀면 옆 모드로
+    private let swipeThreshold: CGFloat = 25
 
     var body: some View {
         ZStack {
-            HStack(spacing: 0) {
-                ForEach(Self.displayOrder) { mode in
-                    segment(mode, isSelected: camera.captureMode == mode)
-                }
-            }
-            .padding(4)
-            .glassEffect(.regular, in: .capsule)
-            .opacity(isExpanded ? 0 : 1)
-
             if isExpanded {
-                HStack(spacing: stripSpacing - segmentSize.width) {
-                    ForEach(Self.displayOrder) { mode in
-                        segment(mode, isSelected: highlighted == mode)
-                    }
-                }
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                strip
+                    .transition(.opacity)
+            } else {
+                capsule
+                    .transition(.opacity)
             }
         }
         .contentShape(.capsule)
@@ -69,14 +64,10 @@ struct CaptureModePicker<CameraModel: Camera>: View {
         .gesture(touchGesture)
         .animation(.easeInOut(duration: 0.2), value: camera.captureMode)
         .animation(.easeOut(duration: 0.2), value: isExpanded)
-        .animation(.easeOut(duration: 0.15), value: highlighted)
-        .sensoryFeedback(.selection, trigger: highlighted) { old, new in old != nil && new != nil }
         // 녹화가 시작되면 꾹 누르기 · 펼친 줄 정리
         .onChange(of: camera.captureActivity.isRecording) { _, isRecording in
             guard isRecording else { return }
-            cancelLongPress()
-            highlighted = nil
-            isExpanded = false
+            collapse()
         }
         .disabled(camera.captureActivity.isRecording)
         // 녹화 중에는 기본 카메라처럼 숨김
@@ -89,19 +80,101 @@ struct CaptureModePicker<CameraModel: Camera>: View {
         }
     }
 
+    // MARK: - 모양
+
+    /// 접힌 캡슐: 선택된 쪽에 강조 판
+    private var capsule: some View {
+        let selectedX = position(of: selectedIndex, spacing: segmentSize.width)
+        return labels(spacing: segmentSize.width, color: .white)
+            .background { highlight.offset(x: selectedX) }
+            .overlay {
+                labels(spacing: segmentSize.width, color: .cameraYellow)
+                    .mask { Capsule().frame(width: segmentSize.width, height: segmentSize.height).offset(x: selectedX) }
+            }
+            .frame(width: segmentSize.width * CGFloat(Self.displayOrder.count), height: segmentSize.height)
+            .padding(4)
+            .glassEffect(.regular, in: .capsule)
+    }
+
+    /// 펼친 모드 줄: 강조 판은 가운데 고정, 글자 줄이 움직임
+    private var strip: some View {
+        let offset = clampedStripOffset
+        return ZStack {
+            highlight
+            labels(spacing: stripSpacing, color: .white)
+                .offset(x: offset)
+            labels(spacing: stripSpacing, color: .cameraYellow)
+                .offset(x: offset)
+                .mask { Capsule().frame(width: segmentSize.width, height: segmentSize.height) }
+        }
+        .frame(width: stripWidth, height: segmentSize.height + 8)
+        .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.2),
+                                     .init(color: .black, location: 0.8), .init(color: .clear, location: 1)],
+                             startPoint: .leading, endPoint: .trailing))
+    }
+
+    private var highlight: some View {
+        Capsule()
+            .fill(.white.opacity(0.18))
+            .overlay(Capsule().stroke(.white.opacity(0.3), lineWidth: 0.5))
+            .frame(width: segmentSize.width, height: segmentSize.height)
+    }
+
+    /// 모드 이름을 가운데 기준 간격대로 놓은 줄
+    private func labels(spacing: CGFloat, color: Color) -> some View {
+        ZStack {
+            ForEach(Array(Self.displayOrder.enumerated()), id: \.element) { index, mode in
+                Text(mode.title)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(color)
+                    .frame(width: segmentSize.width, height: segmentSize.height)
+                    .offset(x: position(of: index, spacing: spacing))
+            }
+        }
+    }
+
+    // MARK: - 위치 계산
+
+    private var selectedIndex: Int {
+        Self.displayOrder.firstIndex(of: camera.captureMode) ?? 0
+    }
+
+    /// 줄 가운데 기준 index번째 모드의 x
+    private func position(of index: Int, spacing: CGFloat) -> CGFloat {
+        (CGFloat(index) - CGFloat(Self.displayOrder.count - 1) / 2) * spacing
+    }
+
+    /// 펼친 줄의 글자 줄 이동: 선택된 모드가 가운데 + 손가락 이동. 양 끝 모드까지만
+    private var clampedStripOffset: CGFloat {
+        let base = -position(of: selectedIndex, spacing: stripSpacing)
+        let limit = position(of: Self.displayOrder.count - 1, spacing: stripSpacing)
+        return min(max(base + scrollOffset, -limit), limit)
+    }
+
+    /// 지금 가운데 강조 판에 가장 가까운 모드
+    private var centeredMode: CaptureMode {
+        let order = Self.displayOrder
+        let index = Int((CGFloat(order.count - 1) / 2 - clampedStripOffset / stripSpacing).rounded())
+        return order[min(max(index, 0), order.count - 1)]
+    }
+
+    // MARK: - 제스처
+
     private var touchGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { value in
-                if longPressTask == nil, !isExpanded {
+                if longPressTask == nil, !isExpanded, !hasMoved {
                     startLongPress()
                 }
-                if !hasMoved, hypot(value.translation.width, value.translation.height) > moveThreshold {
+                if !hasMoved, abs(value.translation.width) > moveThreshold {
                     hasMoved = true
-                    // 펼치기 전에 움직이면 꾹 누르기가 아니라 밀기
-                    if !isExpanded { cancelLongPress() }
+                    // 누른 채 옆으로 밀면 바로 모드 줄로 펼쳐 손가락을 따라가게 함
+                    if !isExpanded { expand(at: value.translation.width) }
                 }
                 if isExpanded {
-                    highlighted = stripMode(at: value.location.x)
+                    let start = expandTranslation ?? value.translation.width
+                    expandTranslation = start
+                    scrollOffset = value.translation.width - start
                 }
             }
             .onEnded { value in
@@ -111,17 +184,17 @@ struct CaptureModePicker<CameraModel: Camera>: View {
                 }
                 guard !camera.captureActivity.isRecording else { return }
                 if isExpanded {
-                    if let highlighted { camera.captureMode = highlighted }
-                    isExpanded = false
-                    highlighted = nil
-                } else if hasMoved {
-                    let translation = value.translation
-                    guard abs(translation.width) >= swipeThreshold,
-                          abs(translation.width) > abs(translation.height)
-                    else { return }
-                    let direction: SwipeDirection = translation.width < 0 ? .left : .right
-                    camera.captureMode = Self.mode(after: camera.captureMode, swipe: direction)
-                } else {
+                    var mode = centeredMode
+                    // 반 칸을 못 넘겨도 조금 밀었으면 민 쪽 모드로
+                    if mode == camera.captureMode, abs(scrollOffset) >= swipeThreshold {
+                        mode = Self.mode(after: mode, swipe: scrollOffset < 0 ? .left : .right)
+                    }
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        camera.captureMode = mode
+                        scrollOffset = 0
+                    }
+                    collapse()
+                } else if !hasMoved {
                     // 탭: 누른 쪽 모드
                     camera.captureMode = value.location.x < centerX ? Self.displayOrder[0] : Self.displayOrder[1]
                 }
@@ -132,40 +205,32 @@ struct CaptureModePicker<CameraModel: Camera>: View {
         longPressTask = Task {
             try? await Task.sleep(for: .seconds(AppDefaults.longPressDuration))
             guard !Task.isCancelled, !hasMoved, !camera.captureActivity.isRecording else { return }
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            highlighted = camera.captureMode
-            isExpanded = true
+            expand(at: 0)
         }
+    }
+
+    private func expand(at translation: CGFloat) {
+        cancelLongPress()
+        expandTranslation = translation
+        scrollOffset = 0
+        isExpanded = true
+    }
+
+    private func collapse() {
+        cancelLongPress()
+        expandTranslation = nil
+        scrollOffset = 0
+        isExpanded = false
     }
 
     private func cancelLongPress() {
         longPressTask?.cancel()
         longPressTask = nil
     }
-
-    /// 펼친 줄에서 손가락과 가장 가까운 모드
-    private func stripMode(at x: CGFloat) -> CaptureMode {
-        let order = Self.displayOrder
-        let firstX = centerX - stripSpacing * CGFloat(order.count - 1) / 2
-        let index = Int(((x - firstX) / stripSpacing).rounded())
-        return order[min(max(index, 0), order.count - 1)]
-    }
-
-    private func segment(_ mode: CaptureMode, isSelected: Bool) -> some View {
-        Text(mode.title)
-            .font(.system(size: 17, weight: .medium))
-            .foregroundStyle(isSelected ? Color.cameraYellow : .white)
-            .frame(width: segmentSize.width, height: segmentSize.height)
-            .background {
-                if isSelected {
-                    Capsule().fill(.white.opacity(0.18))
-                }
-            }
-    }
 }
 
 #Preview {
-    CaptureModePicker(camera: PreviewCameraModel(), isExpanded: .constant(false))
+    CaptureModePicker(camera: PreviewCameraModel(), isExpanded: .constant(true))
         .padding()
         .background(.black)
 }
