@@ -20,5 +20,7 @@ struct LayerItem: Identifiable, Equatable {
     let thumbnail: UIImage
     /// 화면에 겹칠 이미지 (포즈 테두리 PNG, MY 원본 사진)
     let imageURL: URL
+    /// MY 사진 이름 (설정 > MY 목록에서 붙임, 최대 10자). 없으면 빈 문자열
+    var name = ""
 }
 

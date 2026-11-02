@@ -3,7 +3,7 @@
 //  포징
 //
 //  MY 목록 저장소 (docs/01_SPEC.md 5절). 고른 사진을 앱 Documents/MY 폴더에 복사하고,
-//  목록 순서를 my_order.json에 저장한다. 원본을 사진 앱에서 지워도 목록은 남는다.
+//  목록 순서를 my_order.json, 이름을 my_names.json에 저장한다. 원본을 사진 앱에서 지워도 목록은 남는다.
 //
 
 import ImageIO
@@ -23,6 +23,13 @@ enum MYLibrary {
         URL.documentsDirectory.appending(path: "my_order.json")
     }
 
+    private static var namesFile: URL {
+        URL.documentsDirectory.appending(path: "my_names.json")
+    }
+
+    /// 이름 최대 글자 수 (띄어쓰기 포함)
+    static let maxNameLength = 10
+
     // MARK: - 불러오기 · 저장
 
     /// 저장된 순서대로 MY 목록. 파일이 없어진 칸은 건너뜀
@@ -30,12 +37,31 @@ enum MYLibrary {
         guard let data = try? Data(contentsOf: orderFile),
               let names = try? JSONDecoder().decode([String].self, from: data)
         else { return [] }
-        return names.compactMap { item(named: $0) }
+        let itemNames = loadNames()
+        return names.compactMap { name in
+            var item = item(named: name)
+            item?.name = itemNames[name] ?? ""
+            return item
+        }
     }
 
     static func saveOrder(_ items: [LayerItem]) {
         guard let data = try? JSONEncoder().encode(items.map(\.id)) else { return }
         try? data.write(to: orderFile, options: .atomic)
+    }
+
+    /// 이름이 있는 칸만 저장 (파일 이름 → 이름)
+    static func saveNames(_ items: [LayerItem]) {
+        let names = Dictionary(uniqueKeysWithValues: items.filter { !$0.name.isEmpty }.map { ($0.id, $0.name) })
+        guard let data = try? JSONEncoder().encode(names) else { return }
+        try? data.write(to: namesFile, options: .atomic)
+    }
+
+    private static func loadNames() -> [String: String] {
+        guard let data = try? Data(contentsOf: namesFile),
+              let names = try? JSONDecoder().decode([String: String].self, from: data)
+        else { return [:] }
+        return names
     }
 
     /// 목록에서 지운 사진의 복사본 삭제
