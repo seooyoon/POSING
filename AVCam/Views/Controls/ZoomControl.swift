@@ -82,6 +82,8 @@ struct ZoomControl<CameraModel: Camera>: View {
         // 현재 버튼에는 실제 배율 (예: 1.4×)
         let title = isActive ? ZoomState.label(camera.zoom.displayFactor) + "×" : ZoomState.label(preset)
         return Button {
+            // 꾹 눌러 다이얼을 연 뒤 손을 뗄 때는 버튼 배율로 바꾸지 않음
+            guard !isDialShown else { return }
             presetZoomUntil = .now + 0.8
             Task { await camera.setZoom(preset, animated: true) }
         } label: {
