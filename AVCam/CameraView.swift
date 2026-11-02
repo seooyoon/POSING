@@ -69,19 +69,22 @@ struct CameraView<CameraModel: Camera>: View {
         }
     }
 
-    /// 미리보기에서 터치를 받는 영역 (미리보기 기준 좌표): 상단 바 아래 ~ 셔터 위.
+    /// 미리보기에서 터치를 받는 영역 (미리보기 기준 좌표): 상단 바 아래부터, 셔터 자리는 뺌.
     /// 16:9 · 비디오는 미리보기가 상단 바 · 셔터 뒤까지 올라가므로, 미리보기 제스처가 버튼 터치를 가져가지 않게 함
-    private func previewTouchArea(in layout: CameraLayout) -> CGRect {
+    private func previewTouchArea(in layout: CameraLayout) -> Path {
         let rect = layout.previewRect
         let top = max(rect.minY, layout.safeTop + CameraLayout.topBarHeight)
-        let bottom = min(rect.maxY, layout.shutterCenterY - 50)
-        return CGRect(x: 0, y: top - rect.minY, width: rect.width, height: max(0, bottom - top))
+        var path = Path(CGRect(x: 0, y: top - rect.minY, width: rect.width, height: max(0, rect.maxY - top)))
+        // 셔터 자리 (eoFill로 구멍)
+        path.addRect(CGRect(x: layout.centerX - 50 - rect.minX, y: layout.shutterCenterY - 50 - rect.minY,
+                            width: 100, height: 100))
+        return path
     }
 
     /// A view that provides a preview of the captured content.
-    private func preview(touchArea: CGRect) -> some View {
+    private func preview(touchArea: Path) -> some View {
         CameraPreview(source: camera.previewSource)
-            .contentShape(Path(touchArea))
+            .contentShape(touchArea, eoFill: true)
             // Handle capture events from device hardware buttons.
             .onCameraCaptureEvent(defaultSoundDisabled: true) { event in
                 if event.phase == .ended {
