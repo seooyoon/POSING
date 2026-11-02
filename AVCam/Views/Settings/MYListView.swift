@@ -59,7 +59,7 @@ struct MYListView: View {
         .myPhotoPicker(isPresented: $isPicking, layers: layers)
     }
 
-    /// 입력하는 동안 10자를 넘으면 잘라서 저장
+    /// 입력하는 대로 저장. 10자를 넘는 입력은 받지 않음
     private func nameBinding(for item: LayerItem) -> Binding<String> {
         Binding {
             layers.my.items.first { $0.id == item.id }?.name ?? ""

@@ -131,10 +131,12 @@ final class LayerState {
         MYLibrary.saveOrder(my.items)
     }
 
-    /// MY 사진 이름 (띄어쓰기 포함 최대 10자)
+    /// MY 사진 이름 (띄어쓰기 포함 최대 10자). 넘치는 입력은 받지 않고 이전 이름 유지
     func renameMY(_ id: String, to name: String) {
-        guard let index = my.items.firstIndex(where: { $0.id == id }) else { return }
-        my.items[index].name = String(name.prefix(MYLibrary.maxNameLength))
+        guard name.count <= MYLibrary.maxNameLength,
+              let index = my.items.firstIndex(where: { $0.id == id })
+        else { return }
+        my.items[index].name = name
         MYLibrary.saveNames(my.items)
     }
 
