@@ -9,7 +9,8 @@
 - 표시 배율 = `videoZoomFactor × device.displayVideoZoomFactorMultiplier` (iOS 18+, 트리플 카메라에서 0.5 예상 — 실기기 확인)
 - 렌즈 전환 지점: `virtualDeviceSwitchOverVideoZoomFactors` (16 Pro 예상 `[2, 10]` → 표시 1×, 5× — 실기기 확인)
 - 버튼 → `videoZoomFactor`: `.5`=1, `1`=2, `2`=4, `5`=10
-- 후면은 기본 카메라처럼 **1×**(`videoZoomFactor = 1 / displayVideoZoomFactorMultiplier`)로 시작
+- 후면은 기본 카메라처럼 **1×**(`videoZoomFactor = 1 / displayVideoZoomFactorMultiplier`)로 시작. 모드 전환(프리셋 변경) 뒤에도 다시 1×로
+- 48MP: `.photo` 프리셋 형식의 `supportedMaxPhotoDimensions`에 48MP가 없으면, 같은 크기·픽셀 형식에서 48MP를 지원하는 `device.formats` 중 하나로 `activeFormat`을 바꿈 (프리셋은 inputPriority가 됨)
 - 최대 25× 표시 = `videoZoomFactor 50`, 단 `maxAvailableVideoZoomFactor`보다 크면 그 값으로 제한
 - 버튼 전환은 `ramp(toVideoZoomFactor:withRate:)`로 부드럽게, 다이얼·손가락은 즉시 설정
 - 전면은 `builtInTrueDepthCamera`. 화각 버튼(넓게/가깝게)의 실제 배율 값은 실기기 확인
@@ -93,7 +94,7 @@
 ## 11. 수평계
 
 - CoreMotion `deviceMotion.gravity`로 기울기 계산. 수평 ±약 1° 안에서 가운데 선이 노랗게 일치 (기본 카메라 모양 참고)
-- 화면이 바닥·하늘을 향하면(`|gravity.z| > 0.9`) 가운데 흰 십자 + 중력 x·y만큼 비켜 난 노란 십자. 약 1° 안이면 노란 십자 하나로 합쳐지며 햅틱
+- 화면이 바닥·하늘을 거의 똑바로 향하면(기울기 8° 안) 가운데 흰 십자 + 중력 x·y만큼 비켜 난 노란 십자. 3° 안은 또렷하고 8°까지 점점 투명. 약 1° 안이면 노란 십자 하나로 합쳐짐 (햅틱 없음)
 
 ## 12. 전면 카메라
 
