@@ -12,6 +12,8 @@ struct TopBar<CameraModel: Camera>: View {
     @State var camera: CameraModel
     let layers: LayerState
     @Binding var isShowingMoreMenu: Bool
+    /// 열린 빠른 설정 판 (형식 버튼 · 오른쪽 묶음 꾹 누르기)
+    @Binding var quickSettings: QuickSettingsKind?
 
     /// 초기화 탭 햅틱 트리거
     @State private var resetCount = 0
@@ -24,7 +26,7 @@ struct TopBar<CameraModel: Camera>: View {
                 RecordingTimeView(time: camera.captureActivity.currentTime)
                 Spacer()
             } else {
-                FormatButton(camera: camera)
+                FormatButton(camera: camera, quickSettings: $quickSettings)
                 // 초기화 · 포즈 · MY: 따로 떨어진 버튼 3개 (docs/01_SPEC.md 2절)
                 PosingButton(title: "초기화", onLongPress: {
                     layers.isShowingSettings = true
@@ -47,7 +49,7 @@ struct TopBar<CameraModel: Camera>: View {
                     layers.togglePanel(.my)
                 }
                 Spacer(minLength: 0)
-                TopControlsCapsule(camera: camera, isShowingMoreMenu: $isShowingMoreMenu)
+                TopControlsCapsule(camera: camera, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings)
             }
         }
         .padding(.horizontal, CameraLayout.sideInset)
@@ -89,8 +91,6 @@ struct PosingButton: View {
             // 꾹 누르기는 항상 받아서, 포즈는 꾹 눌렀다 떼도 탭으로 처리되지 않게 함
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
                 guard let onLongPress else { return }
-                // 인식되는 순간 바로 햅틱 (화면이 바로 바뀌어 sensoryFeedback은 놓칠 수 있음)
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 popAnimation()
                 onLongPress()
             }
@@ -109,6 +109,7 @@ struct PosingButton: View {
 }
 
 #Preview {
-    TopBar(camera: PreviewCameraModel(status: .running), layers: LayerState(), isShowingMoreMenu: .constant(false))
+    TopBar(camera: PreviewCameraModel(status: .running), layers: LayerState(),
+           isShowingMoreMenu: .constant(false), quickSettings: .constant(nil))
         .background(.gray)
 }
