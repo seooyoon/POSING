@@ -59,7 +59,7 @@ struct MYListView: View {
     }
 }
 
-/// MY 사진 이름 입력칸. 10자를 넘는 글자는 입력되는 즉시 지워 칸에도 보이지 않음
+/// MY 사진 이름 입력칸. 10자를 넘는 입력은 즉시 되돌려 칸에도 보이지 않음
 private struct MYNameField: View {
 
     let onChange: (String) -> Void
@@ -73,9 +73,10 @@ private struct MYNameField: View {
     var body: some View {
         TextField("이름", text: $text)
             .submitLabel(.done)
-            .onChange(of: text) { _, newValue in
+            .onChange(of: text) { oldValue, newValue in
+                // 넘치는 입력(가운데 끼워 넣기 · 붙여넣기 포함)은 받지 않고 이전 이름으로
                 guard newValue.count <= MYLibrary.maxNameLength else {
-                    text = String(newValue.prefix(MYLibrary.maxNameLength))
+                    text = oldValue
                     return
                 }
                 onChange(newValue)

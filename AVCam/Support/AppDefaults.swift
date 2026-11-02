@@ -41,6 +41,13 @@ enum AppDefaults {
     static let photoCodec = PhotoCodec.jpeg
     static let photoResolution = 24
 
+    // MARK: - 노출 감도 (기본 카메라처럼 천천히)
+
+    /// 초점 옆 해 아이콘을 이만큼(pt) 밀면 밝기 1 EV
+    static let focusBiasPointsPerEV = 200.0
+    /// 더보기 메뉴 노출 눈금을 이만큼(pt) 밀면 1/3 EV
+    static let exposureRulerPointsPerStep = 30.0
+
     // MARK: - 화면 표시
 
     /// 3x3 격자 기본값

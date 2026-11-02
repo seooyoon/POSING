@@ -14,8 +14,8 @@ struct ExposureRuler: View {
 
     /// 눈금 하나(1/3) 사이 간격
     private let tickSpacing: CGFloat = 16
-    /// 1/3 바꾸는 데 미는 거리. 기본 카메라처럼 눈금 간격보다 길게 밀어야 바뀜
-    private let pointsPerStep: CGFloat = 30
+    /// 1/3 바꾸는 데 미는 거리. 눈금 간격보다 길게 밀어야 바뀜
+    private let pointsPerStep = CGFloat(AppDefaults.exposureRulerPointsPerStep)
     @State private var dragStartValue: Float?
 
     private var tickValues: [Float] {
