@@ -2,7 +2,7 @@
 //  LensSmudgeBanner.swift
 //  포징
 //
-//  렌즈에 얼룩이 감지되면 보이는 "카메라 렌즈를 청소하세요 ✕" 안내 (기본 카메라 "Clean Back Camera"와 같은 모양).
+//  렌즈에 얼룩이 감지되면 보이는 "카메라 렌즈를 청소하십시오. ✕" 안내 (기본 카메라 "Clean Back Camera"와 같은 모양).
 //  ✕를 누르면 닫히고, 얼룩이 사라졌다가 다시 감지되면 다시 보인다.
 //
 
@@ -21,7 +21,7 @@ struct LensSmudgeBanner: View {
                     withAnimation { isDismissed = true }
                 } label: {
                     HStack(spacing: 6) {
-                        Text("카메라 렌즈를 청소하세요")
+                        Text("카메라 렌즈를 청소하십시오.")
                         Image(systemName: "xmark")
                             .font(.system(size: 12, weight: .semibold))
                     }

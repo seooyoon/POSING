@@ -29,9 +29,11 @@ final class ZoomController {
     func attach(to device: AVCaptureDevice) {
         self.device = device
         isAutoMacroEnabled = true
-        // 전면은 기본 카메라처럼 '가깝게'로 시작
+        // 전면은 기본 카메라처럼 '가깝게'로, 후면 트리플 카메라는 1×로 시작 (장치 기본값은 0.5×)
         if device.position == .front {
             setZoomFactor(Self.frontCloseZoomFactor, on: device, animated: false)
+        } else if device.isVirtualDevice {
+            setZoomFactor(1 / device.displayVideoZoomFactorMultiplier, on: device, animated: false)
         }
         observations = [
             device.observe(\.videoZoomFactor, options: [.new]) { [weak self] _, _ in
@@ -93,7 +95,7 @@ final class ZoomController {
 
     /// 렌즈 자동 전환을 바꿀 수 있는 카메라인지
     private func supportsMacroSwitching(_ device: AVCaptureDevice) -> Bool {
-        device.isVirtualDevice && device.activePrimaryConstituentDeviceSwitchingBehavior != .unsupported
+        device.isVirtualDevice && device.primaryConstituentDeviceSwitchingBehavior != .unsupported
     }
 
     /// CaptureService 액터 안에서만 부른다
