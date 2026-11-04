@@ -45,9 +45,9 @@ struct ZoomState: Equatable, Sendable {
     /// 1× 버튼을 다시 누를 때 도는 화각: 24 → 28 → 35mm
     static let mainLensFactors: [CGFloat] = [1, 1.2, 1.5]
 
-    /// 지금 배율 다음 화각
-    var nextMainLensFactor: CGFloat {
-        Self.mainLensFactors.first { $0 > displayFactor + 0.05 } ?? 1
+    /// 이 배율 다음 화각
+    static func nextMainLensFactor(after factor: CGFloat) -> CGFloat {
+        mainLensFactors.first { $0 > factor + 0.05 } ?? 1
     }
 
     /// 화각 이름이 있는 배율의 mm (기본 카메라에 표시되는 값만)

@@ -32,6 +32,8 @@ struct ZoomControl<CameraModel: Camera>: View {
     @State private var presetZoomUntil = Date.distantPast
     /// 방금 누른 버튼. 배율이 따라오는 동안 중간 숫자 없이 이 버튼에 원을 표시
     @State private var tappedPreset: CGFloat?
+    /// 마지막으로 버튼으로 요청한 배율
+    @State private var requestedFactor: CGFloat?
     /// 1×를 누른 직후 원 안에 보이는 화각 (mm)
     @State private var millimeterBadge: Int?
     @State private var millimeterTask: Task<Void, Never>?
@@ -135,7 +137,10 @@ struct ZoomControl<CameraModel: Camera>: View {
         // 꾹 눌러 다이얼을 연 뒤 손을 뗄 때는 버튼 배율로 바꾸지 않음
         guard !isDialShown else { return }
         // 이미 1×면 24 → 28 → 35mm로 돌아감
-        let target = preset == 1 && activePreset == 1 ? camera.zoom.nextMainLensFactor : preset
+        // 빠르게 연달아 누르면 카메라 값이 아직 안 바뀌었을 수 있어 방금 요청한 값을 기준으로 함
+        let current = Date.now < presetZoomUntil ? (requestedFactor ?? camera.zoom.displayFactor) : camera.zoom.displayFactor
+        let target = preset == 1 && activePreset == 1 ? ZoomState.nextMainLensFactor(after: current) : preset
+        requestedFactor = target
         presetZoomUntil = .now + 0.8
         tappedPreset = preset
         showMillimeters(preset == 1 ? ZoomState.millimeters(target) : nil)
