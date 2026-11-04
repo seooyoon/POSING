@@ -27,20 +27,31 @@ final class PhotoCapture: OutputService {
     // The current capabilities available.
     private(set) var capabilities: CaptureCapabilities = .unknown
     
+    /// RAW(Apple ProRAW) 촬영 준비. 켜면 세션 구성이 다시 일어나므로 RAW를 고를 때만 켬
+    var isRAWEnabled = false {
+        didSet { applyRAWEnabled() }
+    }
+
+    private func applyRAWEnabled() {
+        guard photoOutput.isAppleProRAWSupported else { return }
+        photoOutput.isAppleProRAWEnabled = isRAWEnabled
+    }
+
     // A count of Live Photo captures currently in progress.
     private var livePhotoCount = 0
     
     // MARK: - Capture a photo.
     
     /// The app calls this method when the user taps the photo capture button.
-    func capturePhoto(with features: PhotoFeatures) async throws -> Photo {
+    /// `onCaptured`: 센서가 찍기를 마친 순간 (플래시 포함). 이때부터 다음 셔터를 받음
+    func capturePhoto(with features: PhotoFeatures, onCaptured: @escaping @Sendable () -> Void) async throws -> Photo {
         // Wrap the delegate-based capture API in a continuation to use it in an async context.
         try await withCheckedThrowingContinuation { continuation in
             
             // Create a settings object to configure the photo capture.
             let photoSettings = createPhotoSettings(with: features)
             
-            let delegate = PhotoCaptureDelegate(continuation: continuation)
+            let delegate = PhotoCaptureDelegate(continuation: continuation, onCaptured: onCaptured)
             monitorProgress(of: delegate)
             
             // Capture a new photo with the specified settings.
@@ -55,9 +66,18 @@ final class PhotoCapture: OutputService {
         // Create a new settings object to configure the photo capture.
         var photoSettings = AVCapturePhotoSettings()
         
-        // 형식 버튼에서 고른 HEIF / JPEG (지원하지 않으면 기본값)
-        if photoOutput.availablePhotoCodecTypes.contains(features.codec) {
-            photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: features.codec])
+        // 형식 버튼에서 고른 RAW / JPEG (지원하지 않으면 기본값)
+        let rawFormat = features.isRAW ? photoOutput.availableRawPhotoPixelFormatTypes.first {
+            AVCapturePhotoOutput.isAppleProRAWPixelFormat($0)
+        } : nil
+        if let rawFormat {
+            photoSettings = AVCapturePhotoSettings(rawPixelFormatType: rawFormat)
+            // 사진 앱 저장 전 썸네일을 빨리 만들 수 있게 작은 그림을 넣음
+            if let thumbnailCodec = photoSettings.availableRawEmbeddedThumbnailPhotoCodecTypes.first {
+                photoSettings.rawEmbeddedThumbnailPhotoFormat = [AVVideoCodecKey: thumbnailCodec]
+            }
+        } else if photoOutput.availablePhotoCodecTypes.contains(.jpeg) {
+            photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
         }
         
         /// Set the format of the preview image to capture. The `photoSettings` object returns the available
@@ -72,7 +92,8 @@ final class PhotoCapture: OutputService {
         photoSettings.maxPhotoDimensions = features.maxDimensions ?? photoOutput.maxPhotoDimensions
         
         // Set the movie URL if the photo output supports Live Photo capture.
-        photoSettings.livePhotoMovieFileURL = features.isLivePhotoEnabled ? URL.movieFileURL : nil
+        // ProRAW는 LIVE와 함께 쓸 수 없음
+        photoSettings.livePhotoMovieFileURL = features.isLivePhotoEnabled && rawFormat == nil ? URL.movieFileURL : nil
         
         // 플래시 (출력이 지원하는 값만)
         if photoOutput.supportedFlashModes.contains(features.flashMode) {
@@ -131,13 +152,15 @@ final class PhotoCapture: OutputService {
         photoOutput.isFastCapturePrioritizationEnabled = photoOutput.isFastCapturePrioritizationSupported
         // 지연 처리는 항상 끔: 처리 전 사진은 자를 수 없고, 비율마다 켜고 끄면 세션이 다시 구성되어 미리보기가 흔들림
         photoOutput.isAutoDeferredPhotoDeliveryEnabled = false
+        applyRAWEnabled()
         updateCapabilities(for: device)
     }
     
     private func updateCapabilities(for device: AVCaptureDevice) {
         capabilities = CaptureCapabilities(isLivePhotoCaptureSupported: photoOutput.isLivePhotoCaptureSupported,
                                            isFlashSupported: photoOutput.supportedFlashModes.contains(.on),
-                                           photoDimensions: Self.sortedByArea(device.activeFormat.supportedMaxPhotoDimensions))
+                                           photoDimensions: Self.sortedByArea(device.activeFormat.supportedMaxPhotoDimensions),
+                                           isRAWSupported: photoOutput.isAppleProRAWSupported)
     }
 
     private static func sortedByArea(_ dimensions: [CMVideoDimensions]) -> [CMVideoDimensions] {
@@ -165,6 +188,7 @@ typealias PhotoContinuation = CheckedContinuation<Photo, Error>
 private class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     
     private let continuation: PhotoContinuation
+    private let onCaptured: @Sendable () -> Void
     
     private var isLivePhoto = false
     private var isProxyPhoto = false
@@ -177,8 +201,9 @@ private class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     private let activityContinuation: AsyncStream<CaptureActivity>.Continuation
     
     /// Creates a new delegate object with the checked continuation to call when processing is complete.
-    init(continuation: PhotoContinuation) {
+    init(continuation: PhotoContinuation, onCaptured: @escaping @Sendable () -> Void) {
         self.continuation = continuation
+        self.onCaptured = onCaptured
         
         let (activityStream, activityContinuation) = AsyncStream.makeStream(of: CaptureActivity.self)
         self.activityStream = activityStream
@@ -194,6 +219,10 @@ private class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, willCapturePhotoFor resolvedSettings: AVCaptureResolvedPhotoSettings) {
         // Signal that a capture is beginning.
         activityContinuation.yield(.photoCapture(willCapture: true, isLivePhoto: isLivePhoto))
+    }
+    
+    func photoOutput(_ output: AVCapturePhotoOutput, didCapturePhotoFor resolvedSettings: AVCaptureResolvedPhotoSettings) {
+        onCaptured()
     }
     
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishRecordingLivePhotoMovieForEventualFileAt outputFileURL: URL, resolvedSettings: AVCaptureResolvedPhotoSettings) {

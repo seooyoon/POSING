@@ -3,7 +3,7 @@
 //  포징
 //
 //  상단 왼쪽 형식 버튼. 사진 `JPEG 24`, 비디오 `HD 해상도 30 FPS`.
-//  사진: 탭하거나 꾹 누르면 포맷(HEIF · JPEG) · 해상도(12 · 24 · 48MP) 빠른 설정 판. 비디오 설정은 5단계.
+//  사진: 탭하거나 꾹 누르면 포맷(JPEG · RAW) · 해상도(12 · 24 · 48MP) 빠른 설정 판. 비디오 설정은 5단계.
 //
 
 import SwiftUI
@@ -31,11 +31,11 @@ struct FormatButton<CameraModel: Camera>: View {
         case .photo:
             // 형식 옆에 작은 아래첨자 해상도. 둘을 따로 누름
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(camera.photoCodec.label)
+                Text(camera.activeCodec.label)
                 small("\(camera.activeResolution)", baseline: -4)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("사진 형식 \(camera.photoCodec.label), 해상도 \(camera.activeResolution)메가픽셀")
+            .accessibilityLabel("사진 형식 \(camera.activeCodec.label), 해상도 \(camera.activeResolution)메가픽셀")
         case .video:
             // HD 해상도 · 30 FPS (작은 위첨자)
             HStack(alignment: .firstTextBaseline, spacing: 14) {

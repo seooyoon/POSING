@@ -30,6 +30,13 @@ struct ZoomControl<CameraModel: Camera>: View {
     @State private var collapseTask: Task<Void, Never>?
     /// 배율 버튼을 눌러 부드럽게 바뀌는 동안은 다이얼을 띄우지 않음
     @State private var presetZoomUntil = Date.distantPast
+    /// 방금 누른 버튼. 배율이 따라오는 동안 중간 숫자 없이 이 버튼에 원을 표시
+    @State private var tappedPreset: CGFloat?
+    /// 원이 버튼 사이를 옮겨 가게 함
+    @Namespace private var circleSpace
+
+    /// 원이 있는 버튼
+    private var activePreset: CGFloat? { tappedPreset ?? camera.zoom.activePreset }
 
     /// 손가락을 이만큼(pt) 밀면 배율이 2배. 눈금이 손가락을 따라가도록 원 둘레 기준
     private var pointsPerDoubling: CGFloat {
@@ -75,6 +82,7 @@ struct ZoomControl<CameraModel: Camera>: View {
                 presetButton(preset)
             }
         }
+        .animation(.easeOut(duration: 0.2), value: activePreset)
         // 기본 카메라처럼 1× 자리가 화면 가운데
         .offset(x: rowCenteringOffset)
         .contentShape(.rect)
@@ -88,14 +96,20 @@ struct ZoomControl<CameraModel: Camera>: View {
     }
 
     private func presetButton(_ preset: CGFloat) -> some View {
-        let isActive = camera.zoom.activePreset == preset
-        // 현재 버튼에는 실제 배율 (예: 1.4×)
-        let title = isActive ? ZoomState.label(camera.zoom.displayFactor) : ZoomState.label(preset)
+        let isActive = activePreset == preset
+        // 현재 버튼에는 실제 배율 (예: 1.4×). 버튼을 눌렀을 때는 중간 숫자 없이 버튼 값
+        let title = isActive && tappedPreset == nil ? ZoomState.label(camera.zoom.displayFactor) : ZoomState.label(preset)
         return Button {
             // 꾹 눌러 다이얼을 연 뒤 손을 뗄 때는 버튼 배율로 바꾸지 않음
             guard !isDialShown else { return }
             presetZoomUntil = .now + 0.8
-            Task { await camera.setZoom(preset, animated: true) }
+            tappedPreset = preset
+            Task {
+                // 기본 카메라처럼 배율을 바로 바꿈
+                await camera.setZoom(preset, animated: false)
+                try? await Task.sleep(for: .seconds(0.25))
+                if tappedPreset == preset { tappedPreset = nil }
+            }
         } label: {
             HStack(spacing: 0) {
                 Text(title)
@@ -107,7 +121,13 @@ struct ZoomControl<CameraModel: Camera>: View {
             .foregroundStyle(isActive ? Color.cameraYellow : .white)
             // 현재 버튼만 어두운 원. 나머지는 글자만
             .frame(width: 38, height: 38)
-            .background(.black.opacity(isActive ? 0.5 : 0), in: .circle)
+            .background {
+                if isActive {
+                    Circle()
+                        .fill(.black.opacity(0.5))
+                        .matchedGeometryEffect(id: "activeCircle", in: circleSpace)
+                }
+            }
             .frame(width: buttonSpacing, height: 44)
             .contentShape(.rect)
         }

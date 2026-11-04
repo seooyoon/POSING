@@ -2,7 +2,7 @@
 //  FocusOverlay.swift
 //  포징
 //
-//  초점 사각형(노란 얇은 사각형 + 모서리 중간 눈금) · 오른쪽 해 아이콘 · 상단 "AE/AF 잠금" 표시.
+//  초점 사각형(노란 얇은 사각형 + 모서리 중간 눈금) · 오른쪽 해 아이콘 · 상단 "자동 노출/초점 고정" 표시.
 //  터치는 받지 않고 미리보기 제스처가 FocusModel을 바꾼다.
 //
 
@@ -71,12 +71,12 @@ struct FocusOverlay: View {
     }
 
     private var lockBadge: some View {
-        Text("AE/AF 잠금")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.black)
+        Text("자동 노출/초점 고정")
+            .font(.system(size: 14))
+            .foregroundStyle(.black.opacity(0.8))
             .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(Color.cameraYellow, in: .rect(cornerRadius: 4))
+            .frame(height: 24)
+            .background(Color.cameraYellow, in: .rect(cornerRadius: 6))
     }
 }
 

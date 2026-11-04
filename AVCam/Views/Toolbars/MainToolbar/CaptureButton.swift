@@ -34,14 +34,14 @@ struct CaptureButton<CameraModel: Camera>: View {
     var captureButton: some View {
         switch camera.captureMode {
         case .photo:
-            PhotoCaptureButton {
+            PhotoCaptureButton(isSceneDark: camera.isSceneDark) {
                 Task {
                     // 타이머가 켜져 있으면 카운트다운
                     await camera.shutterPressed()
                 }
             }
         case .video:
-            MovieCaptureButton(isRecording: $isRecording) { _ in
+            MovieCaptureButton(isRecording: $isRecording, isSceneDark: camera.isSceneDark) { _ in
                 Task {
                     await camera.toggleRecording()
                 }
@@ -58,27 +58,31 @@ struct CaptureButton<CameraModel: Camera>: View {
     CaptureButton(camera: PreviewCameraModel(captureMode: .video))
 }
 
-/// 셔터 바깥 링: 반투명 회색 + 얇고 밝은 테두리. 안쪽 원이 바로 맞닿음
+/// 셔터 바깥 링: 반투명 회색 + 얇고 밝은 테두리. 어두운 장면에서는 링이 어두워지고 테두리만 보임
 private struct ShutterRing: View {
     static let width: CGFloat = 6
+    let isSceneDark: Bool
 
     var body: some View {
         Circle()
-            .strokeBorder(Color(white: 0.5).opacity(0.4), lineWidth: Self.width)
-            .overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 0.5))
+            .strokeBorder(Color(white: 0.5).opacity(isSceneDark ? 0.35 : 0.7), lineWidth: Self.width)
+            .overlay(Circle().strokeBorder(.white.opacity(isSceneDark ? 0.3 : 0.18), lineWidth: 0.5))
+            .animation(.easeInOut(duration: 0.3), value: isSceneDark)
     }
 }
 
 private struct PhotoCaptureButton: View {
+    private let isSceneDark: Bool
     private let action: () -> Void
     
-    init(action: @escaping () -> Void) {
+    init(isSceneDark: Bool, action: @escaping () -> Void) {
+        self.isSceneDark = isSceneDark
         self.action = action
     }
     
     var body: some View {
         ZStack {
-            ShutterRing()
+            ShutterRing(isSceneDark: isSceneDark)
             Button {
                 action()
             } label: {
@@ -101,18 +105,20 @@ private struct PhotoCaptureButton: View {
 
 private struct MovieCaptureButton: View {
     
+    private let isSceneDark: Bool
     private let action: (Bool) -> Void
     
     @Binding private var isRecording: Bool
     
-    init(isRecording: Binding<Bool>, action: @escaping (Bool) -> Void) {
+    init(isRecording: Binding<Bool>, isSceneDark: Bool, action: @escaping (Bool) -> Void) {
+        self.isSceneDark = isSceneDark
         _isRecording = isRecording
         self.action = action
     }
     
     var body: some View {
         ZStack {
-            ShutterRing()
+            ShutterRing(isSceneDark: isSceneDark)
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     isRecording.toggle()

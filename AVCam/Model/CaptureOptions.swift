@@ -135,24 +135,14 @@ enum PhotoAspect: String, CaseIterable, Sendable {
         case .square: 1
         }
     }
-
-    static var saved: PhotoAspect {
-        PhotoAspect(rawValue: UserDefaults.standard.string(forKey: SettingsKeys.photoAspect) ?? "") ?? .fourThree
-    }
-
-    func save() {
-        UserDefaults.standard.set(rawValue, forKey: SettingsKeys.photoAspect)
-    }
 }
 
-/// 사진 형식 버튼 (docs/01_SPEC.md 7절): HEIF ↔ JPEG
+/// 사진 형식 버튼 (docs/01_SPEC.md 7절): JPEG · RAW(Apple ProRAW)
 enum PhotoCodec: String, CaseIterable, Sendable {
-    case heif
     case jpeg
+    case raw
 
-    var label: String { self == .heif ? "HEIF" : "JPEG" }
-
-    var next: PhotoCodec { self == .heif ? .jpeg : .heif }
+    var label: String { self == .raw ? "RAW" : "JPEG" }
 
     static var saved: PhotoCodec {
         PhotoCodec(rawValue: UserDefaults.standard.string(forKey: SettingsKeys.photoCodec) ?? "") ?? AppDefaults.photoCodec
@@ -168,8 +158,10 @@ enum PhotoResolution {
 
     static let values = [12, 24, 48]
 
-    /// 48MP는 LIVE를 끔 (LIVE 영상과 함께 쓸 수 있는지 확실하지 않아서)
+    /// LIVE를 쓸 수 있는 최대 해상도. 기본 카메라처럼 48MP에서 LIVE를 켜면 24MP로 바뀜
     static let maxWithLivePhoto = 24
+    /// RAW로 찍을 수 있는 해상도 (ProRAW는 24MP가 없음)
+    static let rawValues = [12, 48]
 
     /// 장치 사진 크기 → 12 / 24 / 48 중 가장 가까운 값
     static func megapixels(width: Int32, height: Int32) -> Int {
@@ -189,5 +181,20 @@ enum PhotoResolution {
 
     static func save(_ value: Int) {
         UserDefaults.standard.set(value, forKey: SettingsKeys.photoResolution)
+    }
+}
+
+/// 장면 밝기: 어둡거나 렌즈를 가리면 하단 조작부가 어두운 모양으로 바뀜.
+/// 값이 경계에서 깜빡이지 않게 어두워지는 값과 밝아지는 값을 나눔
+struct SceneBrightness {
+    private(set) var isDark = false
+
+    mutating func update(ev: Double) {
+        guard ev.isFinite else { return }
+        if ev < AppDefaults.sceneDarkEV {
+            isDark = true
+        } else if ev > AppDefaults.sceneBrightEV {
+            isDark = false
+        }
     }
 }

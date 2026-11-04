@@ -37,7 +37,7 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
                         .foregroundStyle(camera.isLivePhotoActive ? Color.cameraYellow : .white)
                         .tapTarget()
                 }
-                // 비율이 4:3이 아니거나 48MP면 LIVE 자동 끔 (꺼짐 표시)
+                // 비율이 4:3이 아니거나 RAW면 LIVE 자동 끔 (꺼짐 표시)
                 .disabled(!camera.isLivePhotoAvailable)
             }
 

@@ -25,13 +25,13 @@ final class CameraModel: Camera {
     private(set) var status = CameraStatus.unknown
     
     /// The current state of photo or movie capture.
-    private(set) var captureActivity = CaptureActivity.idle
+    var captureActivity = CaptureActivity.idle
     
     /// A Boolean value that indicates whether the app is currently switching video devices.
     private(set) var isSwitchingVideoDevices = false
     
     /// A Boolean value that indicates whether the camera prefers showing a minimized set of UI controls.
-    private(set) var prefersMinimizedUI = false
+    var prefersMinimizedUI = false
     
     /// A Boolean value that indicates whether the app is currently switching capture modes.
     private(set) var isSwitchingModes = false
@@ -40,7 +40,7 @@ final class CameraModel: Camera {
     private(set) var shouldFlashScreen = false
     
     /// A thumbnail for the last captured photo or video.
-    private(set) var thumbnail: CGImage?
+    var thumbnail: CGImage?
     
     /// An error that indicates the details of an error during photo or movie capture.
     private(set) var error: Error?
@@ -49,11 +49,11 @@ final class CameraModel: Camera {
     var previewSource: PreviewSource { captureService.previewSource }
     
     /// A Boolean that indicates whether the camera supports HDR video recording.
-    private(set) var isHDRVideoSupported = false
+    var isHDRVideoSupported = false
 
-    private(set) var isLensSmudged = false
+    var isLensSmudged = false
 
-    private(set) var zoom = ZoomState.unavailable
+    var zoom = ZoomState.unavailable
 
     private let captureTimer = CaptureTimer()
     var countdown: Int? { captureTimer.countdown }
@@ -63,16 +63,31 @@ final class CameraModel: Camera {
     private var isFlashSupported = false
     /// 지금 카메라가 찍을 수 있는 사진 크기
     private var photoDimensions: [CMVideoDimensions] = []
-    private(set) var availableResolutions: [Int] = []
+    /// 지금 카메라가 찍을 수 있는 MP
+    private var deviceResolutions: [Int] = []
+    /// 고를 수 있는 MP. RAW는 24MP가 없음
+    var availableResolutions: [Int] {
+        activeCodec == .raw ? deviceResolutions.filter(PhotoResolution.rawValues.contains) : deviceResolutions
+    }
+    private(set) var isRAWSupported = false
+    var sceneBrightness = SceneBrightness()
+    var isSceneDark: Bool { sceneBrightness.isDark }
+    /// 지금 찍는 촬영 (플래시 포함). 이 동안 누른 셔터는 기본 카메라처럼 무시
+    private var shutterOwner: UUID?
+
+    /// 해당 촬영이 아직 셔터를 잡고 있을 때만 풂 (앞 촬영이 늦게 끝나도 다음 촬영을 풀지 않게)
+    private func releaseShutter(_ owner: UUID) {
+        if shutterOwner == owner { shutterOwner = nil }
+    }
     
     /// An object that saves captured media to a person's Photos library.
-    private let mediaLibrary = MediaLibrary()
+    let mediaLibrary = MediaLibrary()
     
     /// An object that manages the app's capture functionality.
-    private let captureService = CaptureService()
+    let captureService = CaptureService()
     
     /// Persistent state shared between the app and capture extension.
-    private var cameraState = CameraState()
+    var cameraState = CameraState()
     
     init() {
         //
@@ -92,6 +107,8 @@ final class CameraModel: Camera {
             // 앱을 처음 열면 마지막 모드와 상관없이 항상 사진 (세션 시작 전이라 didSet은 세션을 건드리지 않음)
             captureMode = .photo
             cameraState.captureMode = .photo
+            // 마지막 형식이 RAW면 세션을 시작하기 전에 준비
+            await captureService.setRAWEnabled(photoCodec == .raw)
             // Start the capture service to start the flow of data.
             try await captureService.start(with: cameraState)
             observeState()
@@ -148,7 +165,9 @@ final class CameraModel: Camera {
     /// Captures a photo and writes it to the user's Photos library.
     func capturePhoto() async {
         // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
-        guard !isSwitchingVideoDevices else { return }
+        guard !isSwitchingVideoDevices, shutterOwner == nil else { return }
+        let owner = UUID()
+        shutterOwner = owner
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
         let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
         if usesScreenFlash {
@@ -158,19 +177,26 @@ final class CameraModel: Camera {
             let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoActive,
                                               qualityPrioritization: qualityPrioritization,
                                               flashMode: AVCaptureDevice.FlashMode(flashMode),
-                                              cropRatio: photoAspect.cropLongToShort,
-                                              codec: photoCodec == .heif ? .hevc : .jpeg,
+                                              // RAW(DNG)는 자를 수 없어 원본 4:3으로 저장
+                                              cropRatio: activeCodec == .raw ? nil : photoAspect.cropLongToShort,
+                                              isRAW: activeCodec == .raw,
                                               maxDimensions: activeDimensions)
-            let photo = try await captureService.capturePhoto(with: photoFeatures)
+            let photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
+                // 찍기를 마치면 처리 · 저장이 끝나기 전이라도 다음 셔터를 받음
+                Task { @MainActor in self?.releaseShutter(owner) }
+            }
+            releaseShutter(owner)
             if usesScreenFlash { hideScreenFlash() }
             try await mediaLibrary.save(photo: photo)
         } catch {
+            releaseShutter(owner)
             if usesScreenFlash { hideScreenFlash() }
             self.error = error
         }
     }
 
     func shutterPressed() async {
+        guard shutterOwner == nil else { return }
         await captureTimer.shutterPressed(duration: timerDuration) { [weak self] in
             await self?.capturePhoto()
         }
@@ -193,16 +219,28 @@ final class CameraModel: Camera {
         }
     }
 
-    var photoAspect = PhotoAspect.saved {
-        didSet { photoAspect.save() }
-    }
+    /// 앱을 켜면 항상 4:3으로 시작 (저장하지 않음)
+    var photoAspect = PhotoAspect.fourThree
 
     var photoCodec = PhotoCodec.saved {
-        didSet { photoCodec.save() }
+        didSet {
+            photoCodec.save()
+            guard photoCodec != oldValue else { return }
+            // RAW는 48MP로, JPEG로 돌아오면 기본 해상도로
+            photoResolution = photoCodec == .raw ? PhotoResolution.values.last ?? 48 : AppDefaults.photoResolution
+            let isRAW = photoCodec == .raw
+            Task { await captureService.setRAWEnabled(isRAW) }
+        }
     }
 
     var photoResolution = PhotoResolution.saved {
-        didSet { PhotoResolution.save(photoResolution) }
+        didSet {
+            PhotoResolution.save(photoResolution)
+            // LIVE를 켠 채 48MP를 고르면 LIVE를 끔
+            if photoCodec != .raw, photoResolution > PhotoResolution.maxWithLivePhoto, isLivePhotoEnabled {
+                isLivePhotoEnabled = false
+            }
+        }
     }
 
     /// 고른 해상도에 맞는 장치 사진 크기
@@ -233,6 +271,10 @@ final class CameraModel: Camera {
         didSet {
             // Update the persistent state value.
             cameraState.isLivePhotoEnabled = isLivePhotoEnabled
+            // 기본 카메라처럼 48MP에서 LIVE를 켜면 24MP로
+            if isLivePhotoEnabled, photoCodec != .raw, photoResolution > PhotoResolution.maxWithLivePhoto {
+                photoResolution = PhotoResolution.maxWithLivePhoto
+            }
         }
     }
     
@@ -270,7 +312,7 @@ final class CameraModel: Camera {
     }
     
     /// Sets the `showCaptureFeedback` state to indicate that capture is underway.
-    private func flashScreen() {
+    func flashScreen() {
         shouldFlashScreen = true
         withAnimation(.linear(duration: 0.01)) {
             shouldFlashScreen = false
@@ -308,70 +350,11 @@ final class CameraModel: Camera {
     }
     
     /// 사진 모드일 때만 사진 출력 값(플래시 · 해상도)을 받음
-    private func applyPhotoCapabilities(_ capabilities: CaptureCapabilities) {
+    func applyPhotoCapabilities(_ capabilities: CaptureCapabilities) {
         guard captureMode == .photo else { return }
         isFlashSupported = capabilities.isFlashSupported
         photoDimensions = capabilities.photoDimensions
-        availableResolutions = PhotoResolution.available(in: capabilities.photoDimensions)
-    }
-
-    // MARK: - Internal state observations
-    
-    // Set up camera's state observations.
-    private func observeState() {
-        Task {
-            // Await new thumbnails that the media library generates when saving a file.
-            for await thumbnail in mediaLibrary.thumbnails.compactMap({ $0 }) {
-                self.thumbnail = thumbnail
-            }
-        }
-        
-        Task {
-            // Await new capture activity values from the capture service.
-            for await activity in await captureService.$captureActivity.values {
-                if activity.willCapture {
-                    // Flash the screen to indicate capture is starting.
-                    flashScreen()
-                } else {
-                    // Forward the activity to the UI.
-                    captureActivity = activity
-                }
-            }
-        }
-        
-        Task {
-            // Await updates to the capabilities that the capture service advertises.
-            for await capabilities in await captureService.$captureCapabilities.values {
-                isHDRVideoSupported = capabilities.isHDRSupported
-                applyPhotoCapabilities(capabilities)
-                cameraState.isVideoHDRSupported = capabilities.isHDRSupported
-            }
-        }
-        
-        Task {
-            // 배율 · 접사 상태 (카메라 컨트롤 버튼으로 바꿔도 따라옴)
-            for await zoom in await captureService.$zoomState.values {
-                self.zoom = zoom
-            }
-        }
-
-        Task {
-            // 렌즈 얼룩 감지 결과
-            for await isLensSmudged in await captureService.$isLensSmudged.values {
-                withAnimation {
-                    self.isLensSmudged = isLensSmudged
-                }
-            }
-        }
-
-        Task {
-            // Await updates to a person's interaction with the Camera Control HUD.
-            for await isShowingFullscreenControls in await captureService.$isShowingFullscreenControls.values {
-                withAnimation {
-                    // Prefer showing a minimized UI when capture controls enter a fullscreen appearance.
-                    prefersMinimizedUI = isShowingFullscreenControls
-                }
-            }
-        }
+        deviceResolutions = PhotoResolution.available(in: capabilities.photoDimensions)
+        isRAWSupported = capabilities.isRAWSupported
     }
 }

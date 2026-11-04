@@ -27,7 +27,9 @@ class PreviewCameraModel: Camera {
     var photoCodec = PhotoCodec.jpeg
     var photoResolution = 24
     // 시뮬레이터: 아이폰 16 Pro 후면처럼
-    let availableResolutions = PhotoResolution.values
+    var availableResolutions: [Int] { activeCodec == .raw ? PhotoResolution.rawValues : PhotoResolution.values }
+    let isRAWSupported = true
+    var isSceneDark = false
     private let captureTimer = CaptureTimer()
     var countdown: Int? { captureTimer.countdown }
     private(set) var isScreenFlashing = false

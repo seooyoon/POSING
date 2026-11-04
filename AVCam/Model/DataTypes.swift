@@ -99,8 +99,8 @@ struct PhotoFeatures {
     let flashMode: AVCaptureDevice.FlashMode
     /// 저장 전에 가운데를 잘라낼 비율 (긴 변 / 짧은 변). nil이면 원본 4:3
     let cropRatio: CGFloat?
-    /// HEIF(.hevc) 또는 JPEG
-    let codec: AVVideoCodecType
+    /// RAW(Apple ProRAW)로 찍음. 아니면 JPEG
+    let isRAW: Bool
     /// 사진 크기. nil이면 출력 최대 크기
     let maxDimensions: CMVideoDimensions?
 }
@@ -115,14 +115,18 @@ struct CaptureCapabilities {
     let isFlashSupported: Bool
     /// 지금 카메라가 찍을 수 있는 사진 크기 (작은 것부터)
     let photoDimensions: [CMVideoDimensions]
+    /// 사진 출력이 Apple ProRAW를 지원
+    let isRAWSupported: Bool
     
     init(isLivePhotoCaptureSupported: Bool = false,
          isHDRSupported: Bool = false,
          isFlashSupported: Bool = false,
-         photoDimensions: [CMVideoDimensions] = []) {
+         photoDimensions: [CMVideoDimensions] = [],
+         isRAWSupported: Bool = false) {
         self.isLivePhotoCaptureSupported = isLivePhotoCaptureSupported
         self.isHDRSupported = isHDRSupported
         self.isFlashSupported = isFlashSupported
+        self.isRAWSupported = isRAWSupported
         self.photoDimensions = photoDimensions
     }
     
