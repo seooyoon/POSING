@@ -83,6 +83,12 @@ protocol Camera: AnyObject, SendableMetatype {
     /// 사진 형식 (HEIF ↔ JPEG)
     var photoCodec: PhotoCodec { get set }
 
+    /// 지금 카메라가 RAW(Apple ProRAW)를 찍을 수 있음
+    var isRAWSupported: Bool { get }
+
+    /// 장면이 어두움 (어둡거나 렌즈를 가림). 하단 조작부 모양에 씀
+    var isSceneDark: Bool { get }
+
     /// 고른 사진 해상도(MP). 실제로 찍히는 값은 `activeResolution`
     var photoResolution: Int { get set }
 
@@ -127,14 +133,14 @@ protocol Camera: AnyObject, SendableMetatype {
 }
 
 extension Camera {
-    /// LIVE를 쓸 수 있는지. 비율이 4:3이 아니거나(CLAUDE.md 6절) 48MP면 자동 끔
+    /// LIVE를 쓸 수 있는지. 비율이 4:3이 아니거나(CLAUDE.md 6절) RAW면 자동 끔
     var isLivePhotoAvailable: Bool {
-        photoAspect == .fourThree && activeResolution <= PhotoResolution.maxWithLivePhoto
+        photoAspect == .fourThree && photoCodec != .raw
     }
 
     /// 실제로 LIVE로 찍히는지
     var isLivePhotoActive: Bool {
-        isLivePhotoEnabled && isLivePhotoAvailable
+        isLivePhotoEnabled && isLivePhotoAvailable && activeResolution <= PhotoResolution.maxWithLivePhoto
     }
 
     /// 실제로 찍히는 해상도: 고른 값 이하에서 가장 큰 값 (전면 등 지원하지 않으면 낮아짐)

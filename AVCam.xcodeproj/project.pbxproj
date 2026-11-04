@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		A6EC6038C95987583F534679 /* QuickSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */; };
 		0A2218DE53B144AC3B56F6A3 /* QuickSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */; };
+		A1F0C3D27B6E4A9081D2E3F5 /* CameraModel+Observation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */; };
+		A1F0C3D27B6E4A9081D2E3F6 /* CameraModel+Observation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */; };
 		B84A97739ADFA006BD43133B /* CaptureTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */; };
 		5DC36A618CF5A9ADD1E0B04F /* CaptureTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */; };
 		555BFEEAA63608EEB952BF7C /* PhotoCropper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */; };
@@ -192,6 +194,7 @@
 
 /* Begin PBXFileReference section */
 		0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSettingsPanel.swift; sourceTree = "<group>"; };
+		A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraModel+Observation.swift"; sourceTree = "<group>"; };
 		52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureTimer.swift; sourceTree = "<group>"; };
 		79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCropper.swift; sourceTree = "<group>"; };
 		2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureOptions.swift; sourceTree = "<group>"; };
@@ -475,6 +478,7 @@
 			isa = PBXGroup;
 			children = (
 				52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */,
+				A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */,
 				2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */,
 				B4D67BAFD8F08DEF967D9ADD /* Zoom */,
 				B2F52665D3000F1E9742A08C /* Focus */,
@@ -743,6 +747,7 @@
 			files = (
 				0A2218DE53B144AC3B56F6A3 /* QuickSettingsPanel.swift in Sources */,
 				5DC36A618CF5A9ADD1E0B04F /* CaptureTimer.swift in Sources */,
+				A1F0C3D27B6E4A9081D2E3F5 /* CameraModel+Observation.swift in Sources */,
 				122A2A8ACC04B449B1BEB614 /* PhotoCropper.swift in Sources */,
 				9A6844DC13704CB2DDF30B5F /* CaptureOptions.swift in Sources */,
 				313F414D4A7351E09ADBDF16 /* LightController.swift in Sources */,
@@ -824,6 +829,7 @@
 			files = (
 				A6EC6038C95987583F534679 /* QuickSettingsPanel.swift in Sources */,
 				B84A97739ADFA006BD43133B /* CaptureTimer.swift in Sources */,
+				A1F0C3D27B6E4A9081D2E3F6 /* CameraModel+Observation.swift in Sources */,
 				555BFEEAA63608EEB952BF7C /* PhotoCropper.swift in Sources */,
 				D0D1E996ACA9255E443123A1 /* CaptureOptions.swift in Sources */,
 				8D6D71119B49F88872EF0850 /* LightController.swift in Sources */,

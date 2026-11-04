@@ -690,14 +690,29 @@ actor CaptureService {
     }
     
     // MARK: - Photo capture
-    func capturePhoto(with features: PhotoFeatures) async throws -> Photo {
-        let photo = try await photoCapture.capturePhoto(with: features)
+    func capturePhoto(with features: PhotoFeatures, onCaptured: @escaping @Sendable () -> Void) async throws -> Photo {
+        // RAW를 막 고르고 바로 찍어도 설정이 맞도록 촬영 직전에 확인
+        if photoCapture.isRAWEnabled != features.isRAW {
+            setRAWEnabled(features.isRAW)
+        }
+        let photo = try await photoCapture.capturePhoto(with: features, onCaptured: onCaptured)
         // 비율이 4:3이 아니면 가운데를 잘라 저장
         guard let ratio = features.cropRatio, !photo.isProxy else { return photo }
         return Photo(data: PhotoCropper.crop(photo.data, longToShort: ratio),
                      isProxy: false,
                      livePhotoMovieURL: nil)
     }
+
+    /// RAW(Apple ProRAW) 촬영 준비를 켜고 끔 (세션 구성이 다시 일어남)
+    func setRAWEnabled(_ isEnabled: Bool) {
+        guard photoCapture.isRAWEnabled != isEnabled else { return }
+        captureSession.beginConfiguration()
+        defer { captureSession.commitConfiguration() }
+        photoCapture.isRAWEnabled = isEnabled
+    }
+
+    /// 지금 카메라 노출로 계산한 장면 밝기
+    var sceneEV: Double { currentDevice.sceneEV }
 
     // MARK: - Movie capture
     /// Starts recording video. The video records until the user stops recording,

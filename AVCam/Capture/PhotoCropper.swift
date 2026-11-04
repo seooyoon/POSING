@@ -2,7 +2,7 @@
 //  PhotoCropper.swift
 //  포징
 //
-//  16:9 · 1:1 사진: 4:3 원본을 가운데 기준으로 잘라 같은 형식(HEIF/JPEG)으로 다시 쓴다 (docs/05_TECH_NOTES.md 5절).
+//  16:9 · 1:1 사진: 4:3 원본을 가운데 기준으로 잘라 같은 형식(JPEG)으로 다시 쓴다 (docs/05_TECH_NOTES.md 5절).
 //  원본 메타데이터(EXIF · GPS · 방향)는 그대로 옮긴다. 가운데 기준이라 방향(orientation)과 상관없이 같은 결과.
 //  CaptureService 액터 안에서 부른다 (메인 스레드 밖).
 //

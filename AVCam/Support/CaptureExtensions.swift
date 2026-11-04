@@ -7,6 +7,13 @@ Extensions on AVFoundation capture and related types.
 
 import AVFoundation
 
+extension AVCaptureDevice {
+    /// 지금 노출 값으로 계산한 장면 밝기 (EV100). 어두울수록 낮음
+    var sceneEV: Double {
+        log2(Double(lensAperture * lensAperture) / exposureDuration.seconds) - log2(Double(iso) / 100)
+    }
+}
+
 extension CMVideoDimensions: @retroactive Equatable, @retroactive Comparable {
     
     static let zero = CMVideoDimensions()

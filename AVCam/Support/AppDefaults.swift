@@ -48,6 +48,13 @@ enum AppDefaults {
     /// 더보기 메뉴 노출 눈금을 이만큼(pt) 밀면 1/3 EV
     static let exposureRulerPointsPerStep = 45.0
 
+    // MARK: - 장면 밝기
+
+    /// 장면 밝기(EV100)가 이보다 낮으면 하단 조작부를 어두운 모양으로
+    static let sceneDarkEV = 2.5
+    /// 이보다 높아지면 평소 모양으로
+    static let sceneBrightEV = 3.5
+
     // MARK: - 화면 표시
 
     /// 3x3 격자 기본값

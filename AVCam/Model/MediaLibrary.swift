@@ -114,8 +114,10 @@ actor MediaLibrary {
     
     private func makeThumbnail(from data: Data) -> CGImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        // RAW(DNG)는 전체를 풀면 느리므로 들어 있는 작은 그림을 씀
+        let isRAW = CGImageSourceGetType(source).map { ($0 as String) == "com.adobe.raw-image" } ?? false
         let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            isRAW ? kCGImageSourceCreateThumbnailFromImageIfAbsent : kCGImageSourceCreateThumbnailFromImageAlways: true,
             // 사진 방향(EXIF)을 반영
             kCGImageSourceCreateThumbnailWithTransform: true,
             kCGImageSourceThumbnailMaxPixelSize: thumbnailMaxPixelSize
