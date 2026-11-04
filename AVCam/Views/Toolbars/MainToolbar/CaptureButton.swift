@@ -30,23 +30,27 @@ struct CaptureButton<CameraModel: Camera>: View {
             }
     }
     
-    @ViewBuilder
+    /// 두 버튼을 겹쳐 두고 모드가 바뀌면 흰색 ↔ 빨강이 서서히 바뀜 (기본 카메라와 같음)
     var captureButton: some View {
-        switch camera.captureMode {
-        case .photo:
-            PhotoCaptureButton(isSceneDark: camera.isSceneDark) {
+        ZStack {
+            ShutterRing(isSceneDark: camera.isSceneDark)
+            MovieCaptureButton(isRecording: $isRecording) { _ in
+                Task {
+                    await camera.toggleRecording()
+                }
+            }
+            .opacity(camera.captureMode == .video ? 1 : 0)
+            .allowsHitTesting(camera.captureMode == .video)
+            PhotoCaptureButton {
                 Task {
                     // 타이머가 켜져 있으면 카운트다운
                     await camera.shutterPressed()
                 }
             }
-        case .video:
-            MovieCaptureButton(isRecording: $isRecording, isSceneDark: camera.isSceneDark) { _ in
-                Task {
-                    await camera.toggleRecording()
-                }
-            }
+            .opacity(camera.captureMode == .photo ? 1 : 0)
+            .allowsHitTesting(camera.captureMode == .photo)
         }
+        .animation(.easeInOut(duration: 0.3), value: camera.captureMode)
     }
 }
 
@@ -72,26 +76,21 @@ private struct ShutterRing: View {
 }
 
 private struct PhotoCaptureButton: View {
-    private let isSceneDark: Bool
     private let action: () -> Void
     
-    init(isSceneDark: Bool, action: @escaping () -> Void) {
-        self.isSceneDark = isSceneDark
+    init(action: @escaping () -> Void) {
         self.action = action
     }
     
     var body: some View {
-        ZStack {
-            ShutterRing(isSceneDark: isSceneDark)
-            Button {
-                action()
-            } label: {
-                Circle()
-                    .inset(by: ShutterRing.width)
-                    .fill(.white)
-            }
-            .buttonStyle(PhotoButtonStyle())
+        Button {
+            action()
+        } label: {
+            Circle()
+                .inset(by: ShutterRing.width)
+                .fill(.white)
         }
+        .buttonStyle(PhotoButtonStyle())
     }
     
     struct PhotoButtonStyle: ButtonStyle {
@@ -105,35 +104,30 @@ private struct PhotoCaptureButton: View {
 
 private struct MovieCaptureButton: View {
     
-    private let isSceneDark: Bool
     private let action: (Bool) -> Void
     
     @Binding private var isRecording: Bool
     
-    init(isRecording: Binding<Bool>, isSceneDark: Bool, action: @escaping (Bool) -> Void) {
-        self.isSceneDark = isSceneDark
+    init(isRecording: Binding<Bool>, action: @escaping (Bool) -> Void) {
         _isRecording = isRecording
         self.action = action
     }
     
     var body: some View {
-        ZStack {
-            ShutterRing(isSceneDark: isSceneDark)
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    isRecording.toggle()
-                }
-                action(isRecording)
-            } label: {
-                GeometryReader { geometry in
-                    RoundedRectangle(cornerRadius: geometry.size.width / (isRecording ? 4.0 : 2.0))
-                        .inset(by: ShutterRing.width)
-                        .fill(.red)
-                        .scaleEffect(isRecording ? 0.6 : 1.0)
-                }
+        Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                isRecording.toggle()
             }
-            .buttonStyle(NoFadeButtonStyle())
+            action(isRecording)
+        } label: {
+            GeometryReader { geometry in
+                RoundedRectangle(cornerRadius: geometry.size.width / (isRecording ? 4.0 : 2.0))
+                    .inset(by: ShutterRing.width)
+                    .fill(.red)
+                    .scaleEffect(isRecording ? 0.6 : 1.0)
+            }
         }
+        .buttonStyle(NoFadeButtonStyle())
     }
     
     struct NoFadeButtonStyle: ButtonStyle {
