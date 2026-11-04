@@ -14,7 +14,7 @@ struct FocusOverlay: View {
     /// 미리보기 위쪽에서 상단 바에 가려지는 높이. 잠금 표시는 그 아래에 둠 (비디오 · 16:9)
     var topInset: CGFloat = 0
 
-    private let boxSize: CGFloat = 76
+    private let boxSize: CGFloat = 73
     /// 해 아이콘이 밝기에 따라 위아래로 움직이는 거리 (1 EV당)
     private let sunTravelPerEV: CGFloat = 26
 
@@ -43,14 +43,14 @@ struct FocusOverlay: View {
     }
 
     private var indicator: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 9) {
             FocusBox()
                 .stroke(Color.cameraYellow, lineWidth: 1)
                 .frame(width: boxSize, height: boxSize)
             sunSlider
         }
         // 사각형 가운데가 탭한 자리에 오도록 해 아이콘 폭만큼 보정
-        .offset(x: 13)
+        .offset(x: 13.5)
     }
 
     /// 해 아이콘. 밝기를 조절하는 동안에는 위아래 선이 보임

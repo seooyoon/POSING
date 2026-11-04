@@ -42,6 +42,25 @@ struct ZoomState: Equatable, Sendable {
         presets.last { $0 <= displayFactor + 0.05 } ?? presets.first
     }
 
+    /// 1× 버튼을 다시 누를 때 도는 화각: 24 → 28 → 35mm
+    static let mainLensFactors: [CGFloat] = [1, 1.2, 1.5]
+
+    /// 이 배율 다음 화각
+    static func nextMainLensFactor(after factor: CGFloat) -> CGFloat {
+        mainLensFactors.first { $0 > factor + 0.05 } ?? 1
+    }
+
+    /// 화각 이름이 있는 배율의 mm (기본 카메라에 표시되는 값만)
+    static func millimeters(_ factor: CGFloat) -> Int? {
+        let known: [(CGFloat, Int)] = [(0.5, 13), (1, 24), (1.2, 28), (1.5, 35), (2, 48), (5, 120)]
+        return known.first { abs($0.0 - factor) < 0.05 }?.1
+    }
+
+    /// 지금 배율 글자: 1 아래는 앞에 0을 붙임 (`0.5`, `1.4`, `7`)
+    static func activeLabel(_ value: CGFloat) -> String {
+        value < 0.95 ? String(format: "%.1f", value) : label(value)
+    }
+
     /// 버튼 · 다이얼 글자: `.5`, `1`, `1.4`, `7`
     static func label(_ value: CGFloat) -> String {
         let rounded = (value * 10).rounded() / 10

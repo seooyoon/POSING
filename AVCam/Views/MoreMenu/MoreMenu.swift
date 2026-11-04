@@ -2,7 +2,7 @@
 //  MoreMenu.swift
 //  포징
 //
-//  ••• 더보기 메뉴: 화면 아래에서 올라오는 둥근 판, 원형 버튼 3열 (docs/01_SPEC.md 8절, docs/02_UI.md 8절).
+//  ••• 더보기 메뉴: 셔터 자리에서 부풀어 나오는 둥근 유리 판, 원형 버튼 3열 (docs/01_SPEC.md 8절, docs/02_UI.md 8절).
 //  1줄 플래시 · LIVE · 타이머 / 2줄 노출 · 스타일 · 비율. 야간 모드는 만들 수 없어서 뺐다.
 //  판 바깥을 탭하거나 판을 아래로 밀면 닫힌다.
 //
@@ -17,7 +17,9 @@ struct MoreMenu<CameraModel: Camera>: View {
     @State private var isShowingExposure = false
     @State private var dragOffset: CGFloat = 0
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 3)
+    // 기본 카메라 화면에서 잰 값
+    private let columns = Array(repeating: GridItem(.fixed(115), spacing: 0), count: 3)
+    private let cornerRadius: CGFloat = 50
 
     var body: some View {
         VStack(spacing: 24) {
@@ -25,24 +27,21 @@ struct MoreMenu<CameraModel: Camera>: View {
                 ExposureRuler(value: $camera.exposureCompensation)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            LazyVGrid(columns: columns, spacing: 22) {
+            LazyVGrid(columns: columns, spacing: 36) {
                 ForEach(items, id: \.self) { item in
                     button(for: item)
                 }
             }
         }
-        .padding(.top, 30)
-        .padding(.bottom, 34)
-        .padding(.horizontal, 8)
+        .padding(.top, 37)
+        .padding(.bottom, 35)
         .frame(maxWidth: .infinity)
-        .background {
-            let shape = RoundedRectangle(cornerRadius: 48, style: .continuous)
-            shape.fill(.ultraThinMaterial)
-                .overlay(shape.fill(.black.opacity(0.35)))
-                .overlay(shape.stroke(.white.opacity(0.2), lineWidth: 0.5))
-        }
+        .glassEffect(.regular.tint(.white.opacity(camera.isSceneDark ? 0.03 : 0.1)),
+                     in: .rect(cornerRadius: cornerRadius, style: .continuous))
         .offset(y: max(dragOffset, 0))
         .gesture(closeDrag)
+        // 메뉴가 열리면 상단 바가 숨으므로 VoiceOver 닫기 동작을 따로 둠
+        .accessibilityAction(.escape) { isPresented = false }
         .animation(.easeOut(duration: 0.2), value: isShowingExposure)
     }
 
@@ -90,7 +89,7 @@ struct MoreMenu<CameraModel: Camera>: View {
         case .style:
             // 스타일 화면은 6단계에서 연결
             MoreMenuButton(title: "스타일") {
-                Image(systemName: "circle.grid.3x3")
+                StyleIcon()
             } action: {}
         case .ratio:
             MoreMenuButton(title: "비율", isActive: camera.photoAspect != .fourThree) {
@@ -136,7 +135,8 @@ private struct MoreMenuButton<Icon: View>: View {
                     .font(.system(size: 24))
                     .foregroundStyle(isActive ? Color.cameraYellow : .white)
                     .frame(width: 68, height: 68)
-                    .background(.white.opacity(0.12), in: .circle)
+                    // 판보다 어두운 원
+                    .background(.black.opacity(0.4), in: .circle)
                 Text(title)
                     .font(.system(size: 15))
                     .foregroundStyle(.white)
@@ -145,6 +145,28 @@ private struct MoreMenuButton<Icon: View>: View {
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.selection, trigger: title)
+    }
+}
+
+/// 스타일 버튼: 5 × 5 작은 점, 가운데는 고리 (기본 카메라 모양)
+private struct StyleIcon: View {
+    var body: some View {
+        Canvas { context, size in
+            let step = size.width / 5
+            for row in 0..<5 {
+                for column in 0..<5 {
+                    let center = CGPoint(x: (CGFloat(column) + 0.5) * step, y: (CGFloat(row) + 0.5) * step)
+                    if row == 2 && column == 2 {
+                        let ring = CGRect(x: center.x - 2.5, y: center.y - 2.5, width: 5, height: 5)
+                        context.stroke(Path(ellipseIn: ring), with: .foreground, lineWidth: 1)
+                    } else {
+                        let dot = CGRect(x: center.x - 0.9, y: center.y - 0.9, width: 1.8, height: 1.8)
+                        context.fill(Path(ellipseIn: dot), with: .foreground)
+                    }
+                }
+            }
+        }
+        .frame(width: 30, height: 30)
     }
 }
 

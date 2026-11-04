@@ -2,8 +2,8 @@
 //  ZoomControl.swift
 //  포징
 //
-//  배율 버튼 `.5 · 1 · 2 · 5` (docs/02_UI.md 6절). 현재 버튼만 어두운 원 + 노란 글씨 + `×`,
-//  버튼 사이 배율이면 그 자리에 실제 값. 길게 누르거나 좌우로 밀면 다이얼이 펼쳐지고 손을 떼면 1.5초 뒤 접힌다.
+//  배율 버튼 `.5 · 1 · 2 · 5` (docs/02_UI.md 6절). 가운데 고정 원 안에 현재 버튼이 노란 글씨 + `×`로 들어오고
+//  줄이 좌우로 밀린다. 버튼 사이 배율이면 그 자리에 실제 값. 1×를 다시 누르면 24 → 28 → 35mm. 길게 누르거나 좌우로 밀면 다이얼이 펼쳐지고 손을 떼면 1.5초 뒤 접힌다.
 //  카메라 컨트롤로 배율이 바뀔 때도 다이얼이 잠깐 보인다 (두 손가락 확대는 다이얼 없이).
 //
 
@@ -32,8 +32,11 @@ struct ZoomControl<CameraModel: Camera>: View {
     @State private var presetZoomUntil = Date.distantPast
     /// 방금 누른 버튼. 배율이 따라오는 동안 중간 숫자 없이 이 버튼에 원을 표시
     @State private var tappedPreset: CGFloat?
-    /// 원이 버튼 사이를 옮겨 가게 함
-    @Namespace private var circleSpace
+    /// 마지막으로 버튼으로 요청한 배율
+    @State private var requestedFactor: CGFloat?
+    /// 1×를 누른 직후 원 안에 보이는 화각 (mm)
+    @State private var millimeterBadge: Int?
+    @State private var millimeterTask: Task<Void, Never>?
 
     /// 원이 있는 버튼
     private var activePreset: CGFloat? { tappedPreset ?? camera.zoom.activePreset }
@@ -54,7 +57,7 @@ struct ZoomControl<CameraModel: Camera>: View {
                         .frame(width: dialRadius * 2, height: dialRadius * 2)
                         .contentShape(.circle)
                         .offset(y: dialCenterBelowRow - Self.rowCenterAboveBottom + dialRadius)
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        .transition(.opacity)
                 }
             }
             // 제스처는 바뀌지 않는 바깥 뷰에 한 번만 붙임 (펼쳐지는 중에도 밀기가 끊기지 않게)
@@ -66,7 +69,7 @@ struct ZoomControl<CameraModel: Camera>: View {
                 }
             )
             .sensoryFeedback(.selection, trigger: camera.zoom.activePreset)
-            .animation(.easeOut(duration: 0.2), value: isDialShown)
+            .animation(.easeOut(duration: 0.12), value: isDialShown)
             // 카메라 컨트롤로 배율이 바뀌면 다이얼 표시. 밀고 있는 동안은 prefersMinimizedUI가 켜짐
             // (두 손가락 확대 · 배율 버튼은 표시하지 않음)
             .onChange(of: camera.zoom.displayFactor) {
@@ -76,62 +79,89 @@ struct ZoomControl<CameraModel: Camera>: View {
             }
     }
 
+    /// 원은 화면 가운데에 고정, 글자 줄이 밀려서 지금 버튼이 원 안으로 들어옴 (기본 카메라와 같음)
     private var buttons: some View {
-        HStack(spacing: 0) {
-            ForEach(camera.zoom.presets, id: \.self) { preset in
-                presetButton(preset)
+        ZStack {
+            Circle()
+                .fill(.black.opacity(0.55))
+                .frame(width: 38, height: 38)
+            HStack(spacing: 0) {
+                ForEach(camera.zoom.presets, id: \.self) { preset in
+                    presetButton(preset)
+                }
             }
+            .offset(x: rowOffset)
+            .animation(.spring(duration: 0.25, bounce: 0), value: activePreset)
         }
-        .animation(.easeOut(duration: 0.2), value: activePreset)
-        // 기본 카메라처럼 1× 자리가 화면 가운데
-        .offset(x: rowCenteringOffset)
         .contentShape(.rect)
     }
 
-    /// 1× 버튼을 화면 가운데로 옮기는 거리
-    private var rowCenteringOffset: CGFloat {
+    /// 지금 버튼을 화면 가운데로 옮기는 거리
+    private var rowOffset: CGFloat {
         let presets = camera.zoom.presets
-        guard let index = presets.firstIndex(of: 1) else { return 0 }
+        guard let active = activePreset, let index = presets.firstIndex(of: active) else { return 0 }
         return (CGFloat(presets.count - 1) / 2 - CGFloat(index)) * buttonSpacing
     }
 
     private func presetButton(_ preset: CGFloat) -> some View {
         let isActive = activePreset == preset
-        // 현재 버튼에는 실제 배율 (예: 1.4×). 버튼을 눌렀을 때는 중간 숫자 없이 버튼 값
-        let title = isActive && tappedPreset == nil ? ZoomState.label(camera.zoom.displayFactor) : ZoomState.label(preset)
         return Button {
-            // 꾹 눌러 다이얼을 연 뒤 손을 뗄 때는 버튼 배율로 바꾸지 않음
-            guard !isDialShown else { return }
-            presetZoomUntil = .now + 0.8
-            tappedPreset = preset
-            Task {
-                // 기본 카메라처럼 배율을 바로 바꿈
-                await camera.setZoom(preset, animated: false)
-                try? await Task.sleep(for: .seconds(0.25))
-                if tappedPreset == preset { tappedPreset = nil }
-            }
+            tap(preset)
         } label: {
-            HStack(spacing: 0) {
-                Text(title)
-                if isActive {
-                    Text("×").font(.system(size: 13))
+            Group {
+                if isActive, let millimeterBadge {
+                    // 1×를 누르면 잠깐 화각 표시
+                    VStack(spacing: -2) {
+                        Text(verbatim: "\(millimeterBadge)").font(.cameraDigits(size: 15, weight: .semibold))
+                        Text(verbatim: "MM").font(.system(size: 9, weight: .semibold))
+                    }
+                } else if isActive {
+                    // 현재 버튼에는 실제 배율 (예: 1.4×). 버튼을 눌렀을 때는 중간 숫자 없이 버튼 값
+                    let value = tappedPreset == nil ? camera.zoom.displayFactor : preset
+                    HStack(spacing: 0) {
+                        Text(verbatim: ZoomState.activeLabel(value)).font(.cameraDigits(size: 15))
+                        Text(verbatim: "×").font(.system(size: 13))
+                    }
+                } else {
+                    Text(verbatim: ZoomState.label(preset)).font(.system(size: 15))
                 }
             }
-            .font(.system(size: 15))
             .foregroundStyle(isActive ? Color.cameraYellow : .white)
-            // 현재 버튼만 어두운 원. 나머지는 글자만
-            .frame(width: 38, height: 38)
-            .background {
-                if isActive {
-                    Circle()
-                        .fill(.black.opacity(0.5))
-                        .matchedGeometryEffect(id: "activeCircle", in: circleSpace)
-                }
-            }
             .frame(width: buttonSpacing, height: 44)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+    }
+
+    private func tap(_ preset: CGFloat) {
+        // 꾹 눌러 다이얼을 연 뒤 손을 뗄 때는 버튼 배율로 바꾸지 않음
+        guard !isDialShown else { return }
+        // 이미 1×면 24 → 28 → 35mm로 돌아감
+        // 빠르게 연달아 누르면 카메라 값이 아직 안 바뀌었을 수 있어 방금 요청한 값을 기준으로 함
+        let current = Date.now < presetZoomUntil ? (requestedFactor ?? camera.zoom.displayFactor) : camera.zoom.displayFactor
+        let target = preset == 1 && activePreset == 1 ? ZoomState.nextMainLensFactor(after: current) : preset
+        requestedFactor = target
+        presetZoomUntil = .now + 0.8
+        tappedPreset = preset
+        showMillimeters(preset == 1 ? ZoomState.millimeters(target) : nil)
+        Task {
+            // 기본 카메라처럼 배율을 바로 바꿈
+            await camera.setZoom(target, animated: false)
+            try? await Task.sleep(for: .seconds(0.25))
+            if tappedPreset == preset { tappedPreset = nil }
+        }
+    }
+
+    /// mm 표시를 잠깐 보이고 배율 글자로 돌아감
+    private func showMillimeters(_ value: Int?) {
+        millimeterTask?.cancel()
+        millimeterBadge = value
+        guard value != nil else { return }
+        millimeterTask = Task {
+            try? await Task.sleep(for: .seconds(1.25))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.15)) { millimeterBadge = nil }
+        }
     }
 
     private var dialDrag: some Gesture {
@@ -153,6 +183,7 @@ struct ZoomControl<CameraModel: Camera>: View {
 
     private func showDial() {
         guard !isDialShown else { return }
+        showMillimeters(nil)
         isDialShown = true
     }
 

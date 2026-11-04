@@ -18,6 +18,9 @@ struct CameraLayout {
     static let bottomRowOffset: CGFloat = 96
     /// 4:3 미리보기 아래 끝 ~ 배율 버튼 줄 가운데
     static let zoomRowOffset: CGFloat = 35
+    /// 배율 다이얼 반지름 · 셔터 가운데에서 다이얼 가운데까지 (기본 카메라에서 잰 값)
+    static let zoomDialRadius: CGFloat = 218
+    static let zoomDialCenterBelowShutter: CGFloat = 35
     /// 화면 좌우 여백
     static let sideInset: CGFloat = 16
 
