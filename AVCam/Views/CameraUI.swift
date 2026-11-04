@@ -27,6 +27,8 @@ struct CameraUI<CameraModel: Camera>: View {
             TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings)
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.topBarCenterY)
+                // 빠른 설정 판이 열리면 그 자리를 판이 차지함
+                .opacity(quickSettings == nil ? 1 : 0)
 
             // 포즈 · MY 패널: 상단 바 바로 아래, 한 번에 하나만. 전환할 때는 내용만 바뀜
             if let kind = layers.openPanel {
@@ -101,8 +103,9 @@ struct CameraUI<CameraModel: Camera>: View {
                     .frame(width: layout.size.width, height: layout.size.height)
                     .onTapGesture { quickSettings = nil }
                 QuickSettingsView(camera: camera, kind: kind)
-                    .frame(width: layout.size.width - 20)
-                    .offset(x: 10, y: layout.safeTop + 4)
+                    .frame(width: layout.size.width - 17)
+                    // 판 위쪽이 상단 바 버튼 위쪽과 같은 높이
+                    .offset(x: 8.5, y: layout.topBarCenterY - topBarControlHeight / 2)
                     .transition(.offset(y: -12).combined(with: .opacity))
             }
 

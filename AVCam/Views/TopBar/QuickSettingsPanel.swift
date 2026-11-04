@@ -30,6 +30,8 @@ struct QuickSettingsOption: Identifiable {
 struct QuickSettingsRow: Identifiable {
     let title: String
     let options: [QuickSettingsOption]
+    /// 앞에서 비울 칸 수 (LIVE 켬 · 끔을 플래시 켬 · 끔과 같은 칸에)
+    var startColumn = 0
     var id: String { title }
 }
 
@@ -41,58 +43,72 @@ struct QuickSettingsPanel: View {
     /// 판 아래 작은 안내
     var footnote: String?
 
-    private let titleWidth: CGFloat = 66
-    private let columnWidth: CGFloat = 86
+    // 기본 카메라 화면에서 잰 값
+    private let titleInset: CGFloat = 20
+    private let titleWidth: CGFloat = 93
+    private let columnWidth: CGFloat = 87
+    private let rowHeight: CGFloat = 34
+    private let cornerRadius: CGFloat = 28
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(rows) { row in
                 HStack(spacing: 0) {
                     Text(row.title)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.85))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.9))
                         .frame(width: titleWidth, alignment: .leading)
+                    Color.clear
+                        .frame(width: columnWidth * CGFloat(row.startColumn), height: 0)
                     ForEach(row.options) { option in
                         optionButton(option)
                     }
                     Spacer(minLength: 0)
                 }
-                .frame(height: 50)
+                .frame(height: rowHeight)
             }
             if let footnote {
                 Text(footnote)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .padding(.bottom, 12)
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .frame(height: 19)
+                    .padding(.bottom, 5)
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 6)
-        .background(.black.opacity(0.35), in: .rect(cornerRadius: 34, style: .continuous))
-        .glassEffect(.regular, in: .rect(cornerRadius: 34, style: .continuous))
+        .padding(.leading, titleInset)
+        .padding(.top, 8)
+        .padding(.bottom, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassEffect(.regular.tint(.white.opacity(0.1)), in: .rect(cornerRadius: cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .strokeBorder(.white.opacity(0.22), lineWidth: 0.5)
+        }
     }
 
     private func optionButton(_ option: QuickSettingsOption) -> some View {
         Button(action: option.action) {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(option.title)
+                    .font(.system(size: 14.5))
+                if let superscript = option.superscript {
+                    Text(superscript)
+                        .font(.system(size: 8.5))
+                        .baselineOffset(5)
+                }
+            }
+            // 노란 점은 글자 왼쪽 바깥에 걸침 (글자 시작은 칸마다 그대로)
+            .overlay(alignment: .leading) {
                 if showsDots && option.isSelected {
                     Circle()
                         .fill(Color.cameraYellow)
-                        .frame(width: 6, height: 6)
-                        .alignmentGuide(.firstTextBaseline) { $0[.bottom] + 5 }
-                        .padding(.trailing, 6)
-                }
-                Text(option.title)
-                    .font(.system(size: 19))
-                if let superscript = option.superscript {
-                    Text(superscript)
-                        .font(.system(size: 11))
-                        .baselineOffset(8)
+                        .frame(width: 5.5, height: 5.5)
+                        .offset(x: -9.5)
                 }
             }
             .foregroundStyle(option.isSelected ? Color.cameraYellow : .white)
             .opacity(option.isEnabled ? 1 : 0.35)
-            .frame(width: columnWidth, height: 50)
+            .frame(width: columnWidth, height: rowHeight, alignment: .leading)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -151,7 +167,7 @@ struct QuickSettingsView<CameraModel: Camera>: View {
                 QuickSettingsOption(id: "off", title: "끔", isSelected: !camera.isLivePhotoActive) {
                     camera.isLivePhotoEnabled = false
                 },
-            ]))
+            ], startColumn: 1))
         }
         return rows
     }
