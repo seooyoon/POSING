@@ -42,6 +42,8 @@ struct QuickSettingsPanel: View {
     var showsDots = false
     /// 판 아래 작은 안내
     var footnote: String?
+    /// 어두운 장면이면 유리를 더 어둡게
+    var isSceneDark = false
 
     // 기본 카메라 화면에서 잰 값
     private let titleInset: CGFloat = 20
@@ -79,7 +81,7 @@ struct QuickSettingsPanel: View {
         .padding(.top, 8)
         .padding(.bottom, 7)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular.tint(.white.opacity(0.1)), in: .rect(cornerRadius: cornerRadius, style: .continuous))
+        .glassEffect(.regular.tint(.white.opacity(isSceneDark ? 0.03 : 0.1)), in: .rect(cornerRadius: cornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(.white.opacity(0.22), lineWidth: 0.5)
@@ -119,8 +121,8 @@ struct QuickSettingsPanel: View {
 #Preview {
     QuickSettingsPanel(rows: [
         QuickSettingsRow(title: "포맷", options: [
-            QuickSettingsOption(id: "heif", title: "HEIF", isSelected: false) {},
             QuickSettingsOption(id: "jpeg", title: "JPEG", isSelected: true) {},
+            QuickSettingsOption(id: "raw", title: "RAW", isSelected: false) {},
         ]),
         QuickSettingsRow(title: "해상도", options: [
             QuickSettingsOption(id: "24", title: "24", superscript: "MP", isSelected: true) {},
@@ -140,10 +142,11 @@ struct QuickSettingsView<CameraModel: Camera>: View {
     var body: some View {
         switch kind {
         case .flashAndLive:
-            QuickSettingsPanel(rows: flashAndLiveRows)
+            QuickSettingsPanel(rows: flashAndLiveRows, isSceneDark: camera.isSceneDark)
         case .format:
             QuickSettingsPanel(rows: formatRows, showsDots: true,
-                               footnote: "최대 \(camera.activeResolution)MP의 해상도입니다.")
+                               footnote: "최대 \(camera.activeResolution)MP의 해상도입니다.",
+                               isSceneDark: camera.isSceneDark)
         }
     }
 
@@ -158,7 +161,7 @@ struct QuickSettingsView<CameraModel: Camera>: View {
             }))
         }
         if camera.captureMode == .photo {
-            // 비율이 4:3이 아니거나 48MP면 LIVE를 켤 수 없음
+            // 비율이 4:3이 아니거나 RAW면 LIVE를 켤 수 없음. 48MP에서 켜면 24MP로 바뀜
             rows.append(QuickSettingsRow(title: "LIVE", options: [
                 QuickSettingsOption(id: "on", title: "켬", isSelected: camera.isLivePhotoActive,
                                     isEnabled: camera.isLivePhotoAvailable) {
@@ -175,7 +178,8 @@ struct QuickSettingsView<CameraModel: Camera>: View {
     private var formatRows: [QuickSettingsRow] {
         [
             QuickSettingsRow(title: "포맷", options: PhotoCodec.allCases.map { codec in
-                QuickSettingsOption(id: codec.rawValue, title: codec.label, isSelected: camera.photoCodec == codec) {
+                QuickSettingsOption(id: codec.rawValue, title: codec.label, isSelected: camera.photoCodec == codec,
+                                    isEnabled: codec != .raw || camera.isRAWSupported) {
                     camera.photoCodec = codec
                 }
             }),

@@ -32,6 +32,11 @@ let topBarFontSize: CGFloat = 15
 let bottomRowButtonSize: CGFloat = 48
 
 extension View {
+    /// 하단 유리: 평소에는 밝은 유리, 어두운 장면에서는 어두운 유리 (기본 카메라와 같음)
+    func bottomGlass(isSceneDark: Bool, in shape: some Shape) -> some View {
+        glassEffect(.regular.tint(.white.opacity(isSceneDark ? 0.03 : 0.22)), in: shape)
+    }
+
     /// 상단 바 캡슐 모양. 반투명 유리 판 위에 흰 글자
     func topBarCapsule(horizontalPadding: CGFloat = 12) -> some View {
         font(.system(size: topBarFontSize))
