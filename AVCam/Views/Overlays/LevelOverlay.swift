@@ -19,12 +19,13 @@ struct LevelOverlay: View {
             if let roll = level.roll {
                 let isLevel = abs(roll) <= LevelModel.levelTolerance
                 let color: Color = isLevel ? .cameraYellow : .white
-                HStack(spacing: isLevel ? 0 : 10) {
-                    segment(width: 28, color: color)
-                    segment(width: 80, color: color)
+                // 기본 카메라 길이: 전체 183pt. 수평이면 양옆 선이 늘어나 틈 없이 이어짐
+                HStack(spacing: isLevel ? 0 : 5) {
+                    segment(width: isLevel ? 27 : 22, color: color)
+                    segment(width: 129, color: color)
                         // 화면은 세로로 고정이라, 폰이 기운 반대 방향으로 돌려 실제 수평을 보여줌
                         .rotationEffect(.degrees(isLevel ? 0 : -roll))
-                    segment(width: 28, color: color)
+                    segment(width: isLevel ? 27 : 22, color: color)
                 }
                 .animation(.easeOut(duration: 0.15), value: isLevel)
             }
@@ -61,6 +62,6 @@ struct LevelOverlay: View {
     private func segment(width: CGFloat, color: Color) -> some View {
         Capsule()
             .fill(color)
-            .frame(width: width, height: 1.5)
+            .frame(width: width, height: 1)
     }
 }

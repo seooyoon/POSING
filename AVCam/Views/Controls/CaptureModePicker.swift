@@ -4,7 +4,7 @@
 //
 //  하단 가운데 `비디오 | 사진` 캡슐. 선택된 모드는 밝은 판 안에 노란 글씨 (docs/02_UI.md 7절).
 //  탭하면 누른 쪽 모드. 누른 채 좌우로 밀거나 꾹 누르면 기본 카메라처럼 모드 줄로 펼쳐지고,
-//  가운데 강조 캡슐은 그대로인 채 글자 줄이 손가락을 따라 미끄러진다 (캡슐 안 글자만 노란색).
+//  가운데 강조 캡슐은 그대로인 채 글자 줄이 손가락을 따라 미끄러진다 (가운데에 가장 가까운 모드만 노란색).
 //  손을 떼면 캡슐에 가장 가까운 모드로 자리 잡는다. 타임랩스 · 슬로 모션은 5단계에서 줄에 더한다.
 //
 
@@ -38,11 +38,15 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     /// 캡슐 가운데 (화면 좌표). 탭한 쪽 모드를 고를 때 기준
     @State private var centerX: CGFloat = 0
 
-    private let segmentSize = CGSize(width: 78, height: 40)
-    /// 펼친 줄의 모드 사이 간격 (가운데끼리)
-    private let stripSpacing: CGFloat = 110
+    // 기본 카메라 화면에서 잰 값
+    private let capsuleSize = CGSize(width: 161, height: 47)
+    private let highlightSize = CGSize(width: 81, height: 41)
+    /// 펼쳤을 때 강조 판은 조금 커짐
+    private let expandedHighlightSize = CGSize(width: 87, height: 46)
+    /// 모드 사이 간격 (가운데끼리). 접혔을 때와 펼쳤을 때가 같음
+    private let labelSpacing: CGFloat = 72
     /// 펼친 줄 폭 (양 끝은 흐려짐)
-    private let stripWidth: CGFloat = 320
+    private let stripWidth: CGFloat = 380
     /// 이만큼 움직이면 탭이 아니라 밀기
     private let moveThreshold: CGFloat = 10
     /// 펼친 줄을 이만큼 밀면 옆 모드로
@@ -84,51 +88,44 @@ struct CaptureModePicker<CameraModel: Camera>: View {
 
     /// 접힌 캡슐: 선택된 쪽에 강조 판
     private var capsule: some View {
-        let selectedX = position(of: selectedIndex, spacing: segmentSize.width)
-        return labels(spacing: segmentSize.width, color: .white)
-            .background { highlight.offset(x: selectedX) }
-            .overlay {
-                labels(spacing: segmentSize.width, color: .cameraYellow)
-                    .mask { Capsule().frame(width: segmentSize.width, height: segmentSize.height).offset(x: selectedX) }
+        labels(selected: camera.captureMode)
+            .background {
+                highlight(size: highlightSize, fillOpacity: 0.18)
+                    .offset(x: position(of: selectedIndex))
             }
-            .frame(width: segmentSize.width * CGFloat(Self.displayOrder.count), height: segmentSize.height)
-            .padding(4)
+            .frame(width: capsuleSize.width, height: capsuleSize.height)
             .glassEffect(.regular, in: .capsule)
     }
 
     /// 펼친 모드 줄: 강조 판은 가운데 고정, 글자 줄이 움직임
     private var strip: some View {
-        let offset = clampedStripOffset
-        return ZStack {
-            highlight
-            labels(spacing: stripSpacing, color: .white)
-                .offset(x: offset)
-            labels(spacing: stripSpacing, color: .cameraYellow)
-                .offset(x: offset)
-                .mask { Capsule().frame(width: segmentSize.width, height: segmentSize.height) }
+        ZStack {
+            highlight(size: expandedHighlightSize, fillOpacity: 0.1)
+            labels(selected: centeredMode)
+                .offset(x: clampedStripOffset)
         }
-        .frame(width: stripWidth, height: segmentSize.height + 8)
-        .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.2),
-                                     .init(color: .black, location: 0.8), .init(color: .clear, location: 1)],
+        .frame(width: stripWidth, height: expandedHighlightSize.height)
+        .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.12),
+                                     .init(color: .black, location: 0.88), .init(color: .clear, location: 1)],
                              startPoint: .leading, endPoint: .trailing))
     }
 
-    private var highlight: some View {
+    private func highlight(size: CGSize, fillOpacity: Double) -> some View {
         Capsule()
-            .fill(.white.opacity(0.18))
+            .fill(.white.opacity(fillOpacity))
             .overlay(Capsule().stroke(.white.opacity(0.3), lineWidth: 0.5))
-            .frame(width: segmentSize.width, height: segmentSize.height)
+            .frame(width: size.width, height: size.height)
     }
 
-    /// 모드 이름을 가운데 기준 간격대로 놓은 줄
-    private func labels(spacing: CGFloat, color: Color) -> some View {
+    /// 모드 이름을 가운데 기준 간격대로 놓은 줄. 선택된 모드만 노란색
+    private func labels(selected: CaptureMode) -> some View {
         ZStack {
             ForEach(Array(Self.displayOrder.enumerated()), id: \.element) { index, mode in
                 Text(mode.title)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(color)
-                    .frame(width: segmentSize.width, height: segmentSize.height)
-                    .offset(x: position(of: index, spacing: spacing))
+                    .font(.system(size: 15.5, weight: .medium))
+                    .foregroundStyle(mode == selected ? Color.cameraYellow : .white)
+                    .fixedSize()
+                    .offset(x: position(of: index))
             }
         }
     }
@@ -140,21 +137,21 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     }
 
     /// 줄 가운데 기준 index번째 모드의 x
-    private func position(of index: Int, spacing: CGFloat) -> CGFloat {
-        (CGFloat(index) - CGFloat(Self.displayOrder.count - 1) / 2) * spacing
+    private func position(of index: Int) -> CGFloat {
+        (CGFloat(index) - CGFloat(Self.displayOrder.count - 1) / 2) * labelSpacing
     }
 
     /// 펼친 줄의 글자 줄 이동: 선택된 모드가 가운데 + 손가락 이동. 양 끝 모드까지만
     private var clampedStripOffset: CGFloat {
-        let base = -position(of: selectedIndex, spacing: stripSpacing)
-        let limit = position(of: Self.displayOrder.count - 1, spacing: stripSpacing)
+        let base = -position(of: selectedIndex)
+        let limit = position(of: Self.displayOrder.count - 1)
         return min(max(base + scrollOffset, -limit), limit)
     }
 
     /// 지금 가운데 강조 판에 가장 가까운 모드
     private var centeredMode: CaptureMode {
         let order = Self.displayOrder
-        let index = Int((CGFloat(order.count - 1) / 2 - clampedStripOffset / stripSpacing).rounded())
+        let index = Int((CGFloat(order.count - 1) / 2 - clampedStripOffset / labelSpacing).rounded())
         return order[min(max(index, 0), order.count - 1)]
     }
 

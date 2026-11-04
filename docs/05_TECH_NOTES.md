@@ -51,7 +51,8 @@
 
 - 촬영은 항상 4:3으로 하고, 저장 직전에 가운데 기준으로 자름
 - `fileDataRepresentation()` → `CGImageSource`로 읽기 → **방향(orientation)을 반영한 좌표계에서** 자르기 → `CGImageDestination`에 원본 메타데이터(EXIF, GPS 등)와 함께 같은 형식(HEIF/JPEG)으로 쓰기
-- 자동 지연 처리(`isAutoDeferredPhotoDeliveryEnabled`)를 쓰면 처리 전 사진은 자를 수 없음 → 비율이 4:3이 아닐 때는 지연 처리 끄기
+- 자동 지연 처리(`isAutoDeferredPhotoDeliveryEnabled`)를 쓰면 처리 전 사진은 자를 수 없음. 비율마다 켜고 끄면 세션이 다시 구성되어 미리보기가 흔들리므로 항상 끔
+- 비율을 바꿀 때 미리보기 층 크기를 바꾸면 영상이 흔들림 → 사진은 층을 4:3으로 고정하고 확대(`scaleEffect`) · 자르기(`clipped`)만 움직임. 초점 위치는 층 좌표로 변환 (`CameraLayout.previewLayerPoint`)
 - 비율이 4:3이 아니면 LIVE 끔 (CLAUDE.md 6절 임시 기본값)
 - 미리보기: 같은 비율의 프레임 사각형을 계산해 바깥을 검게 가리고, 레이어도 그 사각형 기준으로 배치
 

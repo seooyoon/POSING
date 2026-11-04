@@ -22,6 +22,8 @@ struct ZoomControl<CameraModel: Camera>: View {
     /// 영역 아래 끝 ~ 버튼 줄 가운데 (CameraUI 배치와 같음)
     static var rowCenterAboveBottom: CGFloat { 20 }
     private let collapseDelay: Duration = .seconds(1.5)
+    /// 버튼 가운데끼리 간격
+    private let buttonSpacing: CGFloat = 39
 
     @State private var isDialShown = false
     @State private var dragStartFactor: CGFloat?
@@ -68,32 +70,46 @@ struct ZoomControl<CameraModel: Camera>: View {
     }
 
     private var buttons: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             ForEach(camera.zoom.presets, id: \.self) { preset in
                 presetButton(preset)
             }
         }
-        .padding(3)
-        .background(.black.opacity(0.3), in: .capsule)
-        .contentShape(.capsule)
+        // 기본 카메라처럼 1× 자리가 화면 가운데
+        .offset(x: rowCenteringOffset)
+        .contentShape(.rect)
+    }
+
+    /// 1× 버튼을 화면 가운데로 옮기는 거리
+    private var rowCenteringOffset: CGFloat {
+        let presets = camera.zoom.presets
+        guard let index = presets.firstIndex(of: 1) else { return 0 }
+        return (CGFloat(presets.count - 1) / 2 - CGFloat(index)) * buttonSpacing
     }
 
     private func presetButton(_ preset: CGFloat) -> some View {
         let isActive = camera.zoom.activePreset == preset
         // 현재 버튼에는 실제 배율 (예: 1.4×)
-        let title = isActive ? ZoomState.label(camera.zoom.displayFactor) + "×" : ZoomState.label(preset)
+        let title = isActive ? ZoomState.label(camera.zoom.displayFactor) : ZoomState.label(preset)
         return Button {
             // 꾹 눌러 다이얼을 연 뒤 손을 뗄 때는 버튼 배율로 바꾸지 않음
             guard !isDialShown else { return }
             presetZoomUntil = .now + 0.8
             Task { await camera.setZoom(preset, animated: true) }
         } label: {
-            Text(title)
-                .font(.system(size: isActive ? 13 : 12, weight: .semibold))
-                .foregroundStyle(isActive ? Color.cameraYellow : .white)
-                .frame(width: isActive ? 38 : 30, height: isActive ? 38 : 30)
-                .background(.black.opacity(isActive ? 0.55 : 0.35), in: .circle)
-                .frame(width: 40, height: 40)
+            HStack(spacing: 0) {
+                Text(title)
+                if isActive {
+                    Text("×").font(.system(size: 13))
+                }
+            }
+            .font(.system(size: 15))
+            .foregroundStyle(isActive ? Color.cameraYellow : .white)
+            // 현재 버튼만 어두운 원. 나머지는 글자만
+            .frame(width: 38, height: 38)
+            .background(.black.opacity(isActive ? 0.5 : 0), in: .circle)
+            .frame(width: buttonSpacing, height: 44)
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
     }
