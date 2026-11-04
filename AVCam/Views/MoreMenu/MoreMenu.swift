@@ -40,6 +40,8 @@ struct MoreMenu<CameraModel: Camera>: View {
                      in: .rect(cornerRadius: cornerRadius, style: .continuous))
         .offset(y: max(dragOffset, 0))
         .gesture(closeDrag)
+        // 메뉴가 열리면 상단 바가 숨으므로 VoiceOver 닫기 동작을 따로 둠
+        .accessibilityAction(.escape) { isPresented = false }
         .animation(.easeOut(duration: 0.2), value: isShowingExposure)
     }
 
