@@ -67,7 +67,7 @@ final class CameraModel: Camera {
     private var deviceResolutions: [Int] = []
     /// 고를 수 있는 MP. RAW는 24MP가 없음
     var availableResolutions: [Int] {
-        activeCodec == .raw ? deviceResolutions.filter(PhotoResolution.rawValues.contains) : deviceResolutions
+        PhotoResolution.selectable(from: deviceResolutions, codec: activeCodec)
     }
     private(set) var isRAWSupported = false
     var sceneBrightness = SceneBrightness()
@@ -183,10 +183,13 @@ final class CameraModel: Camera {
                                               maxDimensions: activeDimensions)
             let photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
                 // 찍기를 마치면 처리 · 저장이 끝나기 전이라도 다음 셔터를 받음
-                Task { @MainActor in self?.releaseShutter(owner) }
+                Task { @MainActor in
+                    self?.releaseShutter(owner)
+                    // 처리가 끝나길 기다리면 다음 촬영의 화면 플래시를 꺼 버릴 수 있음
+                    if usesScreenFlash { self?.hideScreenFlash() }
+                }
             }
             releaseShutter(owner)
-            if usesScreenFlash { hideScreenFlash() }
             try await mediaLibrary.save(photo: photo)
         } catch {
             releaseShutter(owner)

@@ -162,6 +162,20 @@ enum PhotoResolution {
     static let maxWithLivePhoto = 24
     /// RAW로 찍을 수 있는 해상도 (ProRAW는 24MP가 없음)
     static let rawValues = [12, 48]
+    /// JPEG로 고를 수 있는 해상도 (기본 카메라와 같음)
+    static let jpegValues = [24, 48]
+
+    /// 기기 해상도 중 이 형식으로 고를 수 있는 값. 하나도 없으면 (전면 카메라 등) 기기 값 그대로
+    static func selectable(from device: [Int], codec: PhotoCodec) -> [Int] {
+        let allowed = codec == .raw ? rawValues : jpegValues
+        let filtered = device.filter(allowed.contains)
+        return filtered.isEmpty ? device : filtered
+    }
+
+    /// 형식별 기본 해상도 (빠른 설정 판의 점 표시)
+    static func defaultValue(for codec: PhotoCodec) -> Int {
+        codec == .raw ? (values.last ?? 48) : AppDefaults.photoResolution
+    }
 
     /// 장치 사진 크기 → 12 / 24 / 48 중 가장 가까운 값
     static func megapixels(width: Int32, height: Int32) -> Int {

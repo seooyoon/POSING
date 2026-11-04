@@ -24,6 +24,8 @@ struct QuickSettingsOption: Identifiable {
     var superscript: String?
     let isSelected: Bool
     var isEnabled = true
+    /// 기본값. 앞에 점이 붙음 (선택과 별개, 색은 글자를 따라감)
+    var isDefault = false
     let action: () -> Void
 }
 
@@ -38,8 +40,6 @@ struct QuickSettingsRow: Identifiable {
 struct QuickSettingsPanel: View {
 
     let rows: [QuickSettingsRow]
-    /// 선택값 앞에 노란 점 (포맷 · 해상도 판)
-    var showsDots = false
     /// 판 아래 작은 안내
     var footnote: String?
     /// 어두운 장면이면 유리를 더 어둡게
@@ -99,11 +99,11 @@ struct QuickSettingsPanel: View {
                         .baselineOffset(5)
                 }
             }
-            // 노란 점은 글자 왼쪽 바깥에 걸침 (글자 시작은 칸마다 그대로)
+            // 기본값 점은 글자 왼쪽 바깥에 걸침 (글자 시작은 칸마다 그대로)
             .overlay(alignment: .leading) {
-                if showsDots && option.isSelected {
+                if option.isDefault {
                     Circle()
-                        .fill(Color.cameraYellow)
+                        .fill(option.isSelected ? Color.cameraYellow : .white)
                         .frame(width: 5.5, height: 5.5)
                         .offset(x: -9.5)
                 }
@@ -121,14 +121,14 @@ struct QuickSettingsPanel: View {
 #Preview {
     QuickSettingsPanel(rows: [
         QuickSettingsRow(title: "포맷", options: [
-            QuickSettingsOption(id: "jpeg", title: "JPEG", isSelected: true) {},
+            QuickSettingsOption(id: "jpeg", title: "JPEG", isSelected: true, isDefault: true) {},
             QuickSettingsOption(id: "raw", title: "RAW", isSelected: false) {},
         ]),
         QuickSettingsRow(title: "해상도", options: [
-            QuickSettingsOption(id: "24", title: "24", superscript: "MP", isSelected: true) {},
+            QuickSettingsOption(id: "24", title: "24", superscript: "MP", isSelected: true, isDefault: true) {},
             QuickSettingsOption(id: "48", title: "48", superscript: "MP", isSelected: false) {},
         ]),
-    ], showsDots: true, footnote: "최대 24MP의 해상도입니다.")
+    ], footnote: "최대 24MP의 해상도입니다.")
     .padding()
     .background(.gray)
 }
@@ -144,7 +144,7 @@ struct QuickSettingsView<CameraModel: Camera>: View {
         case .flashAndLive:
             QuickSettingsPanel(rows: flashAndLiveRows, isSceneDark: camera.isSceneDark)
         case .format:
-            QuickSettingsPanel(rows: formatRows, showsDots: true,
+            QuickSettingsPanel(rows: formatRows,
                                footnote: "최대 \(camera.activeResolution)MP의 해상도입니다.",
                                isSceneDark: camera.isSceneDark)
         }
@@ -179,13 +179,15 @@ struct QuickSettingsView<CameraModel: Camera>: View {
         [
             QuickSettingsRow(title: "포맷", options: PhotoCodec.allCases.map { codec in
                 QuickSettingsOption(id: codec.rawValue, title: codec.label, isSelected: camera.activeCodec == codec,
-                                    isEnabled: codec != .raw || camera.isRAWSupported) {
+                                    isEnabled: codec != .raw || camera.isRAWSupported,
+                                    isDefault: codec == AppDefaults.photoCodec) {
                     camera.photoCodec = codec
                 }
             }),
             QuickSettingsRow(title: "해상도", options: camera.availableResolutions.map { resolution in
                 QuickSettingsOption(id: "\(resolution)", title: "\(resolution)", superscript: "MP",
-                                    isSelected: camera.activeResolution == resolution) {
+                                    isSelected: camera.activeResolution == resolution,
+                                    isDefault: resolution == PhotoResolution.defaultValue(for: camera.activeCodec)) {
                     camera.photoResolution = resolution
                 }
             }),

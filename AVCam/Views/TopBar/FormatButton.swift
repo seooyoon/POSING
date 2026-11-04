@@ -44,7 +44,7 @@ struct FormatButton<CameraModel: Camera>: View {
                     small("해상도", baseline: 6)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("30")
+                    Text("30").font(.cameraDigits(size: topBarFontSize))
                     small("FPS", baseline: 6)
                 }
             }
@@ -59,6 +59,7 @@ struct FormatButton<CameraModel: Camera>: View {
     private func small(_ text: String, baseline: CGFloat) -> some View {
         Text(text)
             .font(.system(size: 10))
+            .foregroundStyle(.white.opacity(0.6))
             .baselineOffset(baseline)
     }
 }
