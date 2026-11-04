@@ -67,13 +67,18 @@ final class CameraModel: Camera {
     private var deviceResolutions: [Int] = []
     /// 고를 수 있는 MP. RAW는 24MP가 없음
     var availableResolutions: [Int] {
-        photoCodec == .raw ? deviceResolutions.filter(PhotoResolution.rawValues.contains) : deviceResolutions
+        activeCodec == .raw ? deviceResolutions.filter(PhotoResolution.rawValues.contains) : deviceResolutions
     }
     private(set) var isRAWSupported = false
     var sceneBrightness = SceneBrightness()
     var isSceneDark: Bool { sceneBrightness.isDark }
-    /// 찍는 중 (플래시 포함). 이 동안 누른 셔터는 기본 카메라처럼 무시
-    private var isShutterBusy = false
+    /// 지금 찍는 촬영 (플래시 포함). 이 동안 누른 셔터는 기본 카메라처럼 무시
+    private var shutterOwner: UUID?
+
+    /// 해당 촬영이 아직 셔터를 잡고 있을 때만 풂 (앞 촬영이 늦게 끝나도 다음 촬영을 풀지 않게)
+    private func releaseShutter(_ owner: UUID) {
+        if shutterOwner == owner { shutterOwner = nil }
+    }
     
     /// An object that saves captured media to a person's Photos library.
     let mediaLibrary = MediaLibrary()
@@ -160,8 +165,9 @@ final class CameraModel: Camera {
     /// Captures a photo and writes it to the user's Photos library.
     func capturePhoto() async {
         // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
-        guard !isSwitchingVideoDevices, !isShutterBusy else { return }
-        isShutterBusy = true
+        guard !isSwitchingVideoDevices, shutterOwner == nil else { return }
+        let owner = UUID()
+        shutterOwner = owner
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
         let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
         if usesScreenFlash {
@@ -172,25 +178,25 @@ final class CameraModel: Camera {
                                               qualityPrioritization: qualityPrioritization,
                                               flashMode: AVCaptureDevice.FlashMode(flashMode),
                                               // RAW(DNG)는 자를 수 없어 원본 4:3으로 저장
-                                              cropRatio: photoCodec == .raw ? nil : photoAspect.cropLongToShort,
-                                              isRAW: photoCodec == .raw,
+                                              cropRatio: activeCodec == .raw ? nil : photoAspect.cropLongToShort,
+                                              isRAW: activeCodec == .raw,
                                               maxDimensions: activeDimensions)
             let photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
                 // 찍기를 마치면 처리 · 저장이 끝나기 전이라도 다음 셔터를 받음
-                Task { @MainActor in self?.isShutterBusy = false }
+                Task { @MainActor in self?.releaseShutter(owner) }
             }
-            isShutterBusy = false
+            releaseShutter(owner)
             if usesScreenFlash { hideScreenFlash() }
             try await mediaLibrary.save(photo: photo)
         } catch {
-            isShutterBusy = false
+            releaseShutter(owner)
             if usesScreenFlash { hideScreenFlash() }
             self.error = error
         }
     }
 
     func shutterPressed() async {
-        guard !isShutterBusy else { return }
+        guard shutterOwner == nil else { return }
         await captureTimer.shutterPressed(duration: timerDuration) { [weak self] in
             await self?.capturePhoto()
         }
