@@ -165,11 +165,14 @@ enum PhotoResolution {
     /// JPEG로 고를 수 있는 해상도 (기본 카메라와 같음)
     static let jpegValues = [24, 48]
 
-    /// 기기 해상도 중 이 형식으로 고를 수 있는 값. 하나도 없으면 (전면 카메라 등) 기기 값 그대로
+    /// 기기 해상도 중 이 형식으로 고를 수 있는 값
     static func selectable(from device: [Int], codec: PhotoCodec) -> [Int] {
-        let allowed = codec == .raw ? rawValues : jpegValues
-        let filtered = device.filter(allowed.contains)
-        return filtered.isEmpty ? device : filtered
+        if codec == .raw {
+            let filtered = device.filter(rawValues.contains)
+            return filtered.isEmpty ? device : filtered
+        }
+        // 기본 24MP가 없는 카메라는 기기 값 그대로 (48MP만 남아 LIVE가 꺼지지 않게)
+        return device.contains(AppDefaults.photoResolution) ? device.filter(jpegValues.contains) : device
     }
 
     /// 형식별 기본 해상도 (빠른 설정 판의 점 표시)
