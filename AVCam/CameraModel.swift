@@ -76,8 +76,11 @@ final class CameraModel: Camera {
     private var shutterOwner: UUID?
 
     /// 해당 촬영이 아직 셔터를 잡고 있을 때만 풂 (앞 촬영이 늦게 끝나도 다음 촬영을 풀지 않게)
-    private func releaseShutter(_ owner: UUID) {
-        if shutterOwner == owner { shutterOwner = nil }
+    /// 이 촬영이 아직 셔터를 쥐고 있을 때만 셔터를 풀고 화면 플래시를 끔 (다음 촬영의 플래시를 끄지 않게)
+    private func releaseShutter(_ owner: UUID, hidesScreenFlash: Bool) {
+        guard shutterOwner == owner else { return }
+        shutterOwner = nil
+        if hidesScreenFlash { hideScreenFlash() }
     }
     
     /// An object that saves captured media to a person's Photos library.
@@ -183,17 +186,12 @@ final class CameraModel: Camera {
                                               maxDimensions: activeDimensions)
             let photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
                 // 찍기를 마치면 처리 · 저장이 끝나기 전이라도 다음 셔터를 받음
-                Task { @MainActor in
-                    self?.releaseShutter(owner)
-                    // 처리가 끝나길 기다리면 다음 촬영의 화면 플래시를 꺼 버릴 수 있음
-                    if usesScreenFlash { self?.hideScreenFlash() }
-                }
+                Task { @MainActor in self?.releaseShutter(owner, hidesScreenFlash: usesScreenFlash) }
             }
-            releaseShutter(owner)
+            releaseShutter(owner, hidesScreenFlash: usesScreenFlash)
             try await mediaLibrary.save(photo: photo)
         } catch {
-            releaseShutter(owner)
-            if usesScreenFlash { hideScreenFlash() }
+            releaseShutter(owner, hidesScreenFlash: usesScreenFlash)
             self.error = error
         }
     }
