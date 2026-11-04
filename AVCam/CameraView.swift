@@ -16,13 +16,6 @@ struct CameraView<CameraModel: Camera>: View {
     @State private var layers = LayerState()
     @State private var focus = FocusModel()
     @State private var level = LevelModel()
-    /// 길게 누르기 위치 (onLongPressGesture는 위치를 주지 않아 따로 기록)
-    @State private var touchLocation: CGPoint = .zero
-    /// 지금 미는 방향. 위아래 = 밝기, 좌우 = 모드 전환
-    @State private var dragAxis: Axis?
-    /// 두 손가락 확대를 시작할 때 배율
-    @State private var pinchStartZoom: CGFloat?
-
     var body: some View {
         GeometryReader { proxy in
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
@@ -30,12 +23,20 @@ struct CameraView<CameraModel: Camera>: View {
                 // 카메라 화면은 다크 고정 (docs/02_UI.md 10절)
                 Color.black
                 // 미리보기는 모드에 맞는 자리 · 비율로 (사진 4:3, 비디오 16:9)
-                PreviewContainer(camera: camera) {
-                    preview(touchArea: previewTouchArea(in: layout))
-                }
-                .frame(width: layout.previewRect.width, height: layout.previewRect.height)
-                .clipped()
-                .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
+                // 비율을 바꿀 때 층 크기는 그대로 두고 확대 · 자르기만 움직임 (영상이 흔들리지 않게)
+                Color.clear
+                    .overlay {
+                        PreviewContainer(camera: camera) {
+                            preview
+                        }
+                        .frame(width: layout.previewLayerSize.width, height: layout.previewLayerSize.height)
+                        .scaleEffect(layout.previewScale)
+                    }
+                    .frame(width: layout.previewRect.width, height: layout.previewRect.height)
+                    .clipped()
+                    .contentShape(previewTouchArea(in: layout), eoFill: true)
+                    .modifier(PreviewGestures(camera: camera, layers: layers, focus: focus, layout: layout))
+                    .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                 // 미리보기 위 표시 (아래 → 위): MY · 포즈 레이어 → 격자 · 중심점 → 수평계 · 초점 (docs/02_UI.md 5절)
@@ -83,9 +84,8 @@ struct CameraView<CameraModel: Camera>: View {
     }
 
     /// A view that provides a preview of the captured content.
-    private func preview(touchArea: Path) -> some View {
+    private var preview: some View {
         CameraPreview(source: camera.previewSource)
-            .contentShape(touchArea, eoFill: true)
             // Handle capture events from device hardware buttons.
             .onCameraCaptureEvent(defaultSoundDisabled: true) { event in
                 if event.phase == .ended {
@@ -107,26 +107,49 @@ struct CameraView<CameraModel: Camera>: View {
                     }
                 }
             }
+            /// The value of `shouldFlashScreen` changes briefly to `true` when capture
+            /// starts, and then immediately changes to `false`. Use this change to
+            /// flash the screen to provide visual feedback when capturing photos.
+            .opacity(camera.shouldFlashScreen ? 0 : 1)
+    }
+}
+
+/// 미리보기 자리의 터치: 탭 초점, 길게 누르기 잠금, 밀기(밝기 · 모드), 두 손가락 확대.
+/// 위치는 미리보기 자리 좌표이고, 카메라에 넘길 때만 층 좌표로 바꾼다
+private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
+
+    let camera: CameraModel
+    let layers: LayerState
+    let focus: FocusModel
+    let layout: CameraLayout
+
+    /// 길게 누르기 위치 (onLongPressGesture는 위치를 주지 않아 따로 기록)
+    @State private var touchLocation: CGPoint = .zero
+    /// 지금 미는 방향. 위아래 = 밝기, 좌우 = 모드 전환
+    @State private var dragAxis: Axis?
+    /// 두 손가락 확대를 시작할 때 배율
+    @State private var pinchStartZoom: CGFloat?
+
+    func body(content: Content) -> some View {
+        content
             // 탭 → 초점 · 노출 + 노란 사각형. 포즈 · MY 패널이 열려 있으면 같이 닫음
             .onTapGesture { location in
                 layers.closePanel()
                 focus.tap(at: location)
-                Task { await camera.focusAndExpose(at: location) }
+                let point = layout.previewLayerPoint(from: location)
+                Task { await camera.focusAndExpose(at: point) }
             }
             // 길게 누르기 → AE/AF 잠금
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
                 focus.lock(at: touchLocation)
-                Task { await camera.lockFocusAndExposure(at: touchLocation) }
+                let point = layout.previewLayerPoint(from: touchLocation)
+                Task { await camera.lockFocusAndExposure(at: point) }
             }
             .simultaneousGesture(touchTracker)
             // 위아래로 밀면 밝기, 좌우로 밀면 모드 전환 (기본 카메라와 같은 방향)
             .simultaneousGesture(dragGesture)
             // 두 손가락 벌리기/모으기 → 배율
             .simultaneousGesture(pinchGesture)
-            /// The value of `shouldFlashScreen` changes briefly to `true` when capture
-            /// starts, and then immediately changes to `false`. Use this change to
-            /// flash the screen to provide visual feedback when capturing photos.
-            .opacity(camera.shouldFlashScreen ? 0 : 1)
     }
 
     private var pinchGesture: some Gesture {

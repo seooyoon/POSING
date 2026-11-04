@@ -16,6 +16,8 @@ struct CameraLayout {
     static let shutterOffset: CGFloat = 55
     /// 셔터 가운데 ~ 하단 줄 가운데
     static let bottomRowOffset: CGFloat = 96
+    /// 4:3 미리보기 아래 끝 ~ 배율 버튼 줄 가운데
+    static let zoomRowOffset: CGFloat = 35
     /// 화면 좌우 여백
     static let sideInset: CGFloat = 16
 
@@ -68,11 +70,30 @@ struct CameraLayout {
         captureMode == .photo ? photoPreviewRect : videoPreviewRect
     }
 
+    /// 실제 미리보기 층 크기. 사진은 비율과 상관없이 4:3으로 고정하고 확대 · 자르기만 바꿈
+    /// (층 크기가 바뀌면 영상이 흔들림). 비디오는 16:9
+    var previewLayerSize: CGSize {
+        captureMode == .photo ? standardPhotoRect.size : videoPreviewRect.size
+    }
+
+    /// 미리보기 자리를 채우는 확대 배율 (16:9 사진은 4:3 층을 키워서 채움)
+    var previewScale: CGFloat {
+        let rect = previewRect
+        return max(rect.width / previewLayerSize.width, rect.height / previewLayerSize.height)
+    }
+
+    /// 미리보기 자리 좌표 → 미리보기 층 좌표 (초점 위치 변환용)
+    func previewLayerPoint(from location: CGPoint) -> CGPoint {
+        let rect = previewRect
+        return CGPoint(x: (location.x - rect.width / 2) / previewScale + previewLayerSize.width / 2,
+                       y: (location.y - rect.height / 2) / previewScale + previewLayerSize.height / 2)
+    }
+
     /// 셔터와 하단 줄은 모드가 바뀌어도 같은 자리 (기본 카메라와 동일)
     var shutterCenterY: CGFloat { standardPhotoRect.maxY + Self.shutterOffset }
 
     var bottomRowCenterY: CGFloat { shutterCenterY + Self.bottomRowOffset }
 
-    /// 배율 버튼 줄: 미리보기 아래쪽 안. 비디오(미리보기가 셔터 뒤까지 내려감)도 셔터 위에 오게
-    var zoomRowCenterY: CGFloat { min(previewRect.maxY, shutterCenterY - 50) - 30 }
+    /// 배율 버튼 줄: 모드 · 비율과 상관없이 같은 자리 (기본 카메라와 동일)
+    var zoomRowCenterY: CGFloat { standardPhotoRect.maxY - Self.zoomRowOffset }
 }

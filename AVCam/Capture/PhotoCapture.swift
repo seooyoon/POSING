@@ -27,13 +27,6 @@ final class PhotoCapture: OutputService {
     // The current capabilities available.
     private(set) var capabilities: CaptureCapabilities = .unknown
     
-    /// 자동 지연 처리 허용. 비율이 4:3이 아니면 끔 (지연 처리된 사진은 저장 전에 자를 수 없음)
-    var allowsDeferredDelivery = true {
-        didSet {
-            photoOutput.isAutoDeferredPhotoDeliveryEnabled = allowsDeferredDelivery && photoOutput.isAutoDeferredPhotoDeliverySupported
-        }
-    }
-    
     // A count of Live Photo captures currently in progress.
     private var livePhotoCount = 0
     
@@ -136,7 +129,8 @@ final class PhotoCapture: OutputService {
         photoOutput.maxPhotoQualityPrioritization = .quality
         photoOutput.isResponsiveCaptureEnabled = photoOutput.isResponsiveCaptureSupported
         photoOutput.isFastCapturePrioritizationEnabled = photoOutput.isFastCapturePrioritizationSupported
-        photoOutput.isAutoDeferredPhotoDeliveryEnabled = allowsDeferredDelivery && photoOutput.isAutoDeferredPhotoDeliverySupported
+        // 지연 처리는 항상 끔: 처리 전 사진은 자를 수 없고, 비율마다 켜고 끄면 세션이 다시 구성되어 미리보기가 흔들림
+        photoOutput.isAutoDeferredPhotoDeliveryEnabled = false
         updateCapabilities(for: device)
     }
     

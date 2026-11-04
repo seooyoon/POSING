@@ -92,8 +92,6 @@ final class CameraModel: Camera {
             // 앱을 처음 열면 마지막 모드와 상관없이 항상 사진 (세션 시작 전이라 didSet은 세션을 건드리지 않음)
             captureMode = .photo
             cameraState.captureMode = .photo
-            // 저장된 비율이 16:9 · 1:1이면 세션을 시작하기 전에 지연 처리를 끔
-            await captureService.setPhotoCropping(photoAspect != .fourThree)
             // Start the capture service to start the flow of data.
             try await captureService.start(with: cameraState)
             observeState()
@@ -151,10 +149,6 @@ final class CameraModel: Camera {
     func capturePhoto() async {
         // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
         guard !isSwitchingVideoDevices else { return }
-        // 비율을 막 바꿨으면 지연 처리 설정이 끝난 뒤에 찍음 (지연 처리 사진은 자를 수 없음)
-        await photoAspectTask?.value
-        // 기다리는 사이 카메라 전환이 시작됐으면 찍지 않음
-        guard !isSwitchingVideoDevices else { return }
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
         let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
         if usesScreenFlash {
@@ -200,10 +194,7 @@ final class CameraModel: Camera {
     }
 
     var photoAspect = PhotoAspect.saved {
-        didSet {
-            photoAspect.save()
-            applyPhotoAspect()
-        }
+        didSet { photoAspect.save() }
     }
 
     var photoCodec = PhotoCodec.saved {
@@ -218,18 +209,6 @@ final class CameraModel: Camera {
     private var activeDimensions: CMVideoDimensions? {
         photoDimensions.last {
             PhotoResolution.megapixels(width: $0.width, height: $0.height) == activeResolution
-        }
-    }
-
-    private var photoAspectTask: Task<Void, Never>?
-
-    private func applyPhotoAspect() {
-        let isCropping = photoAspect != .fourThree
-        let previous = photoAspectTask
-        photoAspectTask = Task {
-            // 빠르게 여러 번 바꿔도 순서대로 적용
-            await previous?.value
-            await captureService.setPhotoCropping(isCropping)
         }
     }
 
