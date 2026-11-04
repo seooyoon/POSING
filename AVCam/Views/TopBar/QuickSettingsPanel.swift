@@ -178,7 +178,7 @@ struct QuickSettingsView<CameraModel: Camera>: View {
     private var formatRows: [QuickSettingsRow] {
         [
             QuickSettingsRow(title: "포맷", options: PhotoCodec.allCases.map { codec in
-                QuickSettingsOption(id: codec.rawValue, title: codec.label, isSelected: camera.photoCodec == codec,
+                QuickSettingsOption(id: codec.rawValue, title: codec.label, isSelected: camera.activeCodec == codec,
                                     isEnabled: codec != .raw || camera.isRAWSupported) {
                     camera.photoCodec = codec
                 }

@@ -690,10 +690,25 @@ actor CaptureService {
     }
     
     // MARK: - Photo capture
+    /// 처리가 끝나지 않은 사진 수
+    private var photosInProgress = 0
+    /// 사진 처리가 끝나면 적용할 RAW 설정
+    private var pendingRAWEnabled: Bool?
+
     func capturePhoto(with features: PhotoFeatures, onCaptured: @escaping @Sendable () -> Void) async throws -> Photo {
         // RAW를 막 고르고 바로 찍어도 설정이 맞도록 촬영 직전에 확인
         if photoCapture.isRAWEnabled != features.isRAW {
-            setRAWEnabled(features.isRAW)
+            applyRAWEnabled(features.isRAW)
+        }
+        pendingRAWEnabled = nil
+        photosInProgress += 1
+        defer {
+            photosInProgress -= 1
+            // 처리 중이던 사진이 모두 끝난 뒤 미뤄 둔 RAW 설정을 적용
+            if photosInProgress == 0, let pending = pendingRAWEnabled {
+                pendingRAWEnabled = nil
+                applyRAWEnabled(pending)
+            }
         }
         let photo = try await photoCapture.capturePhoto(with: features, onCaptured: onCaptured)
         // 비율이 4:3이 아니면 가운데를 잘라 저장
@@ -705,6 +720,15 @@ actor CaptureService {
 
     /// RAW(Apple ProRAW) 촬영 준비를 켜고 끔 (세션 구성이 다시 일어남)
     func setRAWEnabled(_ isEnabled: Bool) {
+        // 처리 중인 사진이 있으면 끝난 뒤로 미룸 (세션 구성 변경과 겹치지 않게)
+        guard photosInProgress == 0 else {
+            pendingRAWEnabled = isEnabled
+            return
+        }
+        applyRAWEnabled(isEnabled)
+    }
+
+    private func applyRAWEnabled(_ isEnabled: Bool) {
         guard photoCapture.isRAWEnabled != isEnabled else { return }
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }

@@ -31,11 +31,11 @@ struct FormatButton<CameraModel: Camera>: View {
         case .photo:
             // 형식 옆에 작은 아래첨자 해상도. 둘을 따로 누름
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(camera.photoCodec.label)
+                Text(camera.activeCodec.label)
                 small("\(camera.activeResolution)", baseline: -4)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("사진 형식 \(camera.photoCodec.label), 해상도 \(camera.activeResolution)메가픽셀")
+            .accessibilityLabel("사진 형식 \(camera.activeCodec.label), 해상도 \(camera.activeResolution)메가픽셀")
         case .video:
             // HD 해상도 · 30 FPS (작은 위첨자)
             HStack(alignment: .firstTextBaseline, spacing: 14) {
