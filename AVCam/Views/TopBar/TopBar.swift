@@ -53,6 +53,7 @@ struct TopBar<CameraModel: Camera>: View {
             }
         }
         .padding(.horizontal, CameraLayout.sideInset)
+        .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
         // 카메라 컨트롤 버튼을 밀고 있는 동안은 숨김
         .opacity(camera.prefersMinimizedUI ? 0 : 1)
         .hidden(until: camera.status == .running)

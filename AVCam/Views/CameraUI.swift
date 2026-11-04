@@ -27,8 +27,9 @@ struct CameraUI<CameraModel: Camera>: View {
             TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings)
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.topBarCenterY)
-                // 빠른 설정 판이 열리면 그 자리를 판이 차지함
-                .opacity(quickSettings == nil ? 1 : 0)
+                // 빠른 설정 판 · 더보기 메뉴가 열리면 사라짐 (기본 카메라와 같음)
+                .opacity(isTopBarHidden ? 0 : 1)
+                .blur(radius: isTopBarHidden ? 6 : 0)
 
             // 포즈 · MY 패널: 상단 바 바로 아래, 한 번에 하나만. 전환할 때는 내용만 바뀜
             if let kind = layers.openPanel {
@@ -51,31 +52,36 @@ struct CameraUI<CameraModel: Camera>: View {
                 .opacity(isShowingLiveBadge ? 0 : 1)
                 .position(x: layout.centerX, y: smudgeBannerCenterY)
 
-            // 배율 버튼 · 다이얼 (다이얼 원은 셔터 · 하단 줄 뒤까지 펼쳐짐)
-            if camera.zoom.isAvailable {
+            // 배율 버튼 · 다이얼 (다이얼 원은 셔터 · 하단 줄 뒤까지 펼쳐짐). 더보기 메뉴가 열리면 메뉴 뒤로 숨김
+            if camera.zoom.isAvailable && !isShowingMoreMenu {
                 ZoomControl(camera: camera,
-                            dialRadius: layout.size.width * 0.55,
-                            dialCenterBelowRow: layout.shutterCenterY + 45 - layout.zoomRowCenterY)
+                            dialRadius: CameraLayout.zoomDialRadius,
+                            dialCenterBelowRow: layout.shutterCenterY + CameraLayout.zoomDialCenterBelowShutter - layout.zoomRowCenterY)
                     .frame(width: layout.size.width)
                     .position(x: layout.centerX, y: layout.zoomRowCenterY + ZoomControl<CameraModel>.rowCenterAboveBottom - ZoomControl<CameraModel>.height / 2)
             }
             // 전면 카메라는 배율 버튼 자리에 화각 버튼
-            if camera.zoom.isFrontCamera {
+            if camera.zoom.isFrontCamera && !isShowingMoreMenu {
                 FrontFieldOfViewButton(camera: camera)
                     .position(x: layout.centerX, y: layout.zoomRowCenterY)
             }
             // 접사 중이거나 접사 전환을 꺼 두면 왼쪽 아래 꽃 버튼
-            if camera.zoom.showsMacroButton {
+            if camera.zoom.showsMacroButton && !isShowingMoreMenu {
                 MacroButton(camera: camera)
                     .position(x: CameraLayout.sideInset + 22, y: layout.zoomRowCenterY)
             }
 
-            CaptureButton(camera: camera)
-                .position(x: layout.centerX, y: layout.shutterCenterY)
+            // 더보기 메뉴가 열리면 셔터 · 하단 줄은 메뉴 속으로 사라짐
+            Group {
+                CaptureButton(camera: camera)
+                    .position(x: layout.centerX, y: layout.shutterCenterY)
 
-            BottomBar(camera: camera)
-                .frame(width: layout.size.width)
-                .position(x: layout.centerX, y: layout.bottomRowCenterY)
+                BottomBar(camera: camera)
+                    .frame(width: layout.size.width)
+                    .position(x: layout.centerX, y: layout.bottomRowCenterY)
+            }
+            .opacity(isShowingMoreMenu ? 0 : 1)
+            .blur(radius: isShowingMoreMenu ? 6 : 0)
 
             // 타이머 카운트다운: 미리보기 가운데
             TimerCountdownView(countdown: camera.countdown)
@@ -91,9 +97,11 @@ struct CameraUI<CameraModel: Camera>: View {
                     Spacer()
                     MoreMenu(camera: camera, isPresented: $isShowingMoreMenu)
                 }
-                .padding(8)
+                .padding(.horizontal, 6)
+                .padding(.bottom, 8.5)
                 .frame(width: layout.size.width, height: layout.size.height)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                // 셔터 자리에서 부풀어 나옴
+                .transition(.glassPop(GlassPopTransition(anchor: UnitPoint(x: 0.5, y: layout.shutterCenterY / layout.size.height))))
             }
 
             // 빠른 설정 판: 상단 바 위로 내려옴. 판 바깥을 탭하면 닫힘
@@ -106,7 +114,9 @@ struct CameraUI<CameraModel: Camera>: View {
                     .frame(width: layout.size.width - 17)
                     // 판 위쪽이 상단 바 버튼 위쪽과 같은 높이
                     .offset(x: 8.5, y: layout.topBarCenterY - topBarControlHeight / 2)
-                    .transition(.offset(y: -12).combined(with: .opacity))
+                    // 누른 버튼 자리에서 부풀어 나옴
+                    .transition(.glassPop(GlassPopTransition(anchor: kind == .format ? .topLeading : .topTrailing,
+                                                             scaleX: 0.3, scaleY: 0.45)))
             }
 
             // 전면 화면 플래시
@@ -119,8 +129,8 @@ struct CameraUI<CameraModel: Camera>: View {
                 .frame(width: layout.size.width, height: layout.size.height)
         }
         .animation(.easeOut(duration: 0.2), value: layers.openPanel)
-        .animation(.spring(duration: 0.35), value: isShowingMoreMenu)
-        .animation(.easeOut(duration: 0.2), value: quickSettings)
+        .animation(.easeOut(duration: 0.18), value: isShowingMoreMenu)
+        .animation(.easeOut(duration: 0.18), value: quickSettings)
         // 모드를 바꾸거나 녹화를 시작하면 메뉴를 닫음
         .onChange(of: camera.captureMode) {
             isShowingMoreMenu = false
@@ -134,6 +144,10 @@ struct CameraUI<CameraModel: Camera>: View {
             guard camera.captureMode == .photo else { return }
             showLiveNotice(isActive)
         }
+    }
+
+    private var isTopBarHidden: Bool {
+        quickSettings != nil || isShowingMoreMenu
     }
 
     private var isShowingLiveBadge: Bool {
