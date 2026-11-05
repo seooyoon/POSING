@@ -70,6 +70,8 @@ private final class TimelapseRecorder: NSObject, AVCaptureVideoDataOutputSampleB
     private var size: CMVideoDimensions?
     private var lastCaptureTime: CMTime?
     private var frameCount: Int64 = 0
+    /// 파일을 만들지 못한 이유. 있으면 프레임을 더 받지 않음
+    private var setupError: Error?
 
     func start() {
         url = .movieFileURL
@@ -78,14 +80,15 @@ private final class TimelapseRecorder: NSObject, AVCaptureVideoDataOutputSampleB
         size = nil
         lastCaptureTime = nil
         frameCount = 0
+        setupError = nil
         isRecording = true
     }
 
     func finish(completion: @escaping @Sendable (Result<Movie, Error>) -> Void) {
         isRecording = false
         guard let writer, let input, let url else {
-            // 프레임이 하나도 들어오기 전에 멈춤
-            completion(.failure(CameraError.setupFailed))
+            // 파일을 만들지 못했거나 프레임이 하나도 들어오기 전에 멈춤
+            completion(.failure(setupError ?? CameraError.setupFailed))
             return
         }
         input.markAsFinished()
@@ -115,20 +118,40 @@ private final class TimelapseRecorder: NSObject, AVCaptureVideoDataOutputSampleB
     }
 
     private func makeWriter(size: CMVideoDimensions) {
-        guard let url, let writer = try? AVAssetWriter(outputURL: url, fileType: .mov) else { return }
+        guard let url else { return }
+        let writer: AVAssetWriter
+        do {
+            writer = try AVAssetWriter(outputURL: url, fileType: .mov)
+        } catch {
+            failSetup(error)
+            return
+        }
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: Int(size.width),
             AVVideoHeightKey: Int(size.height),
         ])
         input.expectsMediaDataInRealTime = true
-        guard writer.canAdd(input) else { return }
+        guard writer.canAdd(input) else {
+            failSetup(CameraError.setupFailed)
+            return
+        }
         writer.add(input)
-        guard writer.startWriting() else { return }
+        guard writer.startWriting() else {
+            failSetup(writer.error ?? CameraError.setupFailed)
+            return
+        }
         writer.startSession(atSourceTime: .zero)
         self.writer = writer
         self.input = input
         self.size = size
+    }
+
+    /// 프레임마다 다시 시도하지 않게 멈추고 이유를 남김 (멈출 때 오류로 알림)
+    private func failSetup(_ error: Error) {
+        logger.error("타임랩스 파일을 만들지 못함: \(error)")
+        setupError = error
+        isRecording = false
     }
 
     /// 영상 시간표로 옮긴 프레임: n번째 프레임은 n / 30초
