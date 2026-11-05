@@ -34,8 +34,17 @@ final class MovieCapture: OutputService {
 
     // MARK: - Capturing a movie
 
-    /// Starts movie recording.
-    func startRecording() {
+    /// 재생 의도 메타데이터: 0 = 슬로 모션으로 재생
+    private static var slowMotionPlaybackIntent: AVMetadataItem {
+        let item = AVMutableMetadataItem()
+        item.identifier = .quickTimeMetadataFullFrameRatePlaybackIntent
+        item.dataType = kCMMetadataBaseDataType_UInt8 as String
+        item.value = NSNumber(value: UInt8(0))
+        return item
+    }
+
+    /// Starts movie recording. 슬로 모션이면 사진 앱에 느리게 재생할 영상임을 알림
+    func startRecording(isSlowMotion: Bool = false) {
         // Return early if already recording.
         guard !movieOutput.isRecording else { return }
 
@@ -44,6 +53,7 @@ final class MovieCapture: OutputService {
 
         let delegate = MovieCaptureDelegate()
         self.delegate = delegate
+        movieOutput.metadata = isSlowMotion ? [Self.slowMotionPlaybackIntent] : nil
         movieOutput.startRecording(to: URL.movieFileURL, recordingDelegate: delegate)
     }
     

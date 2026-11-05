@@ -570,7 +570,9 @@ actor CaptureService {
     
     private func updateCaptureRotation(_ angle: CGFloat) {
         // Update the orientation for all output services.
-        outputServices.forEach { $0.setVideoRotationAngle(angle) }
+        // 타임랩스는 녹화 중 프레임 크기가 바뀌면 안 되므로 방향을 고정 (다음 녹화 시작 때 맞춤)
+        let services: [any OutputService] = recordingMode == .timelapse ? [photoCapture, movieCapture] : outputServices
+        services.forEach { $0.setVideoRotationAngle(angle) }
     }
     
     private var videoPreviewLayer: AVCaptureVideoPreviewLayer {
@@ -848,11 +850,15 @@ actor CaptureService {
     /// which calls the following `stopRecording()` method.
     func startRecording() {
         guard !isRecording else { return }
+        if captureMode == .timelapse {
+            // 녹화를 시작하기 직전의 방향으로 고정
+            updateCaptureRotation(rotationCoordinator.videoRotationAngleForHorizonLevelCapture)
+        }
         recordingMode = captureMode
         if captureMode == .timelapse {
             timelapseCapture.startRecording()
         } else {
-            movieCapture.startRecording()
+            movieCapture.startRecording(isSlowMotion: captureMode == .slowMotion)
         }
     }
 
