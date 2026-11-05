@@ -47,6 +47,7 @@ extension CameraModel {
             for await capabilities in await captureService.$captureCapabilities.values {
                 isHDRVideoSupported = capabilities.isHDRSupported
                 applyPhotoCapabilities(capabilities)
+                if !capabilities.videoModes.isEmpty { availableVideoModes = capabilities.videoModes }
                 cameraState.isVideoHDRSupported = capabilities.isHDRSupported
             }
         }

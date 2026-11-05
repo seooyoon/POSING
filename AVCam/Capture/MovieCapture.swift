@@ -29,6 +29,8 @@ final class MovieCapture: OutputService {
     // A Boolean value that indicates whether the currently selected camera's
     // active format supports HDR.
     private var isHDRSupported = false
+    /// 지금 카메라가 찍을 수 있는 해상도 · 프레임률
+    private var videoModes = Set<VideoMode>()
 
     // MARK: - Capturing a movie
 
@@ -100,6 +102,7 @@ final class MovieCapture: OutputService {
     func updateConfiguration(for device: AVCaptureDevice) {
         // The app supports HDR video capture if the active format supports it.
         isHDRSupported = device.activeFormat10BitVariant != nil
+        videoModes = device.supportedVideoModes
 
         // The output has a video connection only while the session contains it, which is the
         // case in video capture mode. Adding the output creates a new connection, so the service
@@ -123,6 +126,6 @@ final class MovieCapture: OutputService {
     // MARK: - Configuration
     /// Returns the capabilities for this capture service.
     var capabilities: CaptureCapabilities {
-        CaptureCapabilities(isHDRSupported: isHDRSupported)
+        CaptureCapabilities(isHDRSupported: isHDRSupported, videoModes: videoModes)
     }
 }

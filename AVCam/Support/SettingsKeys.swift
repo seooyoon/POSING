@@ -18,9 +18,14 @@ enum SettingsKeys {
     static let flashMode = "flashMode"
     /// 타이머 초 (0 = 끔)
     static let timerDuration = "timerDuration"
-    /// 사진 비율 (4:3 · 16:9 · 1:1)
     /// 사진 형식 (JPEG · RAW)
     static let photoCodec = "photoCodec"
     /// 사진 해상도 MP (12 · 24 · 48)
     static let photoResolution = "photoResolution"
+    /// 비디오 해상도 (HD · 4K)
+    static let videoResolution = "videoResolution"
+    /// 비디오 프레임률 (24 · 30 · 60)
+    static let videoFrameRate = "videoFrameRate"
+    /// 슬로 모션 프레임률 (120 · 240)
+    static let slowMotionFrameRate = "slowMotionFrameRate"
 }

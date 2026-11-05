@@ -234,6 +234,33 @@ final class CameraModel: Camera {
         }
     }
 
+    var videoMode = VideoMode.saved {
+        didSet {
+            videoMode.save()
+            guard videoMode != oldValue, status == .running else { return }
+            // 형식을 바꾸는 동안 미리보기를 흐리게 (모드 전환과 같음)
+            Task {
+                isSwitchingModes = true
+                defer { isSwitchingModes = false }
+                await captureService.setVideoMode(videoMode)
+            }
+        }
+    }
+
+    var availableVideoModes = Set<VideoMode>()
+
+    var slowMotionFrameRate = VideoMode.savedSlowMotionFrameRate {
+        didSet {
+            VideoMode.saveSlowMotionFrameRate(slowMotionFrameRate)
+            guard slowMotionFrameRate != oldValue, status == .running else { return }
+            Task {
+                isSwitchingModes = true
+                defer { isSwitchingModes = false }
+                await captureService.setSlowMotionFrameRate(slowMotionFrameRate)
+            }
+        }
+    }
+
     var photoResolution = PhotoResolution.saved {
         didSet {
             PhotoResolution.save(photoResolution)
@@ -253,7 +280,7 @@ final class CameraModel: Camera {
 
     /// 비디오 모드에서만 플래시 값대로 조명을 켬
     private func updateTorch() {
-        let mode = captureMode == .video ? flashMode : .off
+        let mode = captureMode.isMovie ? flashMode : .off
         Task { await captureService.setTorchMode(mode) }
     }
 
