@@ -5,7 +5,7 @@
 //  하단 가운데 `비디오 | 사진` 캡슐. 선택된 모드는 밝은 판 안에 노란 글씨 (docs/02_UI.md 7절).
 //  탭하면 누른 쪽 모드. 누른 채 좌우로 밀거나 꾹 누르면 기본 카메라처럼 모드 줄로 펼쳐지고,
 //  가운데 강조 캡슐은 그대로인 채 글자 줄이 손가락을 따라 미끄러진다 (가운데에 가장 가까운 모드만 노란색).
-//  손을 떼면 캡슐에 가장 가까운 모드로 자리 잡는다. 타임랩스 · 슬로 모션은 5단계에서 줄에 더한다.
+//  손을 떼면 캡슐에 가장 가까운 모드로 자리 잡는다. 접힌 캡슐에는 선택된 모드와 오른쪽 옆 모드(사진이면 왼쪽 옆)가 보인다.
 //
 
 import SwiftUI
@@ -13,7 +13,7 @@ import SwiftUI
 struct CaptureModePicker<CameraModel: Camera>: View {
 
     /// 화면에 보이는 순서. 기본 카메라처럼 사진이 오른쪽
-    static var displayOrder: [CaptureMode] { [.video, .photo] }
+    static var displayOrder: [CaptureMode] { [.timelapse, .slowMotion, .video, .photo] }
 
     /// 미리보기를 좌우로 밀었을 때 바뀔 모드. 끝에서 더 밀면 그대로
     static func mode(after mode: CaptureMode, swipe direction: SwipeDirection) -> CaptureMode {
@@ -89,10 +89,10 @@ struct CaptureModePicker<CameraModel: Camera>: View {
 
     /// 접힌 캡슐: 선택된 쪽에 강조 판
     private var capsule: some View {
-        labels(selected: camera.captureMode)
+        labels(capsuleModes, selected: camera.captureMode)
             .background {
                 highlight(size: highlightSize, fillOpacity: camera.isSceneDark ? 0.12 : 0.24)
-                    .offset(x: position(of: selectedIndex))
+                    .offset(x: position(of: capsuleModes.firstIndex(of: camera.captureMode) ?? 0, count: capsuleModes.count))
             }
             .frame(width: capsuleSize.width, height: capsuleSize.height)
             .bottomGlass(isSceneDark: camera.isSceneDark, in: .capsule)
@@ -102,7 +102,7 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     private var strip: some View {
         ZStack {
             highlight(size: expandedHighlightSize, fillOpacity: 0.1)
-            labels(selected: centeredMode)
+            labels(Self.displayOrder, selected: centeredMode)
                 .offset(x: clampedStripOffset)
         }
         .frame(width: stripWidth, height: expandedHighlightSize.height)
@@ -119,14 +119,14 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     }
 
     /// 모드 이름을 가운데 기준 간격대로 놓은 줄. 선택된 모드만 노란색
-    private func labels(selected: CaptureMode) -> some View {
+    private func labels(_ modes: [CaptureMode], selected: CaptureMode) -> some View {
         ZStack {
-            ForEach(Array(Self.displayOrder.enumerated()), id: \.element) { index, mode in
+            ForEach(Array(modes.enumerated()), id: \.element) { index, mode in
                 Text(mode.title)
                     .font(.system(size: 15.5, weight: .medium))
                     .foregroundStyle(mode == selected ? Color.cameraYellow : .white)
                     .fixedSize()
-                    .offset(x: position(of: index))
+                    .offset(x: position(of: index, count: modes.count))
             }
         }
     }
@@ -137,9 +137,16 @@ struct CaptureModePicker<CameraModel: Camera>: View {
         Self.displayOrder.firstIndex(of: camera.captureMode) ?? 0
     }
 
+    /// 접힌 캡슐에 보이는 두 모드
+    private var capsuleModes: [CaptureMode] {
+        let order = Self.displayOrder
+        let first = min(selectedIndex, order.count - 2)
+        return [order[first], order[first + 1]]
+    }
+
     /// 줄 가운데 기준 index번째 모드의 x
-    private func position(of index: Int) -> CGFloat {
-        (CGFloat(index) - CGFloat(Self.displayOrder.count - 1) / 2) * labelSpacing
+    private func position(of index: Int, count: Int = Self.displayOrder.count) -> CGFloat {
+        (CGFloat(index) - CGFloat(count - 1) / 2) * labelSpacing
     }
 
     /// 펼친 줄의 글자 줄 이동: 선택된 모드가 가운데 + 손가락 이동. 양 끝 모드까지만
@@ -199,7 +206,7 @@ struct CaptureModePicker<CameraModel: Camera>: View {
                     collapse()
                 } else if !hasMoved {
                     // 탭: 누른 쪽 모드
-                    camera.captureMode = value.location.x < centerX ? Self.displayOrder[0] : Self.displayOrder[1]
+                    camera.captureMode = value.location.x < centerX ? capsuleModes[0] : capsuleModes[1]
                 }
             }
     }

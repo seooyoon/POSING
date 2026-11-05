@@ -18,6 +18,8 @@ extension CaptureMode {
         switch self {
         case .photo: "사진"
         case .video: "비디오"
+        case .slowMotion: "슬로 모션"
+        case .timelapse: "타임랩스"
         }
     }
 }

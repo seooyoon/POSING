@@ -33,14 +33,14 @@ struct CaptureButton<CameraModel: Camera>: View {
     /// 두 버튼을 겹쳐 두고 모드가 바뀌면 흰색 ↔ 빨강이 서서히 바뀜 (기본 카메라와 같음)
     var captureButton: some View {
         ZStack {
-            ShutterRing(isSceneDark: camera.isSceneDark)
+            ShutterRing(isSceneDark: camera.isSceneDark, showsTicks: camera.captureMode == .slowMotion)
             MovieCaptureButton(isRecording: $isRecording) { _ in
                 Task {
                     await camera.toggleRecording()
                 }
             }
-            .opacity(camera.captureMode == .video ? 1 : 0)
-            .allowsHitTesting(camera.captureMode == .video)
+            .opacity(camera.captureMode.isMovie ? 1 : 0)
+            .allowsHitTesting(camera.captureMode.isMovie)
             PhotoCaptureButton {
                 Task {
                     // 타이머가 켜져 있으면 카운트다운
@@ -66,12 +66,33 @@ struct CaptureButton<CameraModel: Camera>: View {
 private struct ShutterRing: View {
     static let width: CGFloat = 6
     let isSceneDark: Bool
+    /// 슬로 모션은 링에 촘촘한 눈금 (기본 카메라와 같음)
+    var showsTicks = false
+
+    private static let tickCount = 90
 
     var body: some View {
         Circle()
             .strokeBorder(Color(white: 0.5).opacity(isSceneDark ? 0.35 : 0.7), lineWidth: Self.width)
             .overlay(Circle().strokeBorder(.white.opacity(isSceneDark ? 0.3 : 0.18), lineWidth: 0.5))
+            .overlay {
+                Canvas { context, size in
+                    let center = CGPoint(x: size.width / 2, y: size.height / 2)
+                    let radius = size.width / 2
+                    for index in 0..<Self.tickCount {
+                        let angle = Double(index) / Double(Self.tickCount) * 2 * .pi
+                        let direction = CGPoint(x: cos(angle), y: sin(angle))
+                        var tick = Path()
+                        tick.move(to: CGPoint(x: center.x + direction.x * radius, y: center.y + direction.y * radius))
+                        tick.addLine(to: CGPoint(x: center.x + direction.x * (radius - Self.width),
+                                                 y: center.y + direction.y * (radius - Self.width)))
+                        context.stroke(tick, with: .color(.white.opacity(0.9)), lineWidth: 1)
+                    }
+                }
+                .opacity(showsTicks ? 1 : 0)
+            }
             .animation(.easeInOut(duration: 0.3), value: isSceneDark)
+            .animation(.easeInOut(duration: 0.3), value: showsTicks)
     }
 }
 
