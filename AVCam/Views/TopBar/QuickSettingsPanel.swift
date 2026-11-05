@@ -183,14 +183,14 @@ struct QuickSettingsView<CameraModel: Camera>: View {
         // 슬로 모션은 HD 고정이라 프레임률만
         if camera.captureMode == .slowMotion {
             return [QuickSettingsRow(title: "프레임률", options: VideoMode.slowMotionFrameRates.map { rate in
-                QuickSettingsOption(id: "\(rate)", title: "\(rate)", isSelected: camera.slowMotionFrameRate == rate,
+                QuickSettingsOption(id: "\(rate)", title: "\(rate)", isSelected: camera.activeSlowMotionFrameRate == rate,
                                     isEnabled: camera.isVideoModeAvailable(VideoMode(resolution: .hd, frameRate: rate)),
                                     isDefault: rate == AppDefaults.slowMotionFrameRate) {
                     camera.slowMotionFrameRate = rate
                 }
             })]
         }
-        let mode = camera.videoMode
+        let mode = camera.activeVideoMode
         return [
             QuickSettingsRow(title: "해상도", options: VideoResolution.allCases.map { resolution in
                 QuickSettingsOption(id: resolution.rawValue, title: resolution.label, isSelected: mode.resolution == resolution,

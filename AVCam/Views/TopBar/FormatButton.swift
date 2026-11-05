@@ -43,11 +43,11 @@ struct FormatButton<CameraModel: Camera>: View {
             // 4K 해상도 · 30 FPS (작은 위첨자)
             HStack(alignment: .firstTextBaseline, spacing: camera.captureMode == .slowMotion ? 6 : 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(camera.captureMode == .slowMotion ? VideoResolution.hd.label : camera.videoMode.resolution.label)
+                    Text(camera.captureMode == .slowMotion ? VideoResolution.hd.label : camera.activeVideoMode.resolution.label)
                     small("해상도", baseline: 6)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(verbatim: "\(camera.captureMode == .slowMotion ? camera.slowMotionFrameRate : camera.videoMode.frameRate)").font(.cameraDigits(size: topBarFontSize))
+                    Text(verbatim: "\(camera.captureMode == .slowMotion ? camera.activeSlowMotionFrameRate : camera.activeVideoMode.frameRate)").font(.cameraDigits(size: topBarFontSize))
                     small("FPS", baseline: 6)
                 }
             }

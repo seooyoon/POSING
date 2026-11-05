@@ -132,6 +132,17 @@ struct VideoMode: Hashable, Sendable {
 
     var resolution: VideoResolution
     var frameRate: Int
+
+    /// 이 카메라에서 실제로 찍을 조합. 안 되면 같은 해상도의 더 낮은 프레임률, 그래도 없으면 가장 가까운 값.
+    /// 목록이 비어 있으면 아직 모르는 것이라 그대로
+    func resolved(in available: Set<VideoMode>) -> VideoMode {
+        guard !available.isEmpty, !available.contains(self) else { return self }
+        let sameResolution = available.filter { $0.resolution == resolution }
+        let candidates = sameResolution.isEmpty ? available : sameResolution
+        return candidates.filter { $0.frameRate <= frameRate }.max { $0.frameRate < $1.frameRate }
+            ?? candidates.min { $0.frameRate < $1.frameRate }
+            ?? self
+    }
 }
 
 /// A structure that represents the capture capabilities of `CaptureService` in

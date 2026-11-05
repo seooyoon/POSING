@@ -164,6 +164,14 @@ extension Camera {
 }
 
 extension Camera {
+    /// 실제로 찍히는 비디오 조합 (지금 카메라에 없는 값이면 대신 찍을 값)
+    var activeVideoMode: VideoMode { videoMode.resolved(in: availableVideoModes) }
+
+    /// 실제로 찍히는 슬로 모션 프레임률
+    var activeSlowMotionFrameRate: Int {
+        VideoMode(resolution: .hd, frameRate: slowMotionFrameRate).resolved(in: availableVideoModes).frameRate
+    }
+
     func isVideoModeAvailable(_ mode: VideoMode) -> Bool {
         availableVideoModes.isEmpty || availableVideoModes.contains(mode)
     }
