@@ -13,8 +13,10 @@ import SwiftUI
 enum QuickSettingsKind {
     /// 오른쪽 묶음 꾹 누르기: 플래시 · LIVE
     case flashAndLive
-    /// 형식 버튼: 포맷 · 해상도
+    /// 형식 버튼 (사진): 포맷 · 해상도
     case format
+    /// 형식 버튼 (비디오): 해상도 · 프레임률
+    case videoFormat
 }
 
 struct QuickSettingsOption: Identifiable {
@@ -92,7 +94,7 @@ struct QuickSettingsPanel: View {
         Button(action: option.action) {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(option.title)
-                    .font(.system(size: 14.5))
+                    .font(.cameraDigits(size: 14.5))
                 if let superscript = option.superscript {
                     Text(superscript)
                         .font(.system(size: 8.5))
@@ -147,13 +149,15 @@ struct QuickSettingsView<CameraModel: Camera>: View {
             QuickSettingsPanel(rows: formatRows,
                                footnote: "최대 \(camera.activeResolution)MP의 해상도입니다.",
                                isSceneDark: camera.isSceneDark)
+        case .videoFormat:
+            QuickSettingsPanel(rows: videoFormatRows, isSceneDark: camera.isSceneDark)
         }
     }
 
     /// 비디오는 조명으로 쓰는 플래시만 (전면은 조명이 없어 비어 있음). LIVE '자동'은 만들 수 없어서 켬 · 끔만
     private var flashAndLiveRows: [QuickSettingsRow] {
         var rows: [QuickSettingsRow] = []
-        if !(camera.captureMode == .video && camera.zoom.isFrontCamera) {
+        if !(camera.captureMode.isMovie && camera.zoom.isFrontCamera) {
             rows.append(QuickSettingsRow(title: "플래시", options: FlashMode.allCases.map { mode in
                 QuickSettingsOption(id: mode.rawValue, title: mode.title, isSelected: camera.flashMode == mode) {
                     camera.flashMode = mode
@@ -173,6 +177,36 @@ struct QuickSettingsView<CameraModel: Camera>: View {
             ], startColumn: 1))
         }
         return rows
+    }
+
+    private var videoFormatRows: [QuickSettingsRow] {
+        // 슬로 모션은 HD 고정이라 프레임률만
+        if camera.captureMode == .slowMotion {
+            return [QuickSettingsRow(title: "프레임률", options: VideoMode.slowMotionFrameRates.map { rate in
+                QuickSettingsOption(id: "\(rate)", title: "\(rate)", isSelected: camera.slowMotionFrameRate == rate,
+                                    isEnabled: camera.isVideoModeAvailable(VideoMode(resolution: .hd, frameRate: rate)),
+                                    isDefault: rate == AppDefaults.slowMotionFrameRate) {
+                    camera.slowMotionFrameRate = rate
+                }
+            })]
+        }
+        let mode = camera.videoMode
+        return [
+            QuickSettingsRow(title: "해상도", options: VideoResolution.allCases.map { resolution in
+                QuickSettingsOption(id: resolution.rawValue, title: resolution.label, isSelected: mode.resolution == resolution,
+                                    isEnabled: camera.isVideoModeAvailable(VideoMode(resolution: resolution, frameRate: mode.frameRate)),
+                                    isDefault: resolution == AppDefaults.videoResolution) {
+                    camera.videoMode.resolution = resolution
+                }
+            }),
+            QuickSettingsRow(title: "프레임률", options: VideoMode.frameRates.map { rate in
+                QuickSettingsOption(id: "\(rate)", title: "\(rate)", isSelected: mode.frameRate == rate,
+                                    isEnabled: camera.isVideoModeAvailable(VideoMode(resolution: mode.resolution, frameRate: rate)),
+                                    isDefault: rate == AppDefaults.videoFrameRate) {
+                    camera.videoMode.frameRate = rate
+                }
+            }),
+        ]
     }
 
     private var formatRows: [QuickSettingsRow] {
