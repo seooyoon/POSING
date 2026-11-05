@@ -24,6 +24,7 @@ class PreviewCameraModel: Camera {
     var timerDuration = TimerDuration.off
     var exposureCompensation: Float = 0
     var photoAspect = PhotoAspect.fourThree
+    var cameraLook = CameraLookLibrary.savedLook()
     var photoCodec = PhotoCodec.jpeg
     var photoResolution = 24
     var videoMode = VideoMode(resolution: AppDefaults.videoResolution, frameRate: AppDefaults.videoFrameRate)

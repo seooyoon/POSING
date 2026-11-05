@@ -80,6 +80,9 @@ protocol Camera: AnyObject, SendableMetatype {
     /// 사진 비율 (4:3 → 16:9 → 1:1)
     var photoAspect: PhotoAspect { get set }
 
+    /// 고른 카메라의 색감 (셔터 왼쪽 카메라 버튼). 사진에만 적용
+    var cameraLook: CameraLook { get set }
+
     /// 고른 사진 형식 (JPEG · RAW). 실제로 찍히는 값은 `activeCodec`
     var photoCodec: PhotoCodec { get set }
 
@@ -142,9 +145,10 @@ protocol Camera: AnyObject, SendableMetatype {
 }
 
 extension Camera {
-    /// LIVE를 쓸 수 있는지. 비율이 4:3이 아니거나(CLAUDE.md 6절) RAW면 자동 끔
+    /// LIVE를 쓸 수 있는지. 비율이 4:3이 아니거나 기본이 아닌 카메라(CLAUDE.md 6절), RAW면 자동 끔
     var isLivePhotoAvailable: Bool {
         photoAspect == .fourThree && activeCodec != .raw
+            && (cameraLook.isDefault || !AppDefaults.turnsOffLiveForNonDefaultCamera)
     }
 
     /// 실제로 LIVE로 찍히는지
