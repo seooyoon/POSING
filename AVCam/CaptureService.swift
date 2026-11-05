@@ -50,6 +50,12 @@ actor CaptureService {
     /// 비디오 해상도 · 프레임률
     private var videoMode = VideoMode.saved
     private var slowMotionFrameRate = VideoMode.savedSlowMotionFrameRate
+    /// 녹화 중에 도착한 모드 변경
+    private var pendingCaptureMode: CaptureMode?
+
+    private var isRecording: Bool {
+        movieCapture.captureActivity.isRecording || timelapseCapture.captureActivity.isRecording
+    }
 
     private var outputServices: [any OutputService] { [photoCapture, movieCapture, timelapseCapture] }
     
@@ -307,6 +313,11 @@ actor CaptureService {
     ///
     /// - Parameter `captureMode`: The capture mode to enable.
     func setCaptureMode(_ captureMode: CaptureMode) throws {
+        // 녹화 중에는 출력을 바꾸지 않음. 먼저 눌린 모드 변경이 늦게 도착하면 녹화가 끝난 뒤 적용
+        guard !isRecording else {
+            pendingCaptureMode = captureMode
+            return
+        }
         try applyCaptureMode(captureMode)
         // 프리셋 · 형식이 바뀌면 장치 배율이 0.5×로 돌아가므로 기본 배율(1×)로
         zoomController.applyDefaultZoom()
@@ -331,7 +342,7 @@ actor CaptureService {
     }
 
     private func reapplyVideoMode() {
-        guard !movieCapture.output.isRecording else { return }
+        guard !isRecording else { return }
         captureSession.beginConfiguration()
         applyVideoMode()
         updateCaptureCapabilities()
@@ -829,6 +840,7 @@ actor CaptureService {
     /// Starts recording video. The video records until the user stops recording,
     /// which calls the following `stopRecording()` method.
     func startRecording() {
+        guard !isRecording else { return }
         if captureMode == .timelapse {
             timelapseCapture.startRecording()
         } else {
@@ -838,7 +850,15 @@ actor CaptureService {
 
     /// Stops the recording and returns the captured movie.
     func stopRecording() async throws -> Movie {
-        captureMode == .timelapse ? try await timelapseCapture.stopRecording() : try await movieCapture.stopRecording()
+        // 지금 녹화 중인 쪽을 멈춤
+        let isTimelapse = timelapseCapture.captureActivity.isRecording
+        defer {
+            if let mode = pendingCaptureMode {
+                pendingCaptureMode = nil
+                try? setCaptureMode(mode)
+            }
+        }
+        return isTimelapse ? try await timelapseCapture.stopRecording() : try await movieCapture.stopRecording()
     }
 
     /// 촬영 중 HDR 전환. 형식이 바뀌므로 렌즈 얼룩 감지를 다시 켠다
@@ -853,7 +873,9 @@ actor CaptureService {
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
         // If the current device provides a 10-bit HDR format, enable it for use.
-        if isEnabled, currentDevice.activeFormat10BitVariant != nil {
+        // 직전 모드(슬로 모션 등) 형식이 아니라 지금 찍을 조합 기준으로 확인
+        if isEnabled, let mode = activeVideoMode,
+           currentDevice.format(for: mode.resolved(in: currentDevice.supportedVideoModes), prefersTenBit: true)?.isTenBitFormat == true {
             isHDRVideoEnabled = true
         } else {
             captureSession.sessionPreset = .high
