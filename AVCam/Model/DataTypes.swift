@@ -106,6 +106,8 @@ struct PhotoFeatures {
     let flashMode: AVCaptureDevice.FlashMode
     /// 저장 전에 가운데를 잘라낼 비율 (긴 변 / 짧은 변). nil이면 원본 4:3
     let cropRatio: CGFloat?
+    /// 저장 전에 입힐 카메라 색감 LUT (.cube). nil이면 보정 없음
+    let lookLUTURL: URL?
     /// RAW(Apple ProRAW)로 찍음. 아니면 JPEG
     let isRAW: Bool
     /// 사진 크기. nil이면 출력 최대 크기
