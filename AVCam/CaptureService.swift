@@ -52,6 +52,8 @@ actor CaptureService {
     private var slowMotionFrameRate = VideoMode.savedSlowMotionFrameRate
     /// 녹화 중에 도착한 모드 변경
     private var pendingCaptureMode: CaptureMode?
+    /// 녹화 중에 바뀐 해상도 · 프레임률이 있음
+    private var needsVideoModeReapply = false
 
     /// 지금 녹화 중인 모드. 시작 · 정지 때 이 액터에서만 바꿈 (타이머가 메인에서 바꾸는 captureActivity를 읽지 않게)
     private var recordingMode: CaptureMode?
@@ -343,7 +345,11 @@ actor CaptureService {
     }
 
     private func reapplyVideoMode() {
-        guard !isRecording else { return }
+        // 파일을 마무리하는 동안 바뀐 값은 녹화가 끝난 뒤 적용
+        guard !isRecording else {
+            needsVideoModeReapply = true
+            return
+        }
         captureSession.beginConfiguration()
         applyVideoMode()
         updateCaptureCapabilities()
@@ -859,6 +865,10 @@ actor CaptureService {
             if let mode = pendingCaptureMode {
                 pendingCaptureMode = nil
                 try? setCaptureMode(mode)
+            }
+            if needsVideoModeReapply {
+                needsVideoModeReapply = false
+                if captureMode.isMovie { reapplyVideoMode() }
             }
         }
         return isTimelapse ? try await timelapseCapture.stopRecording() : try await movieCapture.stopRecording()

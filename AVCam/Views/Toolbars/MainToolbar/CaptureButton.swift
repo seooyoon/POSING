@@ -136,9 +136,7 @@ private struct MovieCaptureButton: View {
     
     var body: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                isRecording.toggle()
-            }
+            // 모양은 실제 녹화 상태가 바뀔 때만 바뀜 (파일 마무리 중에 눌러도 어긋나지 않게)
             action(isRecording)
         } label: {
             GeometryReader { geometry in
