@@ -33,7 +33,6 @@ final class TimelapseCapture: OutputService {
     }
 
     func startRecording() {
-        guard !captureActivity.isRecording else { return }
         let recorder = recorder
         queue.async { recorder.start() }
         let startDate = Date.now

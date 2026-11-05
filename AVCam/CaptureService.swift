@@ -53,9 +53,10 @@ actor CaptureService {
     /// 녹화 중에 도착한 모드 변경
     private var pendingCaptureMode: CaptureMode?
 
-    private var isRecording: Bool {
-        movieCapture.captureActivity.isRecording || timelapseCapture.captureActivity.isRecording
-    }
+    /// 지금 녹화 중인 모드. 시작 · 정지 때 이 액터에서만 바꿈 (타이머가 메인에서 바꾸는 captureActivity를 읽지 않게)
+    private var recordingMode: CaptureMode?
+
+    private var isRecording: Bool { recordingMode != nil }
 
     private var outputServices: [any OutputService] { [photoCapture, movieCapture, timelapseCapture] }
     
@@ -841,6 +842,7 @@ actor CaptureService {
     /// which calls the following `stopRecording()` method.
     func startRecording() {
         guard !isRecording else { return }
+        recordingMode = captureMode
         if captureMode == .timelapse {
             timelapseCapture.startRecording()
         } else {
@@ -851,8 +853,9 @@ actor CaptureService {
     /// Stops the recording and returns the captured movie.
     func stopRecording() async throws -> Movie {
         // 지금 녹화 중인 쪽을 멈춤
-        let isTimelapse = timelapseCapture.captureActivity.isRecording
+        let isTimelapse = recordingMode == .timelapse
         defer {
+            recordingMode = nil
             if let mode = pendingCaptureMode {
                 pendingCaptureMode = nil
                 try? setCaptureMode(mode)
