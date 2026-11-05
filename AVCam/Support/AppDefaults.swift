@@ -51,6 +51,8 @@ enum AppDefaults {
     /// 타임랩스: 이 간격(초)마다 한 장 골라 아래 프레임률로 재생 (0.5초 + 30fps = 15배속)
     static let timelapseInterval = 0.5
     static let timelapseFrameRate = 30
+    /// 타임랩스 시작 후 프레임을 쓰기 전에 기다리는 시간 (초)
+    static let timelapseSettleTime = 0.2
 
     // MARK: - 노출 감도 (기본 카메라처럼 천천히)
 

@@ -43,7 +43,7 @@ final class MovieCapture: OutputService {
         return item
     }
 
-    /// Starts movie recording. 슬로 모션이면 사진 앱에 느리게 재생할 영상임을 알림
+    /// 녹화를 시작함. 슬로 모션이면 사진 앱에 느리게 재생할 영상임을 알림
     func startRecording(isSlowMotion: Bool = false) {
         // Return early if already recording.
         guard !movieOutput.isRecording else { return }
