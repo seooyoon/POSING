@@ -346,13 +346,15 @@ actor CaptureService {
     private func applyVideoMode() {
         guard let mode = activeVideoMode else { return }
         let device = currentDevice
+        // 이 카메라에 없는 조합이면 대신 찍을 값으로 (화면 표시도 같은 규칙)
+        let resolved = mode.resolved(in: device.supportedVideoModes)
         // 10비트(HDR)는 일반 비디오만
         let prefersTenBit = isHDRVideoEnabled && captureMode == .video
-        guard let format = device.format(for: mode, prefersTenBit: prefersTenBit) else { return }
+        guard let format = device.format(for: resolved, prefersTenBit: prefersTenBit) else { return }
         do {
             try device.lockForConfiguration()
             device.activeFormat = format
-            let duration = CMTime(value: 1, timescale: CMTimeScale(mode.frameRate))
+            let duration = CMTime(value: 1, timescale: CMTimeScale(resolved.frameRate))
             // 최소가 최대를 넘지 않는 순서로 설정
             if duration > device.activeVideoMaxFrameDuration {
                 device.activeVideoMaxFrameDuration = duration
@@ -850,21 +852,15 @@ actor CaptureService {
         // Bracket the following configuration in a begin/commit configuration pair.
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
-        do {
-            // If the current device provides a 10-bit HDR format, enable it for use.
-            if isEnabled, let format = currentDevice.activeFormat10BitVariant {
-                try currentDevice.lockForConfiguration()
-                currentDevice.activeFormat = format
-                currentDevice.unlockForConfiguration()
-                isHDRVideoEnabled = true
-            } else {
-                captureSession.sessionPreset = .high
-                isHDRVideoEnabled = false
-                applyVideoMode()
-            }
-        } catch {
-            logger.error("Unable to obtain lock on device and can't enable HDR video capture.")
+        // If the current device provides a 10-bit HDR format, enable it for use.
+        if isEnabled, currentDevice.activeFormat10BitVariant != nil {
+            isHDRVideoEnabled = true
+        } else {
+            captureSession.sessionPreset = .high
+            isHDRVideoEnabled = false
         }
+        // 형식을 바꾸면 프레임 길이가 풀리므로 고른 프레임률까지 같이 적용
+        applyVideoMode()
     }
     
     /// 사진 모드 프리셋(.photo) 형식이 48MP를 지원하지 않으면, 같은 크기 · 픽셀 형식에서
