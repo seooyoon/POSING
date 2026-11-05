@@ -107,6 +107,8 @@
 		C4C5531B2CA1D5A3005D940C /* CaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F82CCB285AE206005D427A /* CaptureService.swift */; };
 		C4C5531C2CA1D5A3005D940C /* RecordingTimeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4C686222892E33E0038EDE1 /* RecordingTimeView.swift */; };
 		C4C5531D2CA1D5A3005D940C /* LiveBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4DFD84728C5665E005B74F0 /* LiveBadge.swift */; };
+		A1B2C3D42F0A10010057AA02 /* TimelapseCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F0A10010057AA01 /* TimelapseCapture.swift */; };
+		A1B2C3D42F0A10010057AA03 /* TimelapseCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F0A10010057AA01 /* TimelapseCapture.swift */; };
 		C4C5531E2CA1D5A3005D940C /* MovieCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4EA0DBF2891EFC20085A584 /* MovieCapture.swift */; };
 		C4C5531F2CA1D5A3005D940C /* Camera.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F82CC9285AE13B005D427A /* Camera.swift */; };
 		C4C553202CA1D5A3005D940C /* FoundationExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C400F46228DFDAB700861093 /* FoundationExtensions.swift */; };
@@ -261,6 +263,7 @@
 		C4DFD84728C5665E005B74F0 /* LiveBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveBadge.swift; sourceTree = "<group>"; };
 		C4E15AAE2898620E00827683 /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		C4E15AB02898660900827683 /* PhotoCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCapture.swift; sourceTree = "<group>"; };
+		A1B2C3D42F0A10010057AA01 /* TimelapseCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelapseCapture.swift; sourceTree = "<group>"; };
 		C4EA0DBF2891EFC20085A584 /* MovieCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieCapture.swift; sourceTree = "<group>"; };
 		C4EA0DC22891F2F80085A584 /* CaptureExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureExtensions.swift; sourceTree = "<group>"; };
 		C4F82C99285ADDA2005D427A /* AVCam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AVCam.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -519,6 +522,7 @@
 				7ABC64C77391D7868395728A /* ZoomController.swift */,
 				C4E15AB02898660900827683 /* PhotoCapture.swift */,
 				C4EA0DBF2891EFC20085A584 /* MovieCapture.swift */,
+				A1B2C3D42F0A10010057AA01 /* TimelapseCapture.swift */,
 				C472D845285BBFA60082244A /* DeviceLookup.swift */,
 				C48091892BD59D7D00753C4A /* SPCObserver.swift */,
 			);
@@ -790,6 +794,7 @@
 				C4C5531C2CA1D5A3005D940C /* RecordingTimeView.swift in Sources */,
 				C4C5531D2CA1D5A3005D940C /* LiveBadge.swift in Sources */,
 				C4C5531E2CA1D5A3005D940C /* MovieCapture.swift in Sources */,
+				A1B2C3D42F0A10010057AA02 /* TimelapseCapture.swift in Sources */,
 				C4C5531F2CA1D5A3005D940C /* Camera.swift in Sources */,
 				C4C553202CA1D5A3005D940C /* FoundationExtensions.swift in Sources */,
 				C4C553212CA1D5A3005D940C /* PhotoCapture.swift in Sources */,
@@ -887,6 +892,7 @@
 				C4C686232892E33E0038EDE1 /* RecordingTimeView.swift in Sources */,
 				C4DFD84428C3E173005B74F0 /* DataTypes.swift in Sources */,
 				C4EA0DC02891EFC20085A584 /* MovieCapture.swift in Sources */,
+				A1B2C3D42F0A10010057AA03 /* TimelapseCapture.swift in Sources */,
 				C4EA0DC32891F2F80085A584 /* CaptureExtensions.swift in Sources */,
 				C472D846285BBFA60082244A /* DeviceLookup.swift in Sources */,
 				C400F46328DFDAB700861093 /* FoundationExtensions.swift in Sources */,

@@ -44,9 +44,14 @@ actor CaptureService {
     
     // An object that manages the app's video capture behavior.
     private let movieCapture = MovieCapture()
+    private let timelapseCapture = TimelapseCapture()
     
     // An internal collection of output services.
-    private var outputServices: [any OutputService] { [photoCapture, movieCapture] }
+    /// 비디오 해상도 · 프레임률
+    private var videoMode = VideoMode.saved
+    private var slowMotionFrameRate = VideoMode.savedSlowMotionFrameRate
+
+    private var outputServices: [any OutputService] { [photoCapture, movieCapture, timelapseCapture] }
     
     // The video input for the currently selected device camera.
     private var activeVideoInput: AVCaptureDeviceInput?
@@ -209,6 +214,12 @@ actor CaptureService {
     }
     
     // Adds an output to the capture session to connect the specified capture device, if allowed.
+    /// 이미 세션에 있으면 그대로 둠 (비디오 ↔ 슬로 모션)
+    private func addOutputIfNeeded(_ output: AVCaptureOutput) throws {
+        guard !captureSession.outputs.contains(output) else { return }
+        try addOutput(output)
+    }
+
     private func addOutput(_ output: AVCaptureOutput) throws {
         if captureSession.canAddOutput(output) {
             captureSession.addOutput(output)
@@ -305,6 +316,67 @@ actor CaptureService {
         refreshLensSmudgeDetection()
     }
 
+    /// 비디오 해상도 · 프레임률 변경. 녹화 중에는 바꾸지 않음 (화면에서도 판이 닫혀 있음)
+    func setVideoMode(_ mode: VideoMode) {
+        videoMode = mode
+        guard captureMode == .video else { return }
+        reapplyVideoMode()
+    }
+
+    /// 슬로 모션 프레임률 변경
+    func setSlowMotionFrameRate(_ rate: Int) {
+        slowMotionFrameRate = rate
+        guard captureMode == .slowMotion else { return }
+        reapplyVideoMode()
+    }
+
+    private func reapplyVideoMode() {
+        guard !movieCapture.output.isRecording else { return }
+        captureSession.beginConfiguration()
+        applyVideoMode()
+        updateCaptureCapabilities()
+        captureSession.commitConfiguration()
+        // 형식이 바뀌면 배율 · 얼룩 감지가 풀리므로 모드 전환 때와 같이 다시 맞춤
+        zoomController.applyDefaultZoom()
+        resetFocusAndExposure()
+        refreshLensSmudgeDetection()
+    }
+
+    /// 고른 해상도 · 프레임률에 맞는 형식을 장치에 적용. 맞는 형식이 없으면 그대로
+    private func applyVideoMode() {
+        guard let mode = activeVideoMode else { return }
+        let device = currentDevice
+        // 10비트(HDR)는 일반 비디오만
+        let prefersTenBit = isHDRVideoEnabled && captureMode == .video
+        guard let format = device.format(for: mode, prefersTenBit: prefersTenBit) else { return }
+        do {
+            try device.lockForConfiguration()
+            device.activeFormat = format
+            let duration = CMTime(value: 1, timescale: CMTimeScale(mode.frameRate))
+            // 최소가 최대를 넘지 않는 순서로 설정
+            if duration > device.activeVideoMaxFrameDuration {
+                device.activeVideoMaxFrameDuration = duration
+                device.activeVideoMinFrameDuration = duration
+            } else {
+                device.activeVideoMinFrameDuration = duration
+                device.activeVideoMaxFrameDuration = duration
+            }
+            device.unlockForConfiguration()
+        } catch {
+            logger.error("Unable to lock the device to apply the video mode.")
+        }
+    }
+
+    /// 지금 모드에 쓸 해상도 · 프레임률. 사진은 없음
+    private var activeVideoMode: VideoMode? {
+        switch captureMode {
+        case .photo: nil
+        case .video: videoMode
+        case .slowMotion: VideoMode(resolution: .hd, frameRate: slowMotionFrameRate)
+        case .timelapse: VideoMode(resolution: .hd, frameRate: AppDefaults.timelapseFrameRate)
+        }
+    }
+
     private func applyCaptureMode(_ captureMode: CaptureMode) throws {
         // Update the internal capture mode value before performing the session configuration.
         self.captureMode = captureMode
@@ -320,13 +392,24 @@ actor CaptureService {
             captureSession.sessionPreset = .photo
             selectHighResolutionPhotoFormat(for: currentDevice)
             captureSession.removeOutput(movieCapture.output)
-        case .video:
+            captureSession.removeOutput(timelapseCapture.output)
+        case .video, .slowMotion, .timelapse:
             captureSession.sessionPreset = .high
-            try addOutput(movieCapture.output)
-            if isHDRVideoEnabled {
+            // 비디오 · 슬로 모션은 파일 출력, 타임랩스는 프레임 출력
+            if captureMode == .timelapse {
+                captureSession.removeOutput(movieCapture.output)
+                try addOutputIfNeeded(timelapseCapture.output)
+            } else {
+                captureSession.removeOutput(timelapseCapture.output)
+                try addOutputIfNeeded(movieCapture.output)
+            }
+            if isHDRVideoEnabled && captureMode == .video {
                 setHDRVideoEnabled(true)
             }
+            applyVideoMode()
             updateOutputMirroring()
+            // 새로 붙인 출력도 지금 방향으로
+            updateCaptureRotation(rotationCoordinator.videoRotationAngleForHorizonLevelCapture)
         }
 
         // Update the advertised capabilities after reconfiguration.
@@ -386,6 +469,8 @@ actor CaptureService {
             activeVideoInput = try addInput(for: device)
             if captureMode == .photo {
                 selectHighResolutionPhotoFormat(for: device)
+            } else {
+                applyVideoMode()
             }
             zoomController.attach(to: device)
             lightController.attach(to: device)
@@ -500,7 +585,7 @@ actor CaptureService {
     /// 전면 카메라 사진 · 영상은 화면에 보인 그대로(거울 반전) 저장 (docs/02_UI.md 9절)
     private func updateOutputMirroring() {
         let isFront = currentDevice.position == .front
-        for output in [photoCapture.output, movieCapture.output] as [AVCaptureOutput] {
+        for output in [photoCapture.output, movieCapture.output, timelapseCapture.output] as [AVCaptureOutput] {
             guard let connection = output.connection(with: .video), connection.isVideoMirroringSupported else { continue }
             connection.automaticallyAdjustsVideoMirroring = false
             connection.isVideoMirrored = isFront
@@ -742,12 +827,16 @@ actor CaptureService {
     /// Starts recording video. The video records until the user stops recording,
     /// which calls the following `stopRecording()` method.
     func startRecording() {
-        movieCapture.startRecording()
+        if captureMode == .timelapse {
+            timelapseCapture.startRecording()
+        } else {
+            movieCapture.startRecording()
+        }
     }
 
     /// Stops the recording and returns the captured movie.
     func stopRecording() async throws -> Movie {
-        try await movieCapture.stopRecording()
+        captureMode == .timelapse ? try await timelapseCapture.stopRecording() : try await movieCapture.stopRecording()
     }
 
     /// 촬영 중 HDR 전환. 형식이 바뀌므로 렌즈 얼룩 감지를 다시 켠다
@@ -771,6 +860,7 @@ actor CaptureService {
             } else {
                 captureSession.sessionPreset = .high
                 isHDRVideoEnabled = false
+                applyVideoMode()
             }
         } catch {
             logger.error("Unable to obtain lock on device and can't enable HDR video capture.")
@@ -820,15 +910,17 @@ actor CaptureService {
         switch captureMode {
         case .photo:
             captureCapabilities = photoCapture.capabilities
-        case .video:
+        case .video, .slowMotion:
             captureCapabilities = movieCapture.capabilities
+        case .timelapse:
+            captureCapabilities = timelapseCapture.capabilities
         }
     }
     
     /// Merge the `captureActivity` values of the photo and movie capture services,
     /// and assign the value to the actor's property.`
     private func observeOutputServices() {
-        Publishers.Merge(photoCapture.$captureActivity, movieCapture.$captureActivity)
+        Publishers.Merge3(photoCapture.$captureActivity, movieCapture.$captureActivity, timelapseCapture.$captureActivity)
             .assign(to: &$captureActivity)
         zoomController.$state
             .assign(to: &$zoomState)
