@@ -15,6 +15,8 @@ struct CameraView<CameraModel: Camera>: View {
     @State var camera: CameraModel
     @State private var layers = LayerState()
     @State private var looks = CameraLookState()
+    @State private var styles = StyleState()
+    @State private var isShowingStyleScreen = false
     @State private var focus = FocusModel()
     @State private var level = LevelModel()
     var body: some View {
@@ -36,8 +38,9 @@ struct CameraView<CameraModel: Camera>: View {
                     .frame(width: layout.previewRect.width, height: layout.previewRect.height)
                     .clipped()
                     .contentShape(previewTouchArea(in: layout), eoFill: true)
-                    .modifier(PreviewGestures(camera: camera, layers: layers, focus: focus, layout: layout))
-                    .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
+                    .modifier(PreviewGestures(camera: camera, layers: layers, focus: focus, layout: layout,
+                                              onStyleSwipe: isShowingStyleScreen ? { styles.step(by: $0 == .left ? 1 : -1) } : nil))
+                    .modifier(StyleCardEffect(isActive: isShowingStyleScreen, layout: layout))
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                 // 미리보기 위 표시 (아래 → 위): MY · 포즈 레이어 → 격자 · 중심점 → 수평계 · 초점 (docs/02_UI.md 5절)
@@ -51,11 +54,12 @@ struct CameraView<CameraModel: Camera>: View {
                 }
                 .frame(width: layout.previewRect.width, height: layout.previewRect.height)
                 .clipped()
-                .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
+                .modifier(StyleCardEffect(isActive: isShowingStyleScreen, layout: layout))
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                 // 카메라 화면 UI
-                CameraUI(camera: camera, layers: layers, looks: looks, layout: layout)
+                CameraUI(camera: camera, layers: layers, looks: looks, styles: styles,
+                         isShowingStyleScreen: $isShowingStyleScreen, layout: layout)
             }
             .ignoresSafeArea()
             // 카메라 화면만 다크 고정. 설정 화면 · 사진 피커는 아이폰 설정을 따름 (docs/02_UI.md 10절)
@@ -129,6 +133,8 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
     let layers: LayerState
     let focus: FocusModel
     let layout: CameraLayout
+    /// 스타일 화면에서는 좌우로 밀면 모드 대신 스타일이 바뀜
+    let onStyleSwipe: ((SwipeDirection) -> Void)?
 
     /// 길게 누르기 위치 (onLongPressGesture는 위치를 주지 않아 따로 기록)
     @State private var touchLocation: CGPoint = .zero
@@ -202,8 +208,30 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
                       !camera.captureActivity.isRecording
                 else { return }
                 let direction: SwipeDirection = value.translation.width < 0 ? .left : .right
+                if let onStyleSwipe {
+                    onStyleSwipe(direction)
+                    return
+                }
                 camera.captureMode = CaptureModePicker<CameraModel>.mode(after: camera.captureMode, swipe: direction)
             }
+    }
+}
+
+/// 스타일 화면: 미리보기가 둥근 카드로 줄어듦. 아니면 원래 미리보기 자리
+private struct StyleCardEffect: ViewModifier {
+
+    let isActive: Bool
+    let layout: CameraLayout
+
+    func body(content: Content) -> some View {
+        let card = StyleScreenLayout(layout: layout)
+        let scale = isActive ? card.scale : 1
+        content
+            .clipShape(.rect(cornerRadius: isActive ? StyleScreenLayout.cardCornerRadius / scale : 0, style: .continuous))
+            .scaleEffect(scale)
+            .position(x: layout.previewRect.midX,
+                      y: isActive ? card.cardRect.midY : layout.previewRect.midY)
+            .animation(.spring(duration: 0.35, bounce: 0.1), value: isActive)
     }
 }
 

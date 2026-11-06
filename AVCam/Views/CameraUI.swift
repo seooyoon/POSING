@@ -13,6 +13,8 @@ struct CameraUI<CameraModel: Camera>: View {
     @State var camera: CameraModel
     let layers: LayerState
     let looks: CameraLookState
+    let styles: StyleState
+    @Binding var isShowingStyleScreen: Bool
     let layout: CameraLayout
 
     @State private var panelHeight: CGFloat = 0
@@ -29,8 +31,9 @@ struct CameraUI<CameraModel: Camera>: View {
             TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings)
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.topBarCenterY)
-                // 빠른 설정 판 · 더보기 메뉴가 열리면 사라짐 (기본 카메라와 같음)
+                // 빠른 설정 판 · 더보기 메뉴 · 스타일 화면이 열리면 사라짐 (기본 카메라와 같음)
                 .opacity(isTopBarHidden ? 0 : 1)
+                .allowsHitTesting(!isTopBarHidden)
                 .blur(radius: isTopBarHidden ? 6 : 0)
 
             // 포즈 · MY 패널: 상단 바 바로 아래, 한 번에 하나만. 전환할 때는 내용만 바뀜
@@ -55,7 +58,7 @@ struct CameraUI<CameraModel: Camera>: View {
                 .position(x: layout.centerX, y: smudgeBannerCenterY)
 
             // 배율 버튼 · 다이얼 (다이얼 원은 셔터 · 하단 줄 뒤까지 펼쳐짐). 더보기 메뉴가 열리면 메뉴 뒤로 숨김
-            if camera.zoom.isAvailable && !isShowingMoreMenu {
+            if camera.zoom.isAvailable && !isShowingMoreMenu && !isShowingStyleScreen {
                 ZoomControl(camera: camera,
                             dialRadius: CameraLayout.zoomDialRadius,
                             dialCenterBelowRow: layout.shutterCenterY + CameraLayout.zoomDialCenterBelowShutter - layout.zoomRowCenterY)
@@ -63,24 +66,37 @@ struct CameraUI<CameraModel: Camera>: View {
                     .position(x: layout.centerX, y: layout.zoomRowCenterY + ZoomControl<CameraModel>.rowCenterAboveBottom - ZoomControl<CameraModel>.height / 2)
             }
             // 전면 카메라는 배율 버튼 자리에 화각 버튼
-            if camera.zoom.isFrontCamera && !isShowingMoreMenu {
+            if camera.zoom.isFrontCamera && !isShowingMoreMenu && !isShowingStyleScreen {
                 FrontFieldOfViewButton(camera: camera)
                     .position(x: layout.centerX, y: layout.zoomRowCenterY)
             }
             // 접사 중이거나 접사 전환을 꺼 두면 왼쪽 아래 꽃 버튼
-            if camera.zoom.showsMacroButton && !isShowingMoreMenu {
+            if camera.zoom.showsMacroButton && !isShowingMoreMenu && !isShowingStyleScreen {
                 MacroButton(camera: camera)
                     .position(x: CameraLayout.sideInset + 22, y: layout.zoomRowCenterY)
             }
 
             // 더보기 메뉴가 열리면 셔터 · 하단 줄은 메뉴 속으로 사라짐
-            Group {
-                CaptureButton(camera: camera)
-                    .position(x: layout.centerX, y: layout.shutterCenterY)
+            // 스타일 화면: 카드 위아래 표시 · 패드 · 닫기 버튼
+            if isShowingStyleScreen {
+                StyleScreenControls(styles: styles, layout: layout) {
+                    isShowingStyleScreen = false
+                }
+                .transition(.opacity)
+            }
 
+            Group {
+                // 스타일 화면에서는 셔터가 카드 아래쪽 안으로 올라옴
+                CaptureButton(camera: camera)
+                    .position(x: layout.centerX,
+                              y: isShowingStyleScreen ? StyleScreenLayout(layout: layout).shutterCenterY : layout.shutterCenterY)
+
+                // 하단 줄은 스타일 화면에서 숨김
                 BottomBar(camera: camera)
                     .frame(width: layout.size.width)
                     .position(x: layout.centerX, y: layout.bottomRowCenterY)
+                    .opacity(isShowingStyleScreen ? 0 : 1)
+                    .allowsHitTesting(!isShowingStyleScreen)
             }
             .opacity(isShowingMoreMenu ? 0 : 1)
             .blur(radius: isShowingMoreMenu ? 6 : 0)
@@ -99,7 +115,10 @@ struct CameraUI<CameraModel: Camera>: View {
                     .onTapGesture { isShowingMoreMenu = false }
                 VStack {
                     Spacer()
-                    MoreMenu(camera: camera, isPresented: $isShowingMoreMenu)
+                    MoreMenu(camera: camera, isPresented: $isShowingMoreMenu) {
+                        isShowingMoreMenu = false
+                        isShowingStyleScreen = true
+                    }
                 }
                 .padding(.horizontal, 6)
                 .padding(.bottom, 8.5)
@@ -136,10 +155,16 @@ struct CameraUI<CameraModel: Camera>: View {
         .animation(.easeOut(duration: 0.18), value: isShowingMoreMenu)
         .animation(.easeOut(duration: 0.18), value: quickSettings)
         .animation(.easeOut(duration: 0.2), value: isShowingCameraList)
+        .animation(.spring(duration: 0.35, bounce: 0.1), value: isShowingStyleScreen)
+        // 스타일을 바꾸면 사진 보정에 바로 반영
+        .onChange(of: styles.selection) { _, selection in
+            camera.photoStyle = selection
+        }
         // 모드를 바꾸거나 녹화를 시작하면 메뉴를 닫음
         .onChange(of: camera.captureMode) {
             isShowingMoreMenu = false
             isShowingCameraList = false
+            isShowingStyleScreen = false
             quickSettings = nil
         }
         .onChange(of: camera.captureActivity.isRecording) {
@@ -157,7 +182,7 @@ struct CameraUI<CameraModel: Camera>: View {
     @ViewBuilder
     private var cameraLookControls: some View {
         let isAvailable = camera.captureMode == .photo && camera.status == .running
-            && !isShowingMoreMenu && !camera.prefersMinimizedUI
+            && !isShowingMoreMenu && !isShowingStyleScreen && !camera.prefersMinimizedUI
         let buttonTop = layout.shutterCenterY - CameraLookList.cellSize / 2
         if isShowingCameraList {
             // 목록 바깥을 탭하면 닫힘
@@ -191,7 +216,7 @@ struct CameraUI<CameraModel: Camera>: View {
     private static var cameraListGap: CGFloat { 8 }
 
     private var isTopBarHidden: Bool {
-        quickSettings != nil || isShowingMoreMenu
+        quickSettings != nil || isShowingMoreMenu || isShowingStyleScreen
     }
 
     private var isShowingLiveBadge: Bool {

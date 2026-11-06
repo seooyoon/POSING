@@ -13,6 +13,8 @@ struct MoreMenu<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
     @Binding var isPresented: Bool
+    /// 스타일 버튼 → 스타일 화면
+    let onShowStyle: () -> Void
 
     @State private var isShowingExposure = false
     @State private var dragOffset: CGFloat = 0
@@ -87,10 +89,11 @@ struct MoreMenu<CameraModel: Camera>: View {
                 isShowingExposure.toggle()
             }
         case .style:
-            // 스타일 화면은 6단계에서 연결
-            MoreMenuButton(title: "스타일") {
+            MoreMenuButton(title: "스타일", isActive: camera.photoStyle.changesImage) {
                 StyleIcon()
-            } action: {}
+            } action: {
+                onShowStyle()
+            }
         case .ratio:
             MoreMenuButton(title: "비율", isActive: camera.photoAspect != .fourThree) {
                 RatioIcon(text: camera.photoAspect.label)
@@ -187,7 +190,7 @@ struct RatioIcon: View {
 }
 
 #Preview {
-    MoreMenu(camera: PreviewCameraModel(status: .running), isPresented: .constant(true))
+    MoreMenu(camera: PreviewCameraModel(status: .running), isPresented: .constant(true)) {}
         .padding(8)
         .background(.gray)
 }
