@@ -931,11 +931,11 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AVCamCaptureExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AVCamCaptureExtension;
-				INFOPLIST_KEY_NSCameraUsageDescription = "To capture photos and videos.";
+				INFOPLIST_KEY_CFBundleDisplayName = "포징";
+				INFOPLIST_KEY_NSCameraUsageDescription = "사진과 영상을 찍으려면 카메라 접근이 필요합니다.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AVCam uses your location to tag where photos and videos are taken.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "To record audio for Live Photos and videos.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "사진과 영상에 찍은 장소를 기록하는 데 사용합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "영상과 LIVE 사진의 소리를 녹음하는 데 사용합니다.";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -973,11 +973,11 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AVCamCaptureExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AVCamCaptureExtension;
-				INFOPLIST_KEY_NSCameraUsageDescription = "To capture photos and videos.";
+				INFOPLIST_KEY_CFBundleDisplayName = "포징";
+				INFOPLIST_KEY_NSCameraUsageDescription = "사진과 영상을 찍으려면 카메라 접근이 필요합니다.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AVCam uses your location to tag where photos and videos are taken.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "To record audio for Live Photos and videos.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "사진과 영상에 찍은 장소를 기록하는 데 사용합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "영상과 LIVE 사진의 소리를 녹음하는 데 사용합니다.";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1017,7 +1017,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AVCamControlCenterExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AVCamControlCenterExtension;
+				INFOPLIST_KEY_CFBundleDisplayName = "포징";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1058,7 +1058,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AVCamControlCenterExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AVCamControlCenterExtension;
+				INFOPLIST_KEY_CFBundleDisplayName = "포징";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1226,11 +1226,13 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "포징";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
-				INFOPLIST_KEY_NSCameraUsageDescription = "To capture photos and videos.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AVCam uses your location to tag where photos and videos are taken.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "To record audio for Live Photos and videos.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To save captured photos and videos.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "사진과 영상을 찍으려면 카메라 접근이 필요합니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "사진과 영상에 찍은 장소를 기록하는 데 사용합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "영상과 LIVE 사진의 소리를 녹음하는 데 사용합니다.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "찍은 사진과 영상을 사진 앱에 저장하는 데 사용합니다.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "찍은 사진과 영상을 사진 앱에 저장하는 데 사용합니다.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
@@ -1272,11 +1274,13 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "포징";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
-				INFOPLIST_KEY_NSCameraUsageDescription = "To capture photos and videos.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AVCam uses your location to tag where photos and videos are taken.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "To record audio for Live Photos and videos.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "To save captured photos and videos.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "사진과 영상을 찍으려면 카메라 접근이 필요합니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "사진과 영상에 찍은 장소를 기록하는 데 사용합니다.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "영상과 LIVE 사진의 소리를 녹음하는 데 사용합니다.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "찍은 사진과 영상을 사진 앱에 저장하는 데 사용합니다.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "찍은 사진과 영상을 사진 앱에 저장하는 데 사용합니다.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
