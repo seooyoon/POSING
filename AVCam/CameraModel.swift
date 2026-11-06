@@ -184,6 +184,7 @@ final class CameraModel: Camera {
                                               cropRatio: activeCodec == .raw ? nil : photoAspect.cropLongToShort,
                                               // RAW(DNG)는 색감도 입히지 않음
                                               lookLUTURL: activeCodec == .raw ? nil : cameraLook.lutURL,
+                                              style: activeCodec == .raw || !photoStyle.changesImage ? nil : photoStyle,
                                               isRAW: activeCodec == .raw,
                                               maxDimensions: activeDimensions)
             let photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
@@ -225,6 +226,7 @@ final class CameraModel: Camera {
     /// 앱을 켜면 항상 4:3으로 시작 (저장하지 않음)
     var photoAspect = PhotoAspect.fourThree
     var cameraLook = CameraLookLibrary.savedLook()
+    var photoStyle = StyleLibrary.savedSelection()
 
     var photoCodec = PhotoCodec.saved {
         didSet {
