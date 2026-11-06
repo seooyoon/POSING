@@ -161,10 +161,12 @@ struct CameraUI<CameraModel: Camera>: View {
         let buttonTop = layout.shutterCenterY - CameraLookList.cellSize / 2
         if isShowingCameraList {
             // 목록 바깥을 탭하면 닫힘
-            Color.clear
-                .contentShape(.rect)
-                .frame(width: layout.size.width, height: layout.size.height)
-                .onTapGesture { isShowingCameraList = false }
+            if AppDefaults.closesCameraListOnOutsideTap {
+                Color.clear
+                    .contentShape(.rect)
+                    .frame(width: layout.size.width, height: layout.size.height)
+                    .onTapGesture { isShowingCameraList = false }
+            }
             let list = CameraLookList(looks: looks,
                                       maxHeight: buttonTop - CameraUI.cameraListGap - previewTopY) { item in
                 looks.select(item)
