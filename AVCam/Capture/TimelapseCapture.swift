@@ -61,7 +61,6 @@ private final class TimelapseRecorder: NSObject, AVCaptureVideoDataOutputSampleB
 
     private let interval = CMTime(seconds: AppDefaults.timelapseInterval, preferredTimescale: 600)
     private let outputFrameRate = AppDefaults.timelapseFrameRate
-    private let settleTime = CMTime(seconds: AppDefaults.timelapseSettleTime, preferredTimescale: 600)
 
     private var isRecording = false
     private var url: URL?
@@ -69,7 +68,6 @@ private final class TimelapseRecorder: NSObject, AVCaptureVideoDataOutputSampleB
     private var input: AVAssetWriterInput?
     private var size: CMVideoDimensions?
     private var lastCaptureTime: CMTime?
-    private var firstFrameTime: CMTime?
     private var frameCount: Int64 = 0
     /// 파일을 만들지 못한 이유. 있으면 프레임을 더 받지 않음
     private var setupError: Error?
@@ -80,7 +78,6 @@ private final class TimelapseRecorder: NSObject, AVCaptureVideoDataOutputSampleB
         input = nil
         size = nil
         lastCaptureTime = nil
-        firstFrameTime = nil
         frameCount = 0
         setupError = nil
         isRecording = true
@@ -107,13 +104,14 @@ private final class TimelapseRecorder: NSObject, AVCaptureVideoDataOutputSampleB
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard isRecording else { return }
         let time = sampleBuffer.presentationTimeStamp
-        // 시작 직전에 방향을 맞추므로, 이전 크기로 남아 있던 프레임이 파일 크기를 정하지 않게 잠깐 기다림
-        let firstFrameTime = firstFrameTime ?? time
-        self.firstFrameTime = firstFrameTime
-        if time - firstFrameTime < settleTime { return }
         if let lastCaptureTime, time - lastCaptureTime < interval { return }
         guard let dimensions = sampleBuffer.formatDescription?.dimensions else { return }
-        if writer == nil { makeWriter(size: dimensions) }
+        if writer == nil {
+            // 시작 직전에 방향을 맞추므로, 이전 방향으로 남아 있던 프레임이 파일 크기를 정하지 않게 함
+            let isPortraitAngle = connection.videoRotationAngle == 90 || connection.videoRotationAngle == 270
+            guard (dimensions.height > dimensions.width) == isPortraitAngle else { return }
+            makeWriter(size: dimensions)
+        }
         // 녹화 중 폰을 돌려 크기가 바뀐 프레임은 건너뜀
         guard dimensions == size, let input, input.isReadyForMoreMediaData,
               let frame = retimed(sampleBuffer) else { return }
