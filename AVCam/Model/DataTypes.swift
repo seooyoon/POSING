@@ -69,12 +69,19 @@ enum CaptureMode: String, Identifiable, CaseIterable, Codable {
     case photo
     /// A mode that enables video capture.
     case video
+    /// 슬로 모션 (HD 120 · 240fps)
+    case slowMotion
+    /// 타임랩스
+    case timelapse
+
+    /// 영상을 찍는 모드
+    var isMovie: Bool { self != .photo }
     
     var systemName: String {
         switch self {
         case .photo:
             "camera.fill"
-        case .video:
+        case .video, .slowMotion, .timelapse:
             "video.fill"
         }
     }
@@ -105,6 +112,39 @@ struct PhotoFeatures {
     let maxDimensions: CMVideoDimensions?
 }
 
+/// 비디오 해상도
+enum VideoResolution: String, CaseIterable, Sendable {
+    case hd, uhd
+
+    var label: String { self == .hd ? "HD" : "4K" }
+
+    var dimensions: CMVideoDimensions {
+        self == .hd ? CMVideoDimensions(width: 1920, height: 1080) : CMVideoDimensions(width: 3840, height: 2160)
+    }
+}
+
+/// 비디오 해상도 + 프레임률 조합
+struct VideoMode: Hashable, Sendable {
+    /// 고를 수 있는 프레임률
+    static let frameRates = [24, 30, 60]
+    /// 슬로 모션 프레임률 (해상도는 HD)
+    static let slowMotionFrameRates = [120, 240]
+
+    var resolution: VideoResolution
+    var frameRate: Int
+
+    /// 이 카메라에서 실제로 찍을 조합. 안 되면 같은 해상도의 더 낮은 프레임률, 그래도 없으면 가장 가까운 값.
+    /// 목록이 비어 있으면 아직 모르는 것이라 그대로
+    func resolved(in available: Set<VideoMode>) -> VideoMode {
+        guard !available.isEmpty, !available.contains(self) else { return self }
+        let sameResolution = available.filter { $0.resolution == resolution }
+        let candidates = sameResolution.isEmpty ? available : sameResolution
+        return candidates.filter { $0.frameRate <= frameRate }.max { $0.frameRate < $1.frameRate }
+            ?? candidates.min { $0.frameRate < $1.frameRate }
+            ?? self
+    }
+}
+
 /// A structure that represents the capture capabilities of `CaptureService` in
 /// its current configuration.
 struct CaptureCapabilities {
@@ -117,17 +157,21 @@ struct CaptureCapabilities {
     let photoDimensions: [CMVideoDimensions]
     /// 사진 출력이 Apple ProRAW를 지원
     let isRAWSupported: Bool
+    /// 지금 카메라가 찍을 수 있는 비디오 해상도 · 프레임률 조합
+    let videoModes: Set<VideoMode>
     
     init(isLivePhotoCaptureSupported: Bool = false,
          isHDRSupported: Bool = false,
          isFlashSupported: Bool = false,
          photoDimensions: [CMVideoDimensions] = [],
-         isRAWSupported: Bool = false) {
+         isRAWSupported: Bool = false,
+         videoModes: Set<VideoMode> = []) {
         self.isLivePhotoCaptureSupported = isLivePhotoCaptureSupported
         self.isHDRSupported = isHDRSupported
         self.isFlashSupported = isFlashSupported
         self.isRAWSupported = isRAWSupported
         self.photoDimensions = photoDimensions
+        self.videoModes = videoModes
     }
     
     static let unknown = CaptureCapabilities()

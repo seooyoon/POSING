@@ -26,6 +26,9 @@ class PreviewCameraModel: Camera {
     var photoAspect = PhotoAspect.fourThree
     var photoCodec = PhotoCodec.jpeg
     var photoResolution = 24
+    var videoMode = VideoMode(resolution: AppDefaults.videoResolution, frameRate: AppDefaults.videoFrameRate)
+    let availableVideoModes = Set<VideoMode>()
+    var slowMotionFrameRate = AppDefaults.slowMotionFrameRate
     // 시뮬레이터: 아이폰 16 Pro 후면처럼
     var availableResolutions: [Int] { PhotoResolution.selectable(from: PhotoResolution.values, codec: activeCodec) }
     let isRAWSupported = true
@@ -129,7 +132,7 @@ class PreviewCameraModel: Camera {
         switch mode {
         case .photo:
             return CaptureCapabilities(isLivePhotoCaptureSupported: true)
-        case .video:
+        case .video, .slowMotion, .timelapse:
             return CaptureCapabilities(isLivePhotoCaptureSupported: false,
                                        isHDRSupported: true)
         }

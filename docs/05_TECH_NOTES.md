@@ -91,7 +91,7 @@
 
 - 슬로 모션: `videoSupportedFrameRateRanges` 최대 240 이상인 포맷 선택 → `activeFormat`, `activeVideoMin/MaxFrameDuration` 설정 후 녹화. 사진 앱이 슬로 모션으로 인식하는지 실기기 확인, 안 되면 저장 시 재생 속도를 늘려 저장
 - 타임랩스: `AVCaptureVideoDataOutput`에서 일정 간격 프레임만 골라 `AVAssetWriter`로 30fps 영상 작성
-- 비디오 해상도·FPS: 지원 포맷에서 4K/HD × 24/30/60 조합만 표시
+- 비디오 해상도·FPS: 4K/HD × 24/30/60을 모두 보여 주고, 지금 카메라가 지원하지 않는 조합은 흐리게 · 누를 수 없게 함. 카메라를 바꿔 고른 조합이 없으면 같은 해상도의 더 낮은 프레임률로 찍고 버튼에도 그 값을 표시
 
 ## 11. 수평계
 

@@ -41,6 +41,17 @@ enum AppDefaults {
     static let photoCodec = PhotoCodec.jpeg
     static let photoResolution = 24
 
+    // MARK: - 비디오 형식
+
+    /// 처음 해상도 · 프레임률 (기본 카메라 빠른 설정 판의 점 표시 `4K` · `30`)
+    static let videoResolution = VideoResolution.uhd
+    static let videoFrameRate = 30
+    /// 슬로 모션 처음 프레임률
+    static let slowMotionFrameRate = 120
+    /// 타임랩스: 이 간격(초)마다 한 장 골라 아래 프레임률로 재생 (0.5초 + 30fps = 15배속)
+    static let timelapseInterval = 0.5
+    static let timelapseFrameRate = 30
+
     // MARK: - 노출 감도 (기본 카메라처럼 천천히)
 
     /// 초점 옆 해 아이콘을 이만큼(pt) 밀면 밝기 1 EV

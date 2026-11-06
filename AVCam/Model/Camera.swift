@@ -95,6 +95,15 @@ protocol Camera: AnyObject, SendableMetatype {
     /// 지금 카메라가 찍을 수 있는 해상도(MP, 작은 것부터)
     var availableResolutions: [Int] { get }
     
+    /// 비디오 해상도 · 프레임률
+    var videoMode: VideoMode { get set }
+
+    /// 슬로 모션 프레임률
+    var slowMotionFrameRate: Int { get set }
+
+    /// 지금 카메라가 찍을 수 있는 조합. 비어 있으면 아직 모름 (모두 누를 수 있게 둠)
+    var availableVideoModes: Set<VideoMode> { get }
+    
     /// A Boolean value that indicates whether to show visual feedback when capture begins.
     var shouldFlashScreen: Bool { get }
     
@@ -151,5 +160,19 @@ extension Camera {
     /// 실제로 찍히는 해상도: 고른 값 이하에서 가장 큰 값 (전면 등 지원하지 않으면 낮아짐)
     var activeResolution: Int {
         availableResolutions.last { $0 <= photoResolution } ?? availableResolutions.first ?? photoResolution
+    }
+}
+
+extension Camera {
+    /// 실제로 찍히는 비디오 조합 (지금 카메라에 없는 값이면 대신 찍을 값)
+    var activeVideoMode: VideoMode { videoMode.resolved(in: availableVideoModes) }
+
+    /// 실제로 찍히는 슬로 모션 프레임률
+    var activeSlowMotionFrameRate: Int {
+        VideoMode(resolution: .hd, frameRate: slowMotionFrameRate).resolved(in: availableVideoModes).frameRate
+    }
+
+    func isVideoModeAvailable(_ mode: VideoMode) -> Bool {
+        availableVideoModes.isEmpty || availableVideoModes.contains(mode)
     }
 }

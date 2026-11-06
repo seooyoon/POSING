@@ -95,7 +95,7 @@ struct CameraView<CameraModel: Camera>: View {
                         sound = .cameraShutter
                         // 카메라 컨트롤 · 음량 버튼도 셔터와 같이 타이머를 따름
                         await camera.shutterPressed()
-                    case .video:
+                    case .video, .slowMotion, .timelapse:
                         sound = camera.captureActivity.isRecording ?
                             .endVideoRecording : .beginVideoRecording
                         // Toggle video recording when pressing a hardware button.

@@ -2,8 +2,8 @@
 //  FormatButton.swift
 //  포징
 //
-//  상단 왼쪽 형식 버튼. 사진 `JPEG 24`, 비디오 `HD 해상도 30 FPS`.
-//  사진: 탭하거나 꾹 누르면 포맷(JPEG · RAW) · 해상도(12 · 24 · 48MP) 빠른 설정 판. 비디오 설정은 5단계.
+//  상단 왼쪽 형식 버튼. 사진 `JPEG 24`, 비디오 `4K 해상도 30 FPS`.
+//  탭하거나 꾹 누르면 빠른 설정 판: 사진은 포맷 · 해상도, 비디오는 해상도 · 프레임률.
 //
 
 import SwiftUI
@@ -15,14 +15,17 @@ struct FormatButton<CameraModel: Camera>: View {
 
     var body: some View {
         label
-            .topBarCapsule()
+            // 상단 바에 버튼이 더 있어 비디오 글자가 길면 여백을 줄임
+            .topBarCapsule(horizontalPadding: camera.captureMode == .photo ? 12 : camera.captureMode == .slowMotion ? 8 : 10)
             .contentShape(.capsule)
             // 기본 카메라처럼 탭 · 꾹 누르기 모두 빠른 설정 판
             .onTapGesture { openFormatSettings() }
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) { openFormatSettings() }
-            .accessibilityAddTraits(camera.captureMode == .photo ? .isButton : [])
+            .accessibilityAddTraits(.isButton)
             .sensoryFeedback(.selection, trigger: camera.photoCodec)
             .sensoryFeedback(.selection, trigger: camera.photoResolution)
+            .sensoryFeedback(.selection, trigger: camera.videoMode)
+            .sensoryFeedback(.selection, trigger: camera.slowMotionFrameRate)
     }
 
     @ViewBuilder
@@ -36,15 +39,15 @@ struct FormatButton<CameraModel: Camera>: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("사진 형식 \(camera.activeCodec.label), 해상도 \(camera.activeResolution)메가픽셀")
-        case .video:
-            // HD 해상도 · 30 FPS (작은 위첨자)
-            HStack(alignment: .firstTextBaseline, spacing: 14) {
+        case .video, .slowMotion, .timelapse:
+            // 4K 해상도 · 30 FPS (작은 위첨자)
+            HStack(alignment: .firstTextBaseline, spacing: camera.captureMode == .slowMotion ? 6 : 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("HD")
+                    Text(camera.captureMode == .slowMotion ? VideoResolution.hd.label : camera.activeVideoMode.resolution.label)
                     small("해상도", baseline: 6)
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("30").font(.cameraDigits(size: topBarFontSize))
+                    Text(verbatim: "\(camera.captureMode == .slowMotion ? camera.activeSlowMotionFrameRate : camera.activeVideoMode.frameRate)").font(.cameraDigits(size: topBarFontSize))
                     small("FPS", baseline: 6)
                 }
             }
@@ -52,8 +55,7 @@ struct FormatButton<CameraModel: Camera>: View {
     }
 
     private func openFormatSettings() {
-        guard camera.captureMode == .photo else { return }
-        quickSettings = .format
+        quickSettings = camera.captureMode == .photo ? .format : .videoFormat
     }
 
     private func small(_ text: String, baseline: CGFloat) -> some View {

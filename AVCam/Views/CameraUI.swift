@@ -115,7 +115,7 @@ struct CameraUI<CameraModel: Camera>: View {
                     // 판 위쪽이 상단 바 버튼 위쪽과 같은 높이
                     .offset(x: 8.5, y: layout.topBarCenterY - topBarControlHeight / 2)
                     // 누른 버튼 자리에서 부풀어 나옴
-                    .transition(.glassPop(GlassPopTransition(anchor: kind == .format ? .topLeading : .topTrailing,
+                    .transition(.glassPop(GlassPopTransition(anchor: kind == .flashAndLive ? .topTrailing : .topLeading,
                                                              scaleX: 0.3, scaleY: 0.45)))
             }
 

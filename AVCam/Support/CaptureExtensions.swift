@@ -40,7 +40,34 @@ extension AVCaptureDevice {
     }
 }
 
+extension AVCaptureDevice {
+    /// 해상도 · 프레임률에 맞는 형식. 10비트(HDR)를 원하면 먼저 찾고, 손떨림 보정이 강한 형식을 고름
+    func format(for mode: VideoMode, prefersTenBit: Bool) -> AVCaptureDevice.Format? {
+        let matches = formats.filter { $0.supports(mode) }
+        let preferred = matches.filter { $0.isTenBitFormat == prefersTenBit }
+        let candidates = preferred.isEmpty ? matches : preferred
+        return candidates.first { $0.isVideoStabilizationModeSupported(.cinematicExtended) } ?? candidates.first
+    }
+
+    /// 이 카메라가 찍을 수 있는 조합
+    var supportedVideoModes: Set<VideoMode> {
+        var modes = Set<VideoMode>()
+        for resolution in VideoResolution.allCases {
+            for frameRate in VideoMode.frameRates + VideoMode.slowMotionFrameRates {
+                let mode = VideoMode(resolution: resolution, frameRate: frameRate)
+                if formats.contains(where: { $0.supports(mode) }) { modes.insert(mode) }
+            }
+        }
+        return modes
+    }
+}
+
 extension AVCaptureDevice.Format {
+    func supports(_ mode: VideoMode) -> Bool {
+        formatDescription.dimensions == mode.resolution.dimensions
+            && videoSupportedFrameRateRanges.contains { $0.minFrameRate <= Double(mode.frameRate) && Double(mode.frameRate) <= $0.maxFrameRate }
+    }
+
     var isTenBitFormat: Bool {
         formatDescription.mediaSubType.rawValue == kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
     }

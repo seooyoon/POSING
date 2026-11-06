@@ -50,7 +50,7 @@ struct MoreMenu<CameraModel: Camera>: View {
         switch camera.captureMode {
         case .photo:
             return MoreMenuItem.allCases
-        case .video:
+        case .video, .slowMotion, .timelapse:
             return camera.zoom.isFrontCamera ? [.exposure] : [.flash, .exposure]
         }
     }

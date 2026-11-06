@@ -215,3 +215,39 @@ struct SceneBrightness {
         }
     }
 }
+
+// MARK: - 비디오 형식 저장값
+
+extension VideoResolution {
+    static var saved: VideoResolution {
+        UserDefaults.standard.string(forKey: SettingsKeys.videoResolution).flatMap(Self.init) ?? AppDefaults.videoResolution
+    }
+
+    func save() {
+        UserDefaults.standard.set(rawValue, forKey: SettingsKeys.videoResolution)
+    }
+}
+
+extension VideoMode {
+    static var saved: VideoMode {
+        let rate = UserDefaults.standard.integer(forKey: SettingsKeys.videoFrameRate)
+        return VideoMode(resolution: .saved, frameRate: frameRates.contains(rate) ? rate : AppDefaults.videoFrameRate)
+    }
+
+    func save() {
+        resolution.save()
+        UserDefaults.standard.set(frameRate, forKey: SettingsKeys.videoFrameRate)
+    }
+}
+
+extension VideoMode {
+    /// 저장된 슬로 모션 프레임률
+    static var savedSlowMotionFrameRate: Int {
+        let rate = UserDefaults.standard.integer(forKey: SettingsKeys.slowMotionFrameRate)
+        return slowMotionFrameRates.contains(rate) ? rate : AppDefaults.slowMotionFrameRate
+    }
+
+    static func saveSlowMotionFrameRate(_ rate: Int) {
+        UserDefaults.standard.set(rate, forKey: SettingsKeys.slowMotionFrameRate)
+    }
+}

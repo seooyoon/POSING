@@ -17,7 +17,7 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            if !(camera.captureMode == .video && camera.zoom.isFrontCamera) {
+            if !(camera.captureMode.isMovie && camera.zoom.isFrontCamera) {
                 Button {
                     guard quickSettings == nil else { return }
                     camera.flashMode = camera.flashMode.next
@@ -57,7 +57,7 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
         .simultaneousGesture(
             LongPressGesture(minimumDuration: AppDefaults.longPressDuration).onEnded { _ in
                 // 전면 비디오는 플래시 · LIVE가 모두 없어 판을 열지 않음
-                guard !(camera.captureMode == .video && camera.zoom.isFrontCamera) else { return }
+                guard !(camera.captureMode.isMovie && camera.zoom.isFrontCamera) else { return }
                 isShowingMoreMenu = false
                 quickSettings = .flashAndLive
             }

@@ -29,11 +29,22 @@ final class MovieCapture: OutputService {
     // A Boolean value that indicates whether the currently selected camera's
     // active format supports HDR.
     private var isHDRSupported = false
+    /// 지금 카메라가 찍을 수 있는 해상도 · 프레임률
+    private var videoModes = Set<VideoMode>()
 
     // MARK: - Capturing a movie
 
-    /// Starts movie recording.
-    func startRecording() {
+    /// 재생 의도 메타데이터: 0 = 슬로 모션으로 재생
+    private static var slowMotionPlaybackIntent: AVMetadataItem {
+        let item = AVMutableMetadataItem()
+        item.identifier = .quickTimeMetadataFullFrameRatePlaybackIntent
+        item.dataType = kCMMetadataBaseDataType_UInt8 as String
+        item.value = NSNumber(value: UInt8(0))
+        return item
+    }
+
+    /// 녹화를 시작함. 슬로 모션이면 사진 앱에 느리게 재생할 영상임을 알림
+    func startRecording(isSlowMotion: Bool = false) {
         // Return early if already recording.
         guard !movieOutput.isRecording else { return }
 
@@ -42,6 +53,7 @@ final class MovieCapture: OutputService {
 
         let delegate = MovieCaptureDelegate()
         self.delegate = delegate
+        movieOutput.metadata = isSlowMotion ? [Self.slowMotionPlaybackIntent] : nil
         movieOutput.startRecording(to: URL.movieFileURL, recordingDelegate: delegate)
     }
     
@@ -100,6 +112,7 @@ final class MovieCapture: OutputService {
     func updateConfiguration(for device: AVCaptureDevice) {
         // The app supports HDR video capture if the active format supports it.
         isHDRSupported = device.activeFormat10BitVariant != nil
+        videoModes = device.supportedVideoModes
 
         // The output has a video connection only while the session contains it, which is the
         // case in video capture mode. Adding the output creates a new connection, so the service
@@ -123,6 +136,6 @@ final class MovieCapture: OutputService {
     // MARK: - Configuration
     /// Returns the capabilities for this capture service.
     var capabilities: CaptureCapabilities {
-        CaptureCapabilities(isHDRSupported: isHDRSupported)
+        CaptureCapabilities(isHDRSupported: isHDRSupported, videoModes: videoModes)
     }
 }
