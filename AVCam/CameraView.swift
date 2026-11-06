@@ -81,8 +81,8 @@ struct CameraView<CameraModel: Camera>: View {
         // 셔터 자리 (eoFill로 구멍)
         path.addRect(CGRect(x: layout.centerX - 50 - rect.minX, y: layout.shutterCenterY - 50 - rect.minY,
                             width: 100, height: 100))
-        // 카메라 버튼 자리 (사진 모드에서만 보임)
-        if camera.captureMode == .photo {
+        // 카메라 버튼 자리 (사진 모드에서만 보이고, 카메라 컨트롤을 밀고 있는 동안은 숨음)
+        if camera.captureMode == .photo && !camera.prefersMinimizedUI {
             path.addRect(CGRect(x: CameraLayout.cameraButtonCenterX - CameraLookList.cellSize / 2 - rect.minX,
                                 y: layout.shutterCenterY - CameraLookList.cellSize / 2 - rect.minY,
                                 width: CameraLookList.cellSize, height: CameraLookList.cellSize))
