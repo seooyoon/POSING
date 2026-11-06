@@ -287,7 +287,7 @@ actor CaptureService {
             // Create a lens position control if the device supports setting a custom position.
             if device.isLockingFocusWithCustomLensPositionSupported {
                 // Create a slider to adjust the value from 0 to 1.
-                let lensSlider = AVCaptureSlider("Lens Position", symbolName: "circle.dotted.circle", in: 0...1)
+                let lensSlider = AVCaptureSlider("렌즈 위치", symbolName: "circle.dotted.circle", in: 0...1)
                 // Perform the slider's action on the session queue.
                 lensSlider.setActionQueue(sessionQueue) { lensPosition in
                     do {
