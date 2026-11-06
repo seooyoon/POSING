@@ -4,7 +4,7 @@
 //
 //  초기화 꾹 누르기로 여는 설정 화면 (docs/01_SPEC.md 6절, docs/02_UI.md 4절).
 //  아이폰 설정 앱 > 카메라와 같은 스타일. 카메라 화면과 달리 시스템 밝은/어두운 모드를 따른다.
-//  앱 아이콘 카드는 7단계, 카메라 목록 줄은 5-1단계에서 추가한다.
+//  앱 아이콘 카드는 7단계에서 추가한다.
 //
 
 import SwiftUI
@@ -12,6 +12,7 @@ import SwiftUI
 struct SettingsView: View {
 
     let layers: LayerState
+    let looks: CameraLookState
 
     @Environment(\.dismiss) private var dismiss
     @AppStorage(SettingsKeys.isGridEnabled) private var isGridEnabled = AppDefaults.isGridEnabled
@@ -36,10 +37,13 @@ struct SettingsView: View {
                     NavigationLink("MY 목록") {
                         MYListView(layers: layers)
                     }
+                    NavigationLink("카메라 목록") {
+                        CameraOrderView(looks: looks)
+                    }
                 } header: {
                     Text("목록")
                 } footer: {
-                    Text("바꾼 순서는 카메라 화면 목록에 왼쪽부터 그대로 보입니다.")
+                    Text("바꾼 순서는 카메라 화면 목록에 그대로 보입니다. 카메라 목록은 1번이 맨 아래입니다.")
                 }
 
                 Section("정보") {
@@ -65,5 +69,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(layers: LayerState())
+    SettingsView(layers: LayerState(), looks: CameraLookState())
 }

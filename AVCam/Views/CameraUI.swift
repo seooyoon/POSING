@@ -12,10 +12,12 @@ struct CameraUI<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
     let layers: LayerState
+    let looks: CameraLookState
     let layout: CameraLayout
 
     @State private var panelHeight: CGFloat = 0
     @State private var isShowingMoreMenu = false
+    @State private var isShowingCameraList = false
     /// 상단 빠른 설정 판 (형식 버튼 · 오른쪽 묶음 꾹 누르기)
     @State private var quickSettings: QuickSettingsKind?
     /// LIVE를 켜고 끈 직후 잠깐 보이는 표시 (true = LIVE, false = LIVE 끔)
@@ -83,6 +85,8 @@ struct CameraUI<CameraModel: Camera>: View {
             .opacity(isShowingMoreMenu ? 0 : 1)
             .blur(radius: isShowingMoreMenu ? 6 : 0)
 
+            cameraLookControls
+
             // 타이머 카운트다운: 미리보기 가운데
             TimerCountdownView(countdown: camera.countdown)
                 .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
@@ -131,13 +135,16 @@ struct CameraUI<CameraModel: Camera>: View {
         .animation(.easeOut(duration: 0.2), value: layers.openPanel)
         .animation(.easeOut(duration: 0.18), value: isShowingMoreMenu)
         .animation(.easeOut(duration: 0.18), value: quickSettings)
+        .animation(.easeOut(duration: 0.2), value: isShowingCameraList)
         // 모드를 바꾸거나 녹화를 시작하면 메뉴를 닫음
         .onChange(of: camera.captureMode) {
             isShowingMoreMenu = false
+            isShowingCameraList = false
             quickSettings = nil
         }
         .onChange(of: camera.captureActivity.isRecording) {
             isShowingMoreMenu = false
+            isShowingCameraList = false
             quickSettings = nil
         }
         .onChange(of: camera.isLivePhotoActive) { _, isActive in
@@ -145,6 +152,43 @@ struct CameraUI<CameraModel: Camera>: View {
             showLiveNotice(isActive)
         }
     }
+
+    /// 셔터 왼쪽 카메라 버튼과 세로 목록. 색감이 사진에만 적용되므로 사진 모드에서만 보임
+    @ViewBuilder
+    private var cameraLookControls: some View {
+        let isAvailable = camera.captureMode == .photo && camera.status == .running
+            && !isShowingMoreMenu && !camera.prefersMinimizedUI
+        let buttonTop = layout.shutterCenterY - CameraLookList.cellSize / 2
+        if isShowingCameraList {
+            // 목록 바깥을 탭하면 닫힘
+            if AppDefaults.closesCameraListOnOutsideTap {
+                Color.clear
+                    .contentShape(.rect)
+                    .frame(width: layout.size.width, height: layout.size.height)
+                    .onTapGesture { isShowingCameraList = false }
+            }
+            let list = CameraLookList(looks: looks,
+                                      maxHeight: buttonTop - CameraUI.cameraListGap - previewTopY) { item in
+                looks.select(item)
+                camera.cameraLook = item.look
+                isShowingCameraList = false
+            }
+            let listBottom = buttonTop - CameraUI.cameraListGap
+            list
+                .position(x: CameraLayout.cameraButtonCenterX, y: listBottom - list.height / 2)
+                // 버튼 위에서 위쪽으로 펼쳐짐
+                .transition(.scale(scale: 0.4, anchor: UnitPoint(x: CameraLayout.cameraButtonCenterX / layout.size.width,
+                                                                 y: listBottom / layout.size.height))
+                    .combined(with: .opacity))
+        }
+        CameraLookButton(looks: looks, isListOpen: $isShowingCameraList)
+            .position(x: CameraLayout.cameraButtonCenterX, y: layout.shutterCenterY)
+            .opacity(isAvailable ? 1 : 0)
+            .allowsHitTesting(isAvailable)
+            .animation(.easeOut(duration: 0.2), value: isAvailable)
+    }
+
+    private static var cameraListGap: CGFloat { 8 }
 
     private var isTopBarHidden: Bool {
         quickSettings != nil || isShowingMoreMenu

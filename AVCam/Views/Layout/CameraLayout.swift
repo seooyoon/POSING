@@ -23,6 +23,8 @@ struct CameraLayout {
     static let zoomDialCenterBelowShutter: CGFloat = 35
     /// 화면 좌우 여백
     static let sideInset: CGFloat = 16
+    /// 카메라 버튼 가운데 x. 아래 썸네일과 같은 세로줄 (docs/02_UI.md 7절)
+    static let cameraButtonCenterX: CGFloat = 58
 
     /// 안전 영역을 포함한 전체 화면 크기
     let size: CGSize

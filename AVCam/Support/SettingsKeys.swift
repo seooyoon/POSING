@@ -14,6 +14,10 @@ enum SettingsKeys {
     static let isCenterMarkEnabled = "isCenterMarkEnabled"
     /// 설정에서 바꾼 포즈 순서 (포즈 id 목록)
     static let poseOrder = "poseOrder"
+    /// 설정에서 바꾼 카메라 순서 (카메라 id 목록)
+    static let cameraOrder = "cameraOrder"
+    /// 지금 고른 카메라 id
+    static let selectedCamera = "selectedCamera"
     /// 플래시 (자동 · 켬 · 끔)
     static let flashMode = "flashMode"
     /// 타이머 초 (0 = 끔)

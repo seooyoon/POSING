@@ -42,12 +42,14 @@ struct SettingsThumbnailRow: View {
 
     let image: UIImage
     var title: String?
+    /// 투명 배경 PNG처럼 칸을 채우지 않고 그대로 보여줄 때 false
+    var fillsFrame = true
 
     var body: some View {
         HStack(spacing: 12) {
             Image(uiImage: image)
                 .resizable()
-                .scaledToFill()
+                .aspectRatio(contentMode: fillsFrame ? .fill : .fit)
                 .frame(width: 44, height: 44)
                 .clipShape(.rect(cornerRadius: 8))
             if let title {

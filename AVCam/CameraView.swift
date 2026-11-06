@@ -14,6 +14,7 @@ struct CameraView<CameraModel: Camera>: View {
 
     @State var camera: CameraModel
     @State private var layers = LayerState()
+    @State private var looks = CameraLookState()
     @State private var focus = FocusModel()
     @State private var level = LevelModel()
     var body: some View {
@@ -54,7 +55,7 @@ struct CameraView<CameraModel: Camera>: View {
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                 // 카메라 화면 UI
-                CameraUI(camera: camera, layers: layers, layout: layout)
+                CameraUI(camera: camera, layers: layers, looks: looks, layout: layout)
             }
             .ignoresSafeArea()
             // 카메라 화면만 다크 고정. 설정 화면 · 사진 피커는 아이폰 설정을 따름 (docs/02_UI.md 10절)
@@ -67,7 +68,7 @@ struct CameraView<CameraModel: Camera>: View {
         .myPhotoPicker(isPresented: $layers.isPickingMY, layers: layers)
         // 초기화 꾹 누르기 → 설정 화면
         .fullScreenCover(isPresented: $layers.isShowingSettings) {
-            SettingsView(layers: layers)
+            SettingsView(layers: layers, looks: looks)
         }
     }
 
@@ -80,6 +81,12 @@ struct CameraView<CameraModel: Camera>: View {
         // 셔터 자리 (eoFill로 구멍)
         path.addRect(CGRect(x: layout.centerX - 50 - rect.minX, y: layout.shutterCenterY - 50 - rect.minY,
                             width: 100, height: 100))
+        // 카메라 버튼 자리 (사진 모드에서만 보이고, 카메라 컨트롤을 밀고 있는 동안은 숨음)
+        if camera.captureMode == .photo && !camera.prefersMinimizedUI {
+            path.addRect(CGRect(x: CameraLayout.cameraButtonCenterX - CameraLookList.cellSize / 2 - rect.minX,
+                                y: layout.shutterCenterY - CameraLookList.cellSize / 2 - rect.minY,
+                                width: CameraLookList.cellSize, height: CameraLookList.cellSize))
+        }
         return path
     }
 

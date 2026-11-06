@@ -818,11 +818,17 @@ actor CaptureService {
             }
         }
         let photo = try await photoCapture.capturePhoto(with: features, onCaptured: onCaptured)
+        guard !photo.isProxy, features.cropRatio != nil || features.lookLUTURL != nil else { return photo }
+        var data = photo.data
         // 비율이 4:3이 아니면 가운데를 잘라 저장
-        guard let ratio = features.cropRatio, !photo.isProxy else { return photo }
-        return Photo(data: PhotoCropper.crop(photo.data, longToShort: ratio),
-                     isProxy: false,
-                     livePhotoMovieURL: nil)
+        if let ratio = features.cropRatio {
+            data = PhotoCropper.crop(data, longToShort: ratio)
+        }
+        // 자른 뒤 카메라 색감을 입힘
+        if let lutURL = features.lookLUTURL {
+            data = PhotoFilter.apply(lut: lutURL, to: data)
+        }
+        return Photo(data: data, isProxy: false, livePhotoMovieURL: nil)
     }
 
     /// RAW(Apple ProRAW) 촬영 준비를 켜고 끔 (세션 구성이 다시 일어남)
