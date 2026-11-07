@@ -35,6 +35,9 @@ actor CaptureService {
     
     /// A type that connects a preview destination with the capture session.
     nonisolated let previewSource: PreviewSource
+    /// 보정 미리보기 프레임 출력 (사진 모드 + 보정이 있을 때만 세션에 붙음)
+    private let filteredFeed = FilteredPreviewFeed()
+    private var wantsPreviewFiltering = false
     
     // The app's capture session.
     private let captureSession = AVCaptureSession()
@@ -97,7 +100,7 @@ actor CaptureService {
     
     init() {
         // Create a source object to connect the preview view with the capture session.
-        previewSource = DefaultPreviewSource(session: captureSession)
+        previewSource = DefaultPreviewSource(session: captureSession, filteredFeed: filteredFeed)
     }
     
     // MARK: - Authorization
@@ -413,8 +416,10 @@ actor CaptureService {
             selectHighResolutionPhotoFormat(for: currentDevice)
             captureSession.removeOutput(movieCapture.output)
             captureSession.removeOutput(timelapseCapture.output)
+            updateFilteredPreviewOutput()
         case .video, .slowMotion, .timelapse:
             captureSession.sessionPreset = .high
+            updateFilteredPreviewOutput()
             // 비디오 · 슬로 모션은 파일 출력, 타임랩스는 프레임 출력
             if captureMode == .timelapse {
                 captureSession.removeOutput(movieCapture.output)
@@ -561,6 +566,10 @@ actor CaptureService {
     }
     
     private func updatePreviewRotation(_ angle: CGFloat) {
+        // 보정 미리보기 프레임도 미리보기와 같은 방향
+        if let connection = filteredFeed.output.connection(with: .video), connection.isVideoRotationAngleSupported(angle) {
+            connection.videoRotationAngle = angle
+        }
         let connection = videoPreviewLayer.connection
         Task { @MainActor in
             // Set initial rotation angle on the video preview.
@@ -602,12 +611,44 @@ actor CaptureService {
         zoomController.setFrontWide(isWide)
     }
 
+    // MARK: - 보정 미리보기
+
+    /// 카메라 색감 · 스타일 보정이 있으면 미리보기 프레임 출력을 붙임
+    func setPreviewFiltering(_ isOn: Bool) {
+        wantsPreviewFiltering = isOn
+        // 사진 처리 중이면 끝난 뒤 맞춤 (세션 구성 변경과 겹치지 않게)
+        guard photosInProgress == 0 else { return }
+        updateFilteredPreviewOutput()
+    }
+
+    /// 사진 모드 + 보정일 때만 출력을 세션에 둠. 보정이 없으면 기존 미리보기만 씀 (성능 · 배터리)
+    private func updateFilteredPreviewOutput() {
+        let output = filteredFeed.output
+        let shouldAttach = wantsPreviewFiltering && captureMode == .photo
+        guard shouldAttach != captureSession.outputs.contains(output) else { return }
+        captureSession.beginConfiguration()
+        defer { captureSession.commitConfiguration() }
+        guard shouldAttach else {
+            captureSession.removeOutput(output)
+            return
+        }
+        guard captureSession.canAddOutput(output) else {
+            logger.error("Unable to add the filtered preview output.")
+            return
+        }
+        captureSession.addOutput(output)
+        updateOutputMirroring()
+        if let rotationCoordinator {
+            updatePreviewRotation(rotationCoordinator.videoRotationAngleForHorizonLevelPreview)
+        }
+    }
+
     // MARK: - 전면 카메라 좌우 반전
 
     /// 전면 카메라 사진 · 영상은 화면에 보인 그대로(거울 반전) 저장 (docs/02_UI.md 9절)
     private func updateOutputMirroring() {
         let isFront = currentDevice.position == .front
-        for output in [photoCapture.output, movieCapture.output, timelapseCapture.output] as [AVCaptureOutput] {
+        for output in [photoCapture.output, movieCapture.output, timelapseCapture.output, filteredFeed.output] as [AVCaptureOutput] {
             guard let connection = output.connection(with: .video), connection.isVideoMirroringSupported else { continue }
             connection.automaticallyAdjustsVideoMirroring = false
             connection.isVideoMirrored = isFront
@@ -815,6 +856,10 @@ actor CaptureService {
             if photosInProgress == 0, let pending = pendingRAWEnabled {
                 pendingRAWEnabled = nil
                 applyRAWEnabled(pending)
+            }
+            // 사진 처리 중에 미뤄 둔 보정 미리보기 출력도 맞춤
+            if photosInProgress == 0 {
+                updateFilteredPreviewOutput()
             }
         }
         let photo = try await photoCapture.capturePhoto(with: features, onCaptured: onCaptured)

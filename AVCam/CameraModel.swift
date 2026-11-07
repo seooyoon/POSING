@@ -117,6 +117,7 @@ final class CameraModel: Camera {
             observeState()
             status = .running
             updateTorch()
+            updatePreviewFilter()
         } catch {
             logger.error("Failed to start capture service. \(error)")
             status = .failed
@@ -150,6 +151,7 @@ final class CameraModel: Camera {
                 // Update the persistent state value.
                 cameraState.captureMode = captureMode
                 updateTorch()
+                updatePreviewFilter()
             }
         }
     }
@@ -226,8 +228,22 @@ final class CameraModel: Camera {
 
     /// 앱을 켜면 항상 4:3으로 시작 (저장하지 않음)
     var photoAspect = PhotoAspect.fourThree
-    var cameraLook = CameraLookLibrary.savedLook()
-    var photoStyle = StyleLibrary.savedSelection()
+    var cameraLook = CameraLookLibrary.savedLook() {
+        didSet { updatePreviewFilter() }
+    }
+    var photoStyle = StyleLibrary.savedSelection() {
+        didSet { updatePreviewFilter() }
+    }
+
+    /// 사진 모드에서 카메라 색감 · 스타일 보정이 있으면 미리보기에도 보정 표시 (Metal 미리보기)
+    private func updatePreviewFilter() {
+        guard status == .running else { return }
+        let isPhoto = captureMode == .photo
+        let feed = captureService.previewSource.filteredFeed
+        feed.configure(lutURL: isPhoto ? cameraLook.lutURL : nil, style: isPhoto ? photoStyle : nil)
+        let isFiltering = feed.isFiltering
+        Task { await captureService.setPreviewFiltering(isFiltering) }
+    }
 
     var photoCodec = PhotoCodec.saved {
         didSet {
