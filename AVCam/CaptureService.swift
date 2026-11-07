@@ -571,10 +571,11 @@ actor CaptureService {
         if let connection = filteredFeed.output.connection(with: .video), connection.isVideoRotationAngleSupported(angle) {
             connection.videoRotationAngle = angle
         }
-        let connection = videoPreviewLayer.connection
+        // 흐린 배경 층도 같은 방향
+        let connections = captureSession.connections.filter { $0.videoPreviewLayer != nil }
         Task { @MainActor in
             // Set initial rotation angle on the video preview.
-            connection?.videoRotationAngle = angle
+            connections.forEach { $0.videoRotationAngle = angle }
         }
     }
     
@@ -587,7 +588,9 @@ actor CaptureService {
     
     private var videoPreviewLayer: AVCaptureVideoPreviewLayer {
         // Access the capture session's connected preview layer.
-        guard let previewLayer = captureSession.connections.compactMap({ $0.videoPreviewLayer }).first else {
+        // 흐린 배경 층(PreviewBackdrop)이 아닌 메인 미리보기 층
+        guard let previewLayer = captureSession.connections.compactMap({ $0.videoPreviewLayer })
+            .first(where: { $0.name != PreviewBackdrop.BackdropView.layerName }) else {
             fatalError("The app is misconfigured. The capture session should have a connection to a preview layer.")
         }
         return previewLayer

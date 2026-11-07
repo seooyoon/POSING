@@ -23,8 +23,14 @@ struct CameraView<CameraModel: Camera>: View {
         GeometryReader { proxy in
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
             ZStack(alignment: .topLeading) {
-                // 카메라 화면은 다크 고정 (docs/02_UI.md 10절)
+                // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 장면을 흐리고 어둡게 깜
+                // (유리 버튼에 비칠 것이 있게, 기본 카메라와 같음). 스타일 화면은 검정
                 Color.black
+                if !isShowingStyleScreen {
+                    PreviewBackdrop(source: camera.previewSource)
+                        .opacity(camera.shouldFlashScreen ? 0 : 1)
+                        .transition(.opacity)
+                }
                 // 미리보기는 모드에 맞는 자리 · 비율로 (사진 4:3, 비디오 16:9)
                 // 비율을 바꿀 때 층 크기는 그대로 두고 확대 · 자르기만 움직임 (영상이 흔들리지 않게)
                 Color.clear
