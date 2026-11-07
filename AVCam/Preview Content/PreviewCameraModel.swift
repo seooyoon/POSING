@@ -24,8 +24,19 @@ class PreviewCameraModel: Camera {
     var timerDuration = TimerDuration.off
     var exposureCompensation: Float = 0
     var photoAspect = PhotoAspect.fourThree
-    var cameraLook = CameraLookLibrary.savedLook()
-    var photoStyle = StyleLibrary.savedSelection()
+    var cameraLook = CameraLookLibrary.savedLook() {
+        didSet { updatePreviewFilter() }
+    }
+    var photoStyle = StyleLibrary.savedSelection() {
+        didSet { updatePreviewFilter() }
+    }
+
+    /// 사진 모드에서 보정이 있으면 미리보기에도 보정 표시
+    private func updatePreviewFilter() {
+        let isPhoto = captureMode == .photo
+        previewSource.filteredFeed.configure(lutURL: isPhoto ? cameraLook.lutURL : nil,
+                                             style: isPhoto ? photoStyle : nil)
+    }
     var photoCodec = PhotoCodec.jpeg
     var photoResolution = 24
     var videoMode = VideoMode(resolution: AppDefaults.videoResolution, frameRate: AppDefaults.videoFrameRate)
@@ -42,14 +53,16 @@ class PreviewCameraModel: Camera {
     struct PreviewSourceStub: PreviewSource {
         // Stubbed out for test purposes.
         func connect(to target: PreviewTarget) {}
+        let filteredFeed = FilteredPreviewFeed()
     }
-    
+
     let previewSource: PreviewSource = PreviewSourceStub()
     
     private(set) var status = CameraStatus.unknown
     private(set) var captureActivity = CaptureActivity.idle
     var captureMode = CaptureMode.photo {
         didSet {
+            updatePreviewFilter()
             isSwitchingModes = true
             Task {
                 // Create a short delay to mimic the time it takes to reconfigure the session.
@@ -74,6 +87,7 @@ class PreviewCameraModel: Camera {
         if status == .unknown {
             status = .running
         }
+        updatePreviewFilter()
     }
     
     // 시뮬레이터에서도 전면 화각 버튼을 확인: 후면 ↔ 전면 상태만 바꿈 (전면은 '가깝게'로 시작)
