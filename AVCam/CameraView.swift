@@ -23,14 +23,11 @@ struct CameraView<CameraModel: Camera>: View {
         GeometryReader { proxy in
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
             ZStack(alignment: .topLeading) {
-                // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 장면을 흐리고 어둡게 깜
-                // (유리 버튼에 비칠 것이 있게, 기본 카메라와 같음). 스타일 화면, 16:9 · 1:1 사진은 검정 (docs/02_UI.md 5절)
+                // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 기본 카메라처럼 장면이 어둡게 비침
+                // (docs/02_UI.md 5절). 배경 층은 계속 붙여 두고 스타일 화면에서는 숨기기만 함 (붙였다 떼면 멈춤)
                 Color.black
-                if !isShowingStyleScreen && (camera.captureMode != .photo || camera.photoAspect == .fourThree) {
-                    PreviewBackdrop(source: camera.previewSource)
-                        .opacity(camera.shouldFlashScreen ? 0 : 1)
-                        .transition(.opacity)
-                }
+                PreviewBackdrop(source: camera.previewSource)
+                    .opacity(isShowingStyleScreen || camera.shouldFlashScreen ? 0 : 1)
                 // 미리보기는 모드에 맞는 자리 · 비율로 (사진 4:3, 비디오 16:9)
                 // 비율을 바꿀 때 층 크기는 그대로 두고 확대 · 자르기만 움직임 (영상이 흔들리지 않게)
                 Color.clear
@@ -41,14 +38,19 @@ struct CameraView<CameraModel: Camera>: View {
                         .frame(width: layout.previewLayerSize.width, height: layout.previewLayerSize.height)
                         .scaleEffect(layout.previewScale)
                     }
+                    // 자르지 않음: 1:1이면 4:3 영상의 위아래가 바깥에 이어서 비침 (OutsidePreviewDim이 어둡게)
                     .frame(width: layout.previewRect.width, height: layout.previewRect.height)
-                    .clipped()
                     .contentShape(previewTouchArea(in: layout), eoFill: true)
                     .modifier(PreviewGestures(camera: camera, layers: layers, focus: focus, layout: layout,
                                               onStyleSwipe: isShowingStyleScreen ? { styles.step(by: $0 == .left ? 1 : -1) } : nil))
-                    .modifier(StyleCardEffect(isActive: isShowingStyleScreen, layout: layout))
+                    .modifier(StyleCardEffect(isActive: isShowingStyleScreen, layout: layout, clipsOutside: false))
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
+                OutsidePreviewDim(previewRect: layout.previewRect)
+                    .opacity(isShowingStyleScreen ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
+                    .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
+                    .animation(.spring(duration: 0.35, bounce: 0.1), value: isShowingStyleScreen)
                 // 미리보기 위 표시 (아래 → 위): MY · 포즈 레이어 → 격자 · 중심점 → 수평계 · 초점 (docs/02_UI.md 5절)
                 // 모두 화면에만 그리고 저장본에는 없음
                 Group {
@@ -232,17 +234,22 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
     }
 }
 
-/// 스타일 화면: 미리보기가 둥근 카드로 줄어듦. 아니면 원래 미리보기 자리
+/// 스타일 화면: 미리보기가 둥근 카드로 줄어듦. 아니면 원래 미리보기 자리.
+/// clipsOutside가 false면 평소에는 자리 바깥도 그대로 보임 (카드로 바뀔 때만 잘림)
 private struct StyleCardEffect: ViewModifier {
 
     let isActive: Bool
     let layout: CameraLayout
+    var clipsOutside = true
 
     func body(content: Content) -> some View {
         let card = StyleScreenLayout(layout: layout)
         let scale = isActive ? card.scale : 1
+        // 평소에는 자르는 모양을 화면보다 크게 넓혀 자르지 않은 것처럼 (카드로 줄어들 때 부드럽게 좁아짐)
+        let outset: CGFloat = isActive || clipsOutside ? 0 : -max(layout.size.width, layout.size.height)
         content
-            .clipShape(.rect(cornerRadius: isActive ? StyleScreenLayout.cardCornerRadius / scale : 0, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: isActive ? StyleScreenLayout.cardCornerRadius / scale : 0, style: .continuous)
+                .inset(by: outset))
             .scaleEffect(scale)
             .position(x: layout.previewRect.midX,
                       y: isActive ? card.cardRect.midY : layout.previewRect.midY)
