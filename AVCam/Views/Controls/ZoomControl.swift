@@ -37,6 +37,9 @@ struct ZoomControl<CameraModel: Camera>: View {
     /// 1×를 누른 직후 원 안에 보이는 화각 (mm)
     @State private var millimeterBadge: Int?
     @State private var millimeterTask: Task<Void, Never>?
+    /// 밀기 중 마지막으로 요청한 배율. 한 번에 하나씩, 가장 최근 값만 카메라에 보냄 (순서가 뒤섞이지 않게)
+    @State private var pendingDragFactor: CGFloat?
+    @State private var dragZoomTask: Task<Void, Never>?
 
     /// 원이 있는 버튼
     private var activePreset: CGFloat? { tappedPreset ?? camera.zoom.activePreset }
@@ -60,8 +63,9 @@ struct ZoomControl<CameraModel: Camera>: View {
                         .transition(.opacity)
                 }
             }
-            // 제스처는 바뀌지 않는 바깥 뷰에 한 번만 붙임 (펼쳐지는 중에도 밀기가 끊기지 않게)
-            .gesture(dialDrag)
+            // 제스처는 바뀌지 않는 바깥 뷰에 한 번만 붙임 (펼쳐지는 중에도 밀기가 끊기지 않게).
+            // 배율 버튼 위에서 시작해도 버튼보다 밀기가 먼저 (탭은 움직임이 없어 그대로 버튼으로)
+            .highPriorityGesture(dialDrag)
             .simultaneousGesture(
                 LongPressGesture(minimumDuration: AppDefaults.zoomDialLongPressDuration).onEnded { _ in
                     showDial()
@@ -138,7 +142,7 @@ struct ZoomControl<CameraModel: Camera>: View {
         guard !isDialShown else { return }
         // 이미 1×면 24 → 28 → 35mm로 돌아감
         // 빠르게 연달아 누르면 카메라 값이 아직 안 바뀌었을 수 있어 방금 요청한 값을 기준으로 함
-        let current = Date.now < presetZoomUntil ? (requestedFactor ?? camera.zoom.displayFactor) : camera.zoom.displayFactor
+        let current = currentFactor
         let target = preset == 1 && activePreset == 1 ? ZoomState.nextMainLensFactor(after: current) : preset
         requestedFactor = target
         presetZoomUntil = .now + 0.8
@@ -169,16 +173,33 @@ struct ZoomControl<CameraModel: Camera>: View {
             .onChanged { value in
                 showDial()
                 collapseTask?.cancel()
-                let start = dragStartFactor ?? camera.zoom.displayFactor
+                let start = dragStartFactor ?? currentFactor
                 dragStartFactor = start
                 // 왼쪽으로 밀면 확대 (다이얼 눈금이 왼쪽으로 돌아감)
                 let factor = start * pow(2, -value.translation.width / pointsPerDoubling)
-                Task { await camera.setZoom(factor, animated: false) }
+                requestDragZoom(factor)
             }
             .onEnded { _ in
                 dragStartFactor = nil
                 scheduleCollapse()
             }
+    }
+
+    /// 지금 배율. 버튼을 막 누른 직후에는 카메라 값이 아직 따라오는 중이라 요청한 값을 씀
+    private var currentFactor: CGFloat {
+        Date.now < presetZoomUntil ? (requestedFactor ?? camera.zoom.displayFactor) : camera.zoom.displayFactor
+    }
+
+    private func requestDragZoom(_ factor: CGFloat) {
+        pendingDragFactor = factor
+        guard dragZoomTask == nil else { return }
+        dragZoomTask = Task {
+            while let target = pendingDragFactor {
+                pendingDragFactor = nil
+                await camera.setZoom(target, animated: false)
+            }
+            dragZoomTask = nil
+        }
     }
 
     private func showDial() {
