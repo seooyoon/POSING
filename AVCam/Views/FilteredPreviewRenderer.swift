@@ -18,6 +18,8 @@ final class FilteredPreviewRenderer: NSObject, MTKViewDelegate {
     private let context: CIContext
     private let commandQueue: MTLCommandQueue
     private let colorSpace = CGColorSpace(name: CGColorSpace.displayP3) ?? CGColorSpaceCreateDeviceRGB()
+    /// 마지막으로 그린 프레임 번호. 새 프레임이 없으면 다시 그리지 않음
+    private var drawnGeneration = -1
 
     init?(feed: FilteredPreviewFeed) {
         guard let device = MTLCreateSystemDefaultDevice(),
@@ -43,18 +45,25 @@ final class FilteredPreviewRenderer: NSObject, MTKViewDelegate {
     /// 보정을 켜면 그리기 시작 (첫 프레임을 그린 뒤 보임), 끄면 멈추고 숨김
     func setActive(_ isActive: Bool) {
         view.isPaused = !isActive
+        // 다시 켜면 첫 프레임부터 새로 그림
+        drawnGeneration = -1
         if !isActive { view.isHidden = true }
     }
 
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+    /// 크기가 바뀌면 같은 프레임이라도 다시 그림
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        drawnGeneration = -1
+    }
 
     func draw(in view: MTKView) {
-        guard let frame = feed.filteredFrame(),
+        let size = view.drawableSize
+        guard size.width > 0, size.height > 0,
+              let (frame, generation) = feed.filteredFrame(after: drawnGeneration),
+              !frame.extent.isEmpty,
               let drawable = view.currentDrawable,
               let commandBuffer = commandQueue.makeCommandBuffer()
         else { return }
-        let size = view.drawableSize
-        guard size.width > 0, size.height > 0, !frame.extent.isEmpty else { return }
+        drawnGeneration = generation
 
         // 미리보기 층과 같은 채우기 (resizeAspectFill): 가운데 기준으로 꽉 채움
         let extent = frame.extent
