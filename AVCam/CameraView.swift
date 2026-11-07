@@ -80,6 +80,15 @@ struct CameraView<CameraModel: Camera>: View {
     /// 16:9 · 비디오는 미리보기가 상단 바 · 셔터 뒤까지 올라가므로, 미리보기 제스처가 버튼 터치를 가져가지 않게 함
     private func previewTouchArea(in layout: CameraLayout) -> Path {
         let rect = layout.previewRect
+        // 스타일 화면: 카드 전체가 터치 영역이고, 카드 안으로 올라온 셔터 자리만 뺌 (줄이기 전 좌표로)
+        if isShowingStyleScreen {
+            let card = StyleScreenLayout(layout: layout)
+            let side = 100 / card.scale
+            let shutterY = (card.shutterCenterY - card.cardRect.midY) / card.scale + rect.height / 2
+            var path = Path(CGRect(origin: .zero, size: rect.size))
+            path.addRect(CGRect(x: rect.width / 2 - side / 2, y: shutterY - side / 2, width: side, height: side))
+            return path
+        }
         let top = max(rect.minY, layout.safeTop + CameraLayout.topBarHeight)
         var path = Path(CGRect(x: 0, y: top - rect.minY, width: rect.width, height: max(0, rect.maxY - top)))
         // 셔터 자리 (eoFill로 구멍)
