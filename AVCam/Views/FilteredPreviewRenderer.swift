@@ -57,11 +57,12 @@ final class FilteredPreviewRenderer: NSObject, MTKViewDelegate {
 
     func draw(in view: MTKView) {
         let size = view.drawableSize
+        // 그릴 곳을 먼저 확보한 뒤 보정을 계산 (실패할 때마다 보정을 다시 계산하지 않게)
         guard size.width > 0, size.height > 0,
-              let (frame, generation) = feed.filteredFrame(after: drawnGeneration),
-              !frame.extent.isEmpty,
               let drawable = view.currentDrawable,
-              let commandBuffer = commandQueue.makeCommandBuffer()
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let (frame, generation) = feed.filteredFrame(after: drawnGeneration),
+              !frame.extent.isEmpty
         else { return }
         drawnGeneration = generation
 
