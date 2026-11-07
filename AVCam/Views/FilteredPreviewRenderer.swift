@@ -64,7 +64,6 @@ final class FilteredPreviewRenderer: NSObject, MTKViewDelegate {
               let (frame, generation) = feed.filteredFrame(after: drawnGeneration),
               !frame.extent.isEmpty
         else { return }
-        drawnGeneration = generation
 
         // 미리보기 층과 같은 채우기 (resizeAspectFill): 가운데 기준으로 꽉 채움
         let extent = frame.extent
@@ -90,6 +89,8 @@ final class FilteredPreviewRenderer: NSObject, MTKViewDelegate {
         }
         commandBuffer.present(drawable)
         commandBuffer.commit()
+        // 그리기에 성공한 뒤에만 그린 것으로 표시 (실패하면 다음 틱에 다시)
+        drawnGeneration = generation
         if view.isHidden { view.isHidden = false }
     }
 }
