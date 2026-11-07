@@ -24,9 +24,9 @@ struct CameraView<CameraModel: Camera>: View {
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
             ZStack(alignment: .topLeading) {
                 // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 장면을 흐리고 어둡게 깜
-                // (유리 버튼에 비칠 것이 있게, 기본 카메라와 같음). 스타일 화면은 검정
+                // (유리 버튼에 비칠 것이 있게, 기본 카메라와 같음). 스타일 화면, 16:9 · 1:1 사진은 검정 (docs/02_UI.md 5절)
                 Color.black
-                if !isShowingStyleScreen {
+                if !isShowingStyleScreen && (camera.captureMode != .photo || camera.photoAspect == .fourThree) {
                     PreviewBackdrop(source: camera.previewSource)
                         .opacity(camera.shouldFlashScreen ? 0 : 1)
                         .transition(.opacity)
