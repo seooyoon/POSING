@@ -116,6 +116,8 @@ struct PaletteSlider: View {
             }
             .contentShape(.rect)
             .gesture(DragGesture(minimumDistance: 0).onChanged { value in
+                // 움직일 폭이 없으면 값이 NaN이 되므로 건너뜀
+                guard width > knob else { return }
                 styles.setPalette((value.location.x - knob / 2) / (width - knob) * 100)
             })
         }
