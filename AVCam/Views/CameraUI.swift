@@ -74,6 +74,8 @@ struct CameraUI<CameraModel: Camera>: View {
             if camera.zoom.showsMacroButton && !isShowingMoreMenu && !isShowingStyleScreen {
                 MacroButton(camera: camera)
                     .position(x: CameraLayout.sideInset + 22, y: layout.zoomRowCenterY)
+                    // 기본 카메라처럼 서서히 나타나고 사라짐
+                    .transition(.opacity)
             }
 
             // 더보기 메뉴가 열리면 셔터 · 하단 줄은 메뉴 속으로 사라짐
@@ -155,6 +157,7 @@ struct CameraUI<CameraModel: Camera>: View {
         .animation(.easeOut(duration: 0.18), value: isShowingMoreMenu)
         .animation(.easeOut(duration: 0.18), value: quickSettings)
         .animation(.easeOut(duration: 0.2), value: isShowingCameraList)
+        .animation(.easeInOut(duration: AppDefaults.macroButtonFadeDuration), value: camera.zoom.showsMacroButton)
         .animation(.spring(duration: 0.35, bounce: 0.1), value: isShowingStyleScreen)
         // 스타일을 바꾸면 사진 보정에 바로 반영
         .onChange(of: styles.selection) { _, selection in
