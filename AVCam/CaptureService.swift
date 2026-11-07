@@ -403,7 +403,15 @@ actor CaptureService {
     private func applyCaptureMode(_ captureMode: CaptureMode) throws {
         // Update the internal capture mode value before performing the session configuration.
         self.captureMode = captureMode
-        
+        try configureOutputs(for: captureMode)
+        // 사진 프리셋은 구성을 마칠 때 적용되므로, 그 뒤에 48MP 형식을 고름
+        // (같은 구성 안에서 고르면 직전 비디오 형식을 기준으로 찾아 48MP를 놓침)
+        if captureMode == .photo {
+            applyHighResolutionPhotoFormat()
+        }
+    }
+
+    private func configureOutputs(for captureMode: CaptureMode) throws {
         // Change the configuration atomically.
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
@@ -413,7 +421,6 @@ actor CaptureService {
         case .photo:
             // The app needs to remove the movie capture output to perform Live Photo capture.
             captureSession.sessionPreset = .photo
-            selectHighResolutionPhotoFormat(for: currentDevice)
             captureSession.removeOutput(movieCapture.output)
             captureSession.removeOutput(timelapseCapture.output)
             // 사진 처리 중이면 끝난 뒤 capturePhoto에서 맞춤
@@ -474,6 +481,10 @@ actor CaptureService {
     // Changes the device the service uses for video capture.
     private func changeCaptureDevice(to device: AVCaptureDevice) {
         applyCaptureDevice(device)
+        // 새 카메라 형식이 정해진 뒤 48MP 형식을 고름
+        if captureMode == .photo {
+            applyHighResolutionPhotoFormat()
+        }
         // 새 카메라는 잠금 없이 연속 자동으로 시작
         resetFocusAndExposure()
         // 새 카메라 형식이 적용된 뒤 얼룩 감지를 다시 켬
@@ -493,9 +504,7 @@ actor CaptureService {
         do {
             // Attempt to connect a new input and device to the capture session.
             activeVideoInput = try addInput(for: device)
-            if captureMode == .photo {
-                selectHighResolutionPhotoFormat(for: device)
-            } else {
+            if captureMode != .photo {
                 applyVideoMode()
             }
             zoomController.attach(to: device)
@@ -662,44 +671,85 @@ actor CaptureService {
 
     // MARK: - 렌즈 얼룩 감지
 
-    /// 얼룩 감지 간격. 계속 돌리면 배터리를 쓰므로 일정 간격으로만
-    private static let smudgeDetectionInterval = CMTime(value: 30, timescale: 1)
+    /// 얼룩 감지 간격. 계속 돌리면 배터리를 쓰므로 일정 간격으로만 (닦은 뒤에도 이 간격 안에 안내가 사라짐)
+    private static let smudgeDetectionInterval = CMTime(seconds: AppDefaults.lensSmudgeDetectionInterval, preferredTimescale: 600)
 
     /// 지원하는 렌즈 · 형식이면 얼룩 감지를 켜고 결과를 관찰.
     /// begin/commitConfiguration 안이나 세션 시작 전에 불러야 함
     private func enableLensSmudgeDetection(for device: AVCaptureDevice) {
-        smudgeObservation = nil
-        isLensSmudged = false
-        guard device.activeFormat.isCameraLensSmudgeDetectionSupported else { return }
-        do {
-            try device.lockForConfiguration()
-            device.setCameraLensSmudgeDetectionEnabled(true, detectionInterval: Self.smudgeDetectionInterval)
-            device.unlockForConfiguration()
-        } catch {
-            logger.debug("Unable to enable lens smudge detection. \(error)")
+        // 카메라가 바뀌면 이전 카메라 결과는 버림
+        if smudgeDevice !== device {
+            smudgeObservation = nil
+            smudgeDevice = nil
+            clearLensSmudge()
+        }
+        guard device.activeFormat.isCameraLensSmudgeDetectionSupported else {
+            // 이 형식(일부 비디오 형식 등)에서는 감지가 꺼지므로 안내도 숨김
+            clearLensSmudge()
             return
         }
-        smudgeObservation = device.observe(\.cameraLensSmudgeDetectionStatus, options: [.new]) { [weak self] device, _ in
+        // 이미 켜져 있으면 다시 켜지 않음 (켤 때마다 촬영 파이프라인이 오래 다시 구성되어 화면이 멈칫함)
+        if !device.isCameraLensSmudgeDetectionEnabled {
+            do {
+                try device.lockForConfiguration()
+                device.setCameraLensSmudgeDetectionEnabled(true, detectionInterval: Self.smudgeDetectionInterval)
+                device.unlockForConfiguration()
+            } catch {
+                logger.debug("Unable to enable lens smudge detection. \(error)")
+                return
+            }
+        }
+        guard smudgeObservation == nil else { return }
+        smudgeDevice = device
+        smudgeObservation = device.observe(\.cameraLensSmudgeDetectionStatus, options: [.initial, .new]) { [weak self] device, _ in
             let status = device.cameraLensSmudgeDetectionStatus
             Task { await self?.updateLensSmudge(status) }
         }
     }
     private var smudgeObservation: NSKeyValueObservation?
+    private var smudgeDevice: AVCaptureDevice?
+    /// 얼룩이 처음 감지된 뒤 확인을 기다리는 중
+    private var smudgeConfirmTask: Task<Void, Never>?
 
-    /// 세션이 도는 중에 다시 켤 때는 구성 묶음 안에서
+    /// 형식 · 카메라가 바뀐 뒤 감지가 꺼졌을 때만 구성 묶음 안에서 다시 켬
     private func refreshLensSmudgeDetection() {
+        let device = currentDevice
+        let isSupported = device.activeFormat.isCameraLensSmudgeDetectionSupported
+        guard isSupported, smudgeDevice !== device || !device.isCameraLensSmudgeDetectionEnabled else {
+            if !isSupported { clearLensSmudge() }
+            return
+        }
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
-        enableLensSmudgeDetection(for: currentDevice)
+        enableLensSmudgeDetection(for: device)
     }
 
+    /// 한 번 감지된 것만으로는 띄우지 않고, 확인 시간 동안 계속 얼룩이면 안내 (잘못 뜨는 것을 줄임).
+    /// 깨끗하다는 결과가 나오면 바로 숨김
     private func updateLensSmudge(_ status: AVCaptureCameraLensSmudgeDetectionStatus) {
         switch status {
-        case .smudged: isLensSmudged = true
-        case .smudgeNotDetected, .disabled: isLensSmudged = false
-        // 결과가 아직 안정되지 않으면 이전 값 유지
-        default: break
+        case .smudged:
+            guard !isLensSmudged, smudgeConfirmTask == nil else { return }
+            smudgeConfirmTask = Task {
+                try? await Task.sleep(for: .seconds(AppDefaults.lensSmudgeConfirmDelay))
+                guard !Task.isCancelled else { return }
+                smudgeConfirmTask = nil
+                if smudgeDevice?.cameraLensSmudgeDetectionStatus == .smudged {
+                    isLensSmudged = true
+                }
+            }
+        case .smudgeNotDetected, .disabled:
+            clearLensSmudge()
+        // 결과가 아직 안정되지 않으면(움직이는 중 등) 이전 값 유지
+        default:
+            break
         }
+    }
+
+    private func clearLensSmudge() {
+        smudgeConfirmTask?.cancel()
+        smudgeConfirmTask = nil
+        if isLensSmudged { isLensSmudged = false }
     }
 
     // MARK: - Automatic focus and exposure
@@ -960,8 +1010,16 @@ actor CaptureService {
         applyVideoMode()
     }
     
-    /// 사진 모드 프리셋(.photo) 형식이 48MP를 지원하지 않으면, 같은 크기 · 픽셀 형식에서
-    /// 48MP를 지원하는 형식으로 바꾼다 (프리셋은 inputPriority가 됨). 없으면 그대로
+    /// 구성 묶음을 따로 열어 48MP 형식을 고르고, 바뀐 해상도를 화면에 알림
+    private func applyHighResolutionPhotoFormat() {
+        captureSession.beginConfiguration()
+        selectHighResolutionPhotoFormat(for: currentDevice)
+        captureSession.commitConfiguration()
+        updateCaptureCapabilities()
+    }
+
+    /// 사진 모드 프리셋(.photo) 형식이 48MP를 지원하지 않으면 48MP를 지원하는 형식으로 바꾼다
+    /// (프리셋은 inputPriority가 됨). 같은 크기 · 픽셀 형식 → 같은 크기 → 같은 비율 순으로 찾고, 없으면 그대로
     private func selectHighResolutionPhotoFormat(for device: AVCaptureDevice) {
         let highResolutionArea = 40_000_000
         func maxPhotoArea(_ format: AVCaptureDevice.Format) -> Int {
@@ -971,13 +1029,22 @@ actor CaptureService {
         guard maxPhotoArea(current) < highResolutionArea else { return }
         let size = CMVideoFormatDescriptionGetDimensions(current.formatDescription)
         let pixelFormat = CMFormatDescriptionGetMediaSubType(current.formatDescription)
-        let candidates = device.formats.filter { format in
-            let candidateSize = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
-            return candidateSize.width == size.width && candidateSize.height == size.height
-                && CMFormatDescriptionGetMediaSubType(format.formatDescription) == pixelFormat
-                && maxPhotoArea(format) >= highResolutionArea
+        let highResolution = device.formats.filter { maxPhotoArea($0) >= highResolutionArea && !$0.isTenBitFormat }
+        func isSameSize(_ format: AVCaptureDevice.Format) -> Bool {
+            let candidate = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            return candidate.width == size.width && candidate.height == size.height
         }
-        guard let format = candidates.first(where: \.isHighestPhotoQualitySupported) ?? candidates.first else {
+        func isSameRatio(_ format: AVCaptureDevice.Format) -> Bool {
+            let candidate = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            return Int(candidate.width) * Int(size.height) == Int(candidate.height) * Int(size.width)
+        }
+        let groups = [
+            highResolution.filter { isSameSize($0) && CMFormatDescriptionGetMediaSubType($0.formatDescription) == pixelFormat },
+            highResolution.filter(isSameSize),
+            highResolution.filter(isSameRatio),
+        ]
+        guard let candidates = groups.first(where: { !$0.isEmpty }),
+              let format = candidates.first(where: \.isHighestPhotoQualitySupported) ?? candidates.first else {
             logger.info("No 48MP photo format for \(device.localizedName).")
             return
         }
