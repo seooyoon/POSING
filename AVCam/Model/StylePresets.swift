@@ -75,35 +75,6 @@ extension StyleSelection {
     }
 }
 
-/// 고른 스타일 · 스타일마다 바꾼 값 저장 (앱을 다시 켜도 유지)
-enum StyleLibrary {
-
-    static func savedStyle() -> PhotoStyle {
-        UserDefaults.standard.string(forKey: SettingsKeys.photoStyle).flatMap(PhotoStyle.init(rawValue:)) ?? .standard
-    }
-
-    /// 스타일마다 사용자가 바꾼 값. 없으면 기본값
-    static func savedValues() -> [PhotoStyle: StyleValues] {
-        guard let data = UserDefaults.standard.data(forKey: SettingsKeys.styleValues),
-              let saved = try? JSONDecoder().decode([String: StyleValues].self, from: data)
-        else { return [:] }
-        return Dictionary(uniqueKeysWithValues: saved.compactMap { key, value in
-            PhotoStyle(rawValue: key).map { ($0, value) }
-        })
-    }
-
-    static func savedSelection() -> StyleSelection {
-        let style = savedStyle()
-        return StyleSelection(style: style, values: savedValues()[style] ?? style.preset.defaults)
-    }
-
-    static func save(style: PhotoStyle, values: [PhotoStyle: StyleValues]) {
-        UserDefaults.standard.set(style.rawValue, forKey: SettingsKeys.photoStyle)
-        let encoded = Dictionary(uniqueKeysWithValues: values.map { ($0.key.rawValue, $0.value) })
-        UserDefaults.standard.set(try? JSONEncoder().encode(encoded), forKey: SettingsKeys.styleValues)
-    }
-}
-
 /// 톤 · 색상 값을 필터 숫자로 바꾸는 비율 (값 ±100일 때의 변화량)
 enum StyleTuning {
     /// 톤 마이너스: 그림자(25%)를 내리는 양 · 밝은 곳(75%)을 올리는 양 → 대비 강하게

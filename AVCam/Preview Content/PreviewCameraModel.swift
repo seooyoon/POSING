@@ -24,10 +24,10 @@ class PreviewCameraModel: Camera {
     var timerDuration = TimerDuration.off
     var exposureCompensation: Float = 0
     var photoAspect = PhotoAspect.fourThree
-    var cameraLook = CameraLookLibrary.savedLook() {
+    var cameraLook = CameraLookLibrary.startLook() {
         didSet { updatePreviewFilter() }
     }
-    var photoStyle = StyleLibrary.savedSelection() {
+    var photoStyle = StyleSelection.standard {
         didSet { updatePreviewFilter() }
     }
 

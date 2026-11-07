@@ -37,13 +37,15 @@ struct SettingsView: View {
                     NavigationLink("MY 목록") {
                         MYListView(layers: layers)
                     }
-                    NavigationLink("카메라 목록") {
+                    NavigationLink {
                         CameraOrderView(looks: looks)
+                    } label: {
+                        LabeledContent("카메라 목록", value: looks.startItem?.name ?? "")
                     }
                 } header: {
                     Text("목록")
                 } footer: {
-                    Text("바꾼 순서는 카메라 화면 목록에 그대로 보입니다. 카메라 목록은 1번이 맨 아래입니다.")
+                    Text("바꾼 순서는 카메라 화면 목록에 그대로 보입니다. 카메라 목록은 1번이 맨 아래이고, 오른쪽 이름은 앱을 켤 때 쓰는 카메라입니다.")
                 }
 
                 Section("정보") {

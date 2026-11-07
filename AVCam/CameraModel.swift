@@ -229,8 +229,8 @@ final class CameraModel: Camera {
 
     /// 앱을 켜면 항상 4:3으로 시작 (저장하지 않음)
     var photoAspect = PhotoAspect.fourThree
-    var cameraLook = CameraLookLibrary.savedLook()
-    var photoStyle = StyleLibrary.savedSelection()
+    var cameraLook = CameraLookLibrary.startLook()
+    var photoStyle = StyleSelection.standard
 
     /// 저장본에 들어가는 보정과 같은 조건 (RAW · LIVE면 보정 없음)
     private var previewFilterInputs: (lutURL: URL?, style: StyleSelection?) {

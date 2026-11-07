@@ -3,12 +3,12 @@
 //  포징
 //
 //  셔터 왼쪽 카메라 버튼과 세로 카메라 목록 (docs/01_SPEC.md 7-1절, docs/02_UI.md 7절).
-//  버튼 · 목록 칸 모두 꾹 눌러도 아무 동작 없다.
+//  버튼 아래에 지금 카메라 이름. 버튼 · 목록 칸 모두 꾹 눌러도 아무 동작 없다.
 //
 
 import SwiftUI
 
-/// 지금 고른 카메라의 PNG가 그대로 버튼 모양
+/// 지금 고른 카메라의 PNG가 그대로 버튼 모양, 아래에 이름
 struct CameraLookButton: View {
 
     let looks: CameraLookState
@@ -27,6 +27,16 @@ struct CameraLookButton: View {
         .frame(width: CameraLookList.cellSize, height: CameraLookList.cellSize)
         .scaleEffect(isPressed ? 0.9 : 1)
         .animation(.easeOut(duration: 0.12), value: isPressed)
+        // 이미지만으로는 어떤 카메라인지 모를 수 있어 아래에 이름 (버튼 자리 · 크기는 그대로)
+        .overlay(alignment: .bottom) {
+            Text(looks.selected?.name ?? "")
+                .font(.system(size: AppDefaults.cameraNameFontSize, weight: .medium))
+                .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(1)
+                .fixedSize()
+                .offset(y: AppDefaults.cameraNameGap + AppDefaults.cameraNameFontSize)
+                .allowsHitTesting(false)
+        }
         .contentShape(.rect)
         .onTapGesture { isListOpen.toggle() }
         // 꾹 누르면 탭으로 처리되지 않고 그냥 끝남

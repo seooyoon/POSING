@@ -34,6 +34,9 @@ enum AppDefaults {
     static let zoomDialLongPressDuration = 0.4
     /// 카메라 목록은 바깥 탭 또는 카메라 버튼 다시 탭으로 닫힘
     static let closesCameraListOnOutsideTap = true
+    /// 카메라 버튼 아래 이름 글자 크기 · 버튼과의 간격 (pt)
+    static let cameraNameFontSize: CGFloat = 11
+    static let cameraNameGap: CGFloat = 3
 
     // MARK: - 사진 형식
 
