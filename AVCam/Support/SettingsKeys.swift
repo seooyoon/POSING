@@ -18,6 +18,10 @@ enum SettingsKeys {
     static let cameraOrder = "cameraOrder"
     /// 지금 고른 카메라 id
     static let selectedCamera = "selectedCamera"
+    /// 고른 스타일 (PhotoStyle 원시값)
+    static let photoStyle = "photoStyle"
+    /// 스타일마다 바꾼 톤 · 색상 · 팔레트 (JSON)
+    static let styleValues = "styleValues"
     /// 플래시 (자동 · 켬 · 끔)
     static let flashMode = "flashMode"
     /// 타이머 초 (0 = 끔)

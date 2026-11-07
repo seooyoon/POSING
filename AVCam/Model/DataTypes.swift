@@ -100,6 +100,24 @@ struct Movie: Sendable {
     let url: URL
 }
 
+/// 사진 스타일 (docs/01_SPEC.md 8절). 순서는 고정
+enum PhotoStyle: String, CaseIterable, Codable, Sendable {
+    case standard, neutral, dramatic, elegant, softMono, starkMono
+}
+
+/// 스타일 하나의 값. 톤 · 색상 -100~100, 팔레트 0~100
+struct StyleValues: Equatable, Codable, Sendable {
+    var tone: Double
+    var color: Double
+    var palette: Double
+}
+
+/// 고른 스타일과 그 값
+struct StyleSelection: Equatable, Sendable {
+    let style: PhotoStyle
+    let values: StyleValues
+}
+
 struct PhotoFeatures {
     let isLivePhotoEnabled: Bool
     let qualityPrioritization: QualityPrioritization
@@ -108,6 +126,8 @@ struct PhotoFeatures {
     let cropRatio: CGFloat?
     /// 저장 전에 입힐 카메라 색감 LUT (.cube). nil이면 보정 없음
     let lookLUTURL: URL?
+    /// 저장 전에 입힐 스타일. nil이면 보정 없음
+    let style: StyleSelection?
     /// RAW(Apple ProRAW)로 찍음. 아니면 JPEG
     let isRAW: Bool
     /// 사진 크기. nil이면 출력 최대 크기

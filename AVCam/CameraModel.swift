@@ -177,13 +177,15 @@ final class CameraModel: Camera {
             await showScreenFlash()
         }
         do {
+            let appliesPhotoFilters = activeCodec != .raw && !isLivePhotoActive
             let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoActive,
                                               qualityPrioritization: qualityPrioritization,
                                               flashMode: AVCaptureDevice.FlashMode(flashMode),
                                               // RAW(DNG)는 자를 수 없어 원본 4:3으로 저장
                                               cropRatio: activeCodec == .raw ? nil : photoAspect.cropLongToShort,
-                                              // RAW(DNG)는 색감도 입히지 않음
-                                              lookLUTURL: activeCodec == .raw ? nil : cameraLook.lutURL,
+                                              // RAW(DNG)와 LIVE는 색감 · 스타일을 입히지 않음 (LIVE 영상 부분은 보정할 수 없어 짝이 어긋남)
+                                              lookLUTURL: appliesPhotoFilters ? cameraLook.lutURL : nil,
+                                              style: appliesPhotoFilters && photoStyle.changesImage ? photoStyle : nil,
                                               isRAW: activeCodec == .raw,
                                               maxDimensions: activeDimensions)
             let photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
@@ -225,6 +227,7 @@ final class CameraModel: Camera {
     /// 앱을 켜면 항상 4:3으로 시작 (저장하지 않음)
     var photoAspect = PhotoAspect.fourThree
     var cameraLook = CameraLookLibrary.savedLook()
+    var photoStyle = StyleLibrary.savedSelection()
 
     var photoCodec = PhotoCodec.saved {
         didSet {
