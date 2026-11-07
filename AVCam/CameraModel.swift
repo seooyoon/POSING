@@ -117,6 +117,8 @@ final class CameraModel: Camera {
             observeState()
             status = .running
             updateTorch()
+            updatePreviewFilter()
+            observePreviewFilterInputs()
         } catch {
             logger.error("Failed to start capture service. \(error)")
             status = .failed
@@ -150,6 +152,7 @@ final class CameraModel: Camera {
                 // Update the persistent state value.
                 cameraState.captureMode = captureMode
                 updateTorch()
+                updatePreviewFilter()
             }
         }
     }
@@ -228,6 +231,32 @@ final class CameraModel: Camera {
     var photoAspect = PhotoAspect.fourThree
     var cameraLook = CameraLookLibrary.savedLook()
     var photoStyle = StyleLibrary.savedSelection()
+
+    /// 저장본에 들어가는 보정과 같은 조건 (RAW · LIVE면 보정 없음)
+    private var previewFilterInputs: (lutURL: URL?, style: StyleSelection?) {
+        guard captureMode == .photo, activeCodec != .raw, !isLivePhotoActive else { return (nil, nil) }
+        return (cameraLook.lutURL, photoStyle)
+    }
+
+    /// 사진 모드에서 카메라 색감 · 스타일 보정이 있으면 미리보기에도 보정 표시 (Metal 미리보기)
+    private func updatePreviewFilter() {
+        guard status == .running else { return }
+        let inputs = previewFilterInputs
+        captureService.previewSource.filteredFeed.configure(lutURL: inputs.lutURL, style: inputs.style)
+        Task { await captureService.refreshPreviewFiltering() }
+    }
+
+    /// 색감 · 스타일 · 형식 · LIVE · 비율 · 해상도 등 보정 조건이 바뀌면 미리보기 다시 맞춤
+    private func observePreviewFilterInputs() {
+        withObservationTracking {
+            _ = previewFilterInputs
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.updatePreviewFilter()
+                self?.observePreviewFilterInputs()
+            }
+        }
+    }
 
     var photoCodec = PhotoCodec.saved {
         didSet {

@@ -13,6 +13,8 @@ struct StyleScreenLayout {
 
     static let cardInset: CGFloat = 17
     static let cardCornerRadius: CGFloat = 24
+    /// 이웃 카드와의 간격
+    static let cardGap: CGFloat = 10
     /// 카드 위쪽이 원래 미리보기 위쪽보다 내려오는 양
     static let cardTopOffset: CGFloat = 5
     static let padSize: CGFloat = 118
@@ -54,6 +56,17 @@ struct StyleScreenControls: View {
         let style = StyleScreenLayout(layout: layout)
         let card = style.cardRect
         ZStack(alignment: .topLeading) {
+            // 양옆 이웃 스타일 카드 (가장자리만 살짝 보임). 처음 · 마지막 스타일은 한쪽만
+            ForEach([-1, 1], id: \.self) { side in
+                let neighbor = styles.index + side
+                if PhotoStyle.allCases.indices.contains(neighbor) {
+                    RoundedRectangle(cornerRadius: StyleScreenLayout.cardCornerRadius, style: .continuous)
+                        .fill(Color(white: 0.2))
+                        .frame(width: card.width, height: card.height)
+                        .position(x: card.midX + CGFloat(side) * (card.width + StyleScreenLayout.cardGap), y: card.midY)
+                        .allowsHitTesting(false)
+                }
+            }
             StyleValuesCapsule(selection: styles.selection)
                 .position(x: layout.centerX, y: card.minY - 38)
             Text(styles.style.preset.category)
