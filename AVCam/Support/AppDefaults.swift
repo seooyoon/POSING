@@ -56,6 +56,8 @@ enum AppDefaults {
     static let timelapseFrameRate = 30
     /// 보정 미리보기(Metal)를 그리는 초당 횟수
     static let filteredPreviewFrameRate = 30
+    /// 미리보기 바깥 흐린 배경을 어둡게 덮는 정도 (0 = 흐림만, 1 = 검정)
+    static let backdropDimOpacity = 0.35
 
     // MARK: - 노출 감도 (기본 카메라처럼 천천히)
 
