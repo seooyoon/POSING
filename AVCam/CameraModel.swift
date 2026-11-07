@@ -239,10 +239,9 @@ final class CameraModel: Camera {
     private func updatePreviewFilter() {
         guard status == .running else { return }
         let isPhoto = captureMode == .photo
-        let feed = captureService.previewSource.filteredFeed
-        feed.configure(lutURL: isPhoto ? cameraLook.lutURL : nil, style: isPhoto ? photoStyle : nil)
-        let isFiltering = feed.isFiltering
-        Task { await captureService.setPreviewFiltering(isFiltering) }
+        captureService.previewSource.filteredFeed.configure(lutURL: isPhoto ? cameraLook.lutURL : nil,
+                                                            style: isPhoto ? photoStyle : nil)
+        Task { await captureService.refreshPreviewFiltering() }
     }
 
     var photoCodec = PhotoCodec.saved {

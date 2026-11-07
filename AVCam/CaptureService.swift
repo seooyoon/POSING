@@ -416,10 +416,11 @@ actor CaptureService {
             selectHighResolutionPhotoFormat(for: currentDevice)
             captureSession.removeOutput(movieCapture.output)
             captureSession.removeOutput(timelapseCapture.output)
-            updateFilteredPreviewOutput()
+            // 사진 처리 중이면 끝난 뒤 capturePhoto에서 맞춤
+            if photosInProgress == 0 { updateFilteredPreviewOutput() }
         case .video, .slowMotion, .timelapse:
             captureSession.sessionPreset = .high
-            updateFilteredPreviewOutput()
+            if photosInProgress == 0 { updateFilteredPreviewOutput() }
             // 비디오 · 슬로 모션은 파일 출력, 타임랩스는 프레임 출력
             if captureMode == .timelapse {
                 captureSession.removeOutput(movieCapture.output)
@@ -613,9 +614,10 @@ actor CaptureService {
 
     // MARK: - 보정 미리보기
 
-    /// 카메라 색감 · 스타일 보정이 있으면 미리보기 프레임 출력을 붙임
-    func setPreviewFiltering(_ isOn: Bool) {
-        wantsPreviewFiltering = isOn
+    /// 카메라 색감 · 스타일 보정이 있으면 미리보기 프레임 출력을 붙임.
+    /// 호출 순서와 상관없이 피드의 지금 상태를 기준으로 맞춤
+    func refreshPreviewFiltering() {
+        wantsPreviewFiltering = filteredFeed.isFiltering
         // 사진 처리 중이면 끝난 뒤 맞춤 (세션 구성 변경과 겹치지 않게)
         guard photosInProgress == 0 else { return }
         updateFilteredPreviewOutput()
