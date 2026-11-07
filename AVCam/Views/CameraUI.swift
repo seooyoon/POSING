@@ -20,6 +20,8 @@ struct CameraUI<CameraModel: Camera>: View {
     @State private var panelHeight: CGFloat = 0
     @State private var isShowingMoreMenu = false
     @State private var isShowingCameraList = false
+    /// 카메라 버튼을 밀어서 고르는 중인 칸
+    @State private var highlightedLookID: String?
     /// 상단 빠른 설정 판 (형식 버튼 · 오른쪽 묶음 꾹 누르기)
     @State private var quickSettings: QuickSettingsKind?
     /// LIVE를 켜고 끈 직후 잠깐 보이는 표시 (true = LIVE, false = LIVE 끔)
@@ -193,9 +195,9 @@ struct CameraUI<CameraModel: Camera>: View {
                     .onTapGesture { isShowingCameraList = false }
             }
             let list = CameraLookList(looks: looks,
-                                      maxHeight: buttonTop - CameraUI.cameraListGap - previewTopY) { item in
-                looks.select(item)
-                camera.cameraLook = item.look
+                                      maxHeight: buttonTop - CameraUI.cameraListGap - previewTopY,
+                                      highlightedID: highlightedLookID) { item in
+                selectLook(item)
                 isShowingCameraList = false
             }
             let listBottom = buttonTop - CameraUI.cameraListGap
@@ -206,7 +208,8 @@ struct CameraUI<CameraModel: Camera>: View {
                                                                  y: listBottom / layout.size.height))
                     .combined(with: .opacity))
         }
-        CameraLookButton(looks: looks, isListOpen: $isShowingCameraList)
+        CameraLookButton(looks: looks, isListOpen: $isShowingCameraList, highlightedID: $highlightedLookID,
+                         onSelect: selectLook)
             .position(x: CameraLayout.cameraButtonCenterX, y: layout.shutterCenterY)
             .opacity(isAvailable ? 1 : 0)
             .allowsHitTesting(isAvailable)
@@ -214,6 +217,11 @@ struct CameraUI<CameraModel: Camera>: View {
     }
 
     private static var cameraListGap: CGFloat { 8 }
+
+    private func selectLook(_ item: CameraLookItem) {
+        looks.select(item)
+        camera.cameraLook = item.look
+    }
 
     private var isTopBarHidden: Bool {
         quickSettings != nil || isShowingMoreMenu || isShowingStyleScreen
