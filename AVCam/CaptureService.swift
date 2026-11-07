@@ -714,6 +714,12 @@ actor CaptureService {
     /// 형식 · 카메라가 바뀐 뒤 감지가 꺼졌을 때만 구성 묶음 안에서 다시 켬
     private func refreshLensSmudgeDetection() {
         let device = currentDevice
+        // 카메라가 바뀌면 지원 여부와 상관없이 이전 카메라 관찰 · 확인 대기를 먼저 정리
+        if smudgeDevice !== device {
+            smudgeObservation = nil
+            smudgeDevice = nil
+            clearLensSmudge()
+        }
         let isSupported = device.activeFormat.isCameraLensSmudgeDetectionSupported
         guard isSupported, smudgeDevice !== device || !device.isCameraLensSmudgeDetectionEnabled else {
             if !isSupported { clearLensSmudge() }
