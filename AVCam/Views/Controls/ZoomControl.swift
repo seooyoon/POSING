@@ -145,6 +145,8 @@ struct ZoomControl<CameraModel: Camera>: View {
         let current = currentFactor
         let target = preset == 1 && activePreset == 1 ? ZoomState.nextMainLensFactor(after: current) : preset
         requestedFactor = target
+        // 아직 보내지 않은 밀기 값이 버튼 배율을 덮어쓰지 않게
+        pendingDragFactor = nil
         presetZoomUntil = .now + 0.8
         tappedPreset = preset
         showMillimeters(preset == 1 ? ZoomState.millimeters(target) : nil)
@@ -191,6 +193,9 @@ struct ZoomControl<CameraModel: Camera>: View {
     }
 
     private func requestDragZoom(_ factor: CGFloat) {
+        // 버튼을 누른 직후 다시 밀 때 이 값에서 이어지게 (장치 범위 안으로)
+        let range = camera.zoom.range
+        requestedFactor = min(max(factor, range.lowerBound), range.upperBound)
         pendingDragFactor = factor
         guard dragZoomTask == nil else { return }
         dragZoomTask = Task {
