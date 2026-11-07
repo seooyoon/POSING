@@ -73,6 +73,19 @@ enum AppDefaults {
     /// 이보다 높아지면 평소 모양으로
     static let sceneBrightEV = 3.5
 
+    // MARK: - 렌즈 청소 안내 · 꽃 버튼
+
+    /// 렌즈 얼룩 감지 간격 (초). 짧을수록 닦은 뒤 빨리 사라지지만 배터리를 씀
+    static let lensSmudgeDetectionInterval = 10.0
+    /// 얼룩이 이 시간(초) 동안 계속 감지되어야 안내 (잘못 뜨는 것을 줄임)
+    static let lensSmudgeConfirmDelay = 12.0
+    /// 꽃을 끈 동안 1× 렌즈 초점 위치(0 = 가장 가까움)가 이 값 이하면 가까움 → 꽃 버튼 보임
+    static let macroCloseLensPosition: Float = 0.1
+    /// 이 값 이상으로 멀어지면 꽃 버튼 숨김 (경계에서 깜빡이지 않게 두 값을 나눔)
+    static let macroFarLensPosition: Float = 0.25
+    /// 꽃 버튼이 나타나고 사라지는 시간 (초)
+    static let macroButtonFadeDuration = 0.25
+
     // MARK: - 화면 표시
 
     /// 3x3 격자 기본값

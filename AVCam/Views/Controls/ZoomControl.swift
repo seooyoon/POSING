@@ -261,6 +261,9 @@ struct MacroButton<CameraModel: Camera>: View {
                 .foregroundStyle(isEnabled ? Color.cameraYellow : .white)
                 .frame(width: 32, height: 32)
                 .background(.black.opacity(0.35), in: .circle)
+                // 켬 ↔ 끔 모양도 서서히 바뀜
+                .contentTransition(.symbolEffect(.replace))
+                .animation(.easeInOut(duration: AppDefaults.macroButtonFadeDuration), value: isEnabled)
         }
         .buttonStyle(.plain)
     }

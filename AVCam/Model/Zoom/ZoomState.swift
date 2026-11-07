@@ -26,6 +26,8 @@ struct ZoomState: Equatable, Sendable {
     var isAutoMacroEnabled = true
     /// 렌즈 자동 전환을 바꿀 수 있음. 안 되면 꽃 버튼을 숨김
     var supportsMacroSwitching = false
+    /// 1× 이상에서 피사체가 가까움 (꽃을 끈 동안 꽃 버튼을 보일지)
+    var isSubjectClose = false
     /// 전면 카메라: 배율 버튼 대신 화각 버튼 (넓게 ↔ 가깝게)
     var isFrontCamera = false
     var isFrontWide = false
@@ -34,8 +36,9 @@ struct ZoomState: Equatable, Sendable {
 
     var isAvailable: Bool { !presets.isEmpty }
 
-    /// 꽃 버튼은 접사 중이거나, 접사 전환을 꺼 둔 동안 보임 (접사 중이면 전환을 바꿀 수 있는 카메라)
-    var showsMacroButton: Bool { isMacroActive || (supportsMacroSwitching && !isAutoMacroEnabled) }
+    /// 꽃 버튼은 접사 중이거나, 접사 전환을 꺼 둔 채 아직 가까이 있을 때 보임.
+    /// 기본 카메라처럼 꽃을 끈 뒤 멀어지면 사라지고, 다시 가까워지면 꺼진 모양으로 나타남
+    var showsMacroButton: Bool { isMacroActive || (supportsMacroSwitching && !isAutoMacroEnabled && isSubjectClose) }
 
     /// 지금 배율이 속한 버튼 (지금 배율보다 작거나 같은 버튼 중 가장 큰 것)
     var activePreset: CGFloat? {
