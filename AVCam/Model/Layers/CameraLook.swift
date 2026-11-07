@@ -52,10 +52,10 @@ enum CameraLookLibrary {
             .map { CameraLookItem(look: $0.element.look, name: $0.element.name, image: image(for: $0.element)) }
     }
 
-    /// 저장된 선택. 없거나 파일이 사라졌으면 기본 카메라
-    static func savedLook(bundle: Bundle = .main) -> CameraLook {
+    /// 앱을 켤 때 쓸 카메라 (설정에서 고정). 없거나 파일이 사라졌으면 기본 카메라
+    static func startLook(bundle: Bundle = .main) -> CameraLook {
         let looks = loadEntries(bundle: bundle).map(\.look)
-        let savedID = UserDefaults.standard.string(forKey: SettingsKeys.selectedCamera)
+        let savedID = UserDefaults.standard.string(forKey: SettingsKeys.startCamera)
         return looks.first { $0.id == savedID } ?? looks.first(where: \.isDefault) ?? .builtInDefault
     }
 
@@ -63,8 +63,8 @@ enum CameraLookLibrary {
         UserDefaults.standard.set(items.map(\.id), forKey: SettingsKeys.cameraOrder)
     }
 
-    static func saveSelection(_ look: CameraLook) {
-        UserDefaults.standard.set(look.id, forKey: SettingsKeys.selectedCamera)
+    static func saveStartLook(_ look: CameraLook) {
+        UserDefaults.standard.set(look.id, forKey: SettingsKeys.startCamera)
     }
 
     /// 번호 순서대로 정렬한 카메라. 기본 카메라는 파일이 없어도 항상 맨 앞에 있음
@@ -106,17 +106,21 @@ enum CameraLookLibrary {
     }
 }
 
-/// 카메라 목록과 지금 고른 카메라
+/// 카메라 목록, 지금 고른 카메라, 앱을 켤 때 쓸 카메라
 @MainActor
 @Observable
 final class CameraLookState {
 
     private(set) var items: [CameraLookItem]
+    /// 화면에서 고른 카메라 (저장하지 않음)
     private(set) var selectedID: String
+    /// 시작 카메라 (설정에서 고정, 저장)
+    private(set) var startID: String
 
-    init(items: [CameraLookItem] = CameraLookLibrary.load(), selected: CameraLook = CameraLookLibrary.savedLook()) {
+    init(items: [CameraLookItem] = CameraLookLibrary.load(), start: CameraLook = CameraLookLibrary.startLook()) {
         self.items = items
-        selectedID = selected.id
+        selectedID = start.id
+        startID = start.id
     }
 
     var selected: CameraLookItem? {
@@ -125,7 +129,16 @@ final class CameraLookState {
 
     func select(_ item: CameraLookItem) {
         selectedID = item.id
-        CameraLookLibrary.saveSelection(item.look)
+    }
+
+    var startItem: CameraLookItem? {
+        items.first { $0.id == startID } ?? items.first
+    }
+
+    /// 설정에서 시작 카메라를 고름. 다음에 앱을 켤 때부터 적용 (지금 화면의 카메라는 그대로)
+    func setStart(_ item: CameraLookItem) {
+        startID = item.id
+        CameraLookLibrary.saveStartLook(item.look)
     }
 
     func move(from source: IndexSet, to destination: Int) {

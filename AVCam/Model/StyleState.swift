@@ -3,7 +3,7 @@
 //  포징
 //
 //  스타일 화면의 상태: 고른 스타일과 스타일마다 바꾼 값 (docs/01_SPEC.md 8절 스타일 화면).
-//  바뀔 때마다 저장해서 앱을 다시 켜도 유지된다.
+//  저장하지 않아 앱을 다시 켜면 표준 · 기본값으로 돌아간다.
 //
 
 import Foundation
@@ -13,11 +13,10 @@ import Foundation
 final class StyleState {
 
     private(set) var style: PhotoStyle
-    private var values: [PhotoStyle: StyleValues]
+    private var values: [PhotoStyle: StyleValues] = [:]
 
     init() {
-        style = StyleLibrary.savedStyle()
-        values = StyleLibrary.savedValues()
+        style = .standard
     }
 
     var current: StyleValues { values[style] ?? style.preset.defaults }
@@ -32,7 +31,6 @@ final class StyleState {
         let next = min(max(index + offset, 0), styles.count - 1)
         guard styles[next] != style else { return }
         style = styles[next]
-        save()
     }
 
     /// 조절 패드: 가로 = 색상, 세로 = 톤 (-100~100)
@@ -57,11 +55,6 @@ final class StyleState {
     private func update(_ value: StyleValues) {
         guard value != current else { return }
         values[style] = value
-        save()
-    }
-
-    private func save() {
-        StyleLibrary.save(style: style, values: values)
     }
 
     private static func clamped(_ value: Double, _ range: ClosedRange<Double>) -> Double {
