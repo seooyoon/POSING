@@ -23,6 +23,8 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
         var lutURL: URL?
         var lut: CubeLUT?
         var style: StyleSelection?
+        /// 새 프레임 · 새 보정이 들어올 때마다 1씩 늘어남. 그리는 쪽은 바뀌었을 때만 그림 (발열)
+        var generation = 0
 
         var isFiltering: Bool { lut != nil || style != nil }
     }
@@ -36,6 +38,9 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
     override init() {
         super.init()
         output.alwaysDiscardsLateVideoFrames = true
+        // 48MP 형식이어도 화면 크기 프레임만 받음 (전체 크기 프레임은 메모리 · 발열이 큼)
+        output.automaticallyConfiguresOutputBufferDimensions = false
+        output.deliversPreviewSizedOutputBuffers = true
         output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
         output.setSampleBufferDelegate(self, queue: queue)
     }
@@ -53,6 +58,7 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
             state.style = style?.changesImage == true ? style : nil
             // 끄면 지난 프레임을 버려서 다시 켤 때 옛 화면이 잠깐 보이지 않게
             if !state.isFiltering { state.image = nil }
+            state.generation &+= 1
             return state.isFiltering
         }
         onChange?(isFiltering)
@@ -61,7 +67,10 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
     /// 시뮬레이터: 샘플 이미지를 프레임 대신 씀
     func setStaticImage(_ image: UIImage?) {
         let ciImage = image.flatMap { CIImage(image: $0) }
-        state.withLock { $0.staticImage = ciImage }
+        state.withLock { state in
+            state.staticImage = ciImage
+            state.generation &+= 1
+        }
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -70,13 +79,15 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
         state.withLock { state in
             guard state.isFiltering else { return }
             state.image = image
+            state.generation &+= 1
         }
     }
 
-    /// 지금 그릴 보정된 프레임. 보정이 없거나 아직 프레임이 없으면 nil
-    func filteredFrame() -> CIImage? {
+    /// 지난번 이후 바뀐 보정 프레임. 보정이 없거나, 프레임이 없거나, 바뀐 것이 없으면 nil
+    func filteredFrame(after generation: Int) -> (image: CIImage, generation: Int)? {
         let current = state.withLock { $0 }
-        guard current.isFiltering, let image = current.image ?? current.staticImage else { return nil }
-        return PhotoFilter.filtered(image, lut: current.lut, style: current.style)
+        guard current.isFiltering, current.generation != generation,
+              let image = current.image ?? current.staticImage else { return nil }
+        return (PhotoFilter.filtered(image, lut: current.lut, style: current.style), current.generation)
     }
 }

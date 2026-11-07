@@ -2,9 +2,9 @@
 //  PreviewBackdrop.swift
 //  포징
 //
-//  미리보기 바깥(상단 바 · 하단 영역) 배경: 기본 카메라처럼 장면을 화면 전체에 크게 흐리고 어둡게 깐다.
-//  검정 위에서는 유리 버튼(모드 줄 · 전환 버튼 등)에 비칠 것이 없어 유리처럼 보이지 않기 때문.
-//  같은 세션에 두 번째 미리보기 층을 붙이고(늦게 시작), 흐림 · 어둡게는 화면에서만 한다.
+//  미리보기 바깥(상단 바 · 하단 영역) 배경: 기본 카메라처럼 장면이 어둡게 비친다 (docs/02_UI.md 5절).
+//  같은 세션에 두 번째 미리보기 층을 화면 전체에 붙이고(늦게 시작), 어둡게 덮는 것은 OutsidePreviewDim이 한다.
+//  층을 붙였다 떼면 세션이 다시 구성되어 앱이 멈추므로, 앱을 켤 때 한 번만 붙이고 보이기 · 숨기기만 한다.
 //
 
 import SwiftUI
@@ -43,14 +43,6 @@ struct PreviewBackdrop: UIViewRepresentable {
             imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             addSubview(imageView)
     #endif
-            let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
-            blur.frame = bounds
-            blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-            addSubview(blur)
-            let dim = UIView(frame: bounds)
-            dim.backgroundColor = UIColor.black.withAlphaComponent(AppDefaults.backdropDimOpacity)
-            dim.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-            addSubview(dim)
         }
 
         required init?(coder: NSCoder) {
@@ -70,5 +62,28 @@ struct PreviewBackdrop: UIViewRepresentable {
                 previewLayer.session = session
             }
         }
+    }
+}
+
+/// 미리보기 자리 바깥을 어둡게 덮음. 바깥에 비치는 장면(배경 층, 1:1일 때 4:3 영상의 위아래)이 반투명하게 보임
+struct OutsidePreviewDim: View {
+
+    let previewRect: CGRect
+
+    var body: some View {
+        Color.black
+            .opacity(AppDefaults.outsidePreviewDimOpacity)
+            .mask {
+                ZStack(alignment: .topLeading) {
+                    Rectangle()
+                    // 미리보기 자리만 뚫음 (비율을 바꿀 때 자리와 같이 움직임)
+                    Rectangle()
+                        .frame(width: previewRect.width, height: previewRect.height)
+                        .offset(x: previewRect.minX, y: previewRect.minY)
+                        .blendMode(.destinationOut)
+                }
+                .compositingGroup()
+            }
+            .allowsHitTesting(false)
     }
 }
