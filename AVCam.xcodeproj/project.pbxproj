@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BA88FDC592764A879B5FEB1A /* StylePad.swift in Sources */ = {isa = PBXBuildFile; fileRef = C928D72418E7465F81E49C2A /* StylePad.swift */; };
+		576BD08F02F24641A6B677AF /* StylePad.swift in Sources */ = {isa = PBXBuildFile; fileRef = C928D72418E7465F81E49C2A /* StylePad.swift */; };
+		4FF639F7A25A4A899A4E403D /* StyleScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D290A780BD8421A985F9155 /* StyleScreen.swift */; };
+		9D90BF94DDF64EB38563F190 /* StyleScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D290A780BD8421A985F9155 /* StyleScreen.swift */; };
+		79B578C79C204D6EBCFC3FEE /* StyleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AA96D5DD6F467EA6E15F00 /* StyleState.swift */; };
+		B1CE03CC6AAE43BBA3F64151 /* StyleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AA96D5DD6F467EA6E15F00 /* StyleState.swift */; };
 		39AC2A1E45854CAC9FC4C487 /* StylePresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F42E92D869146ACA448613D /* StylePresets.swift */; };
 		591C4BB3F801449FBD5C7B03 /* StylePresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F42E92D869146ACA448613D /* StylePresets.swift */; };
 		D2A87344937E49D8AC5464A5 /* StyleFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 218FE28330844D25BF845F50 /* StyleFilter.swift */; };
@@ -208,6 +214,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C928D72418E7465F81E49C2A /* StylePad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StylePad.swift; sourceTree = "<group>"; };
+		7D290A780BD8421A985F9155 /* StyleScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleScreen.swift; sourceTree = "<group>"; };
+		E1AA96D5DD6F467EA6E15F00 /* StyleState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleState.swift; sourceTree = "<group>"; };
 		8F42E92D869146ACA448613D /* StylePresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StylePresets.swift; sourceTree = "<group>"; };
 		218FE28330844D25BF845F50 /* StyleFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleFilter.swift; sourceTree = "<group>"; };
 		46E26086558540CB83BCD772 /* Cameras */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Cameras; sourceTree = "<group>"; };
@@ -349,6 +358,8 @@
 			children = (
 				A1CCB3395AF40EA0DBE1BB08 /* ExposureRuler.swift */,
 				21B13FC1A1CC545BA5FCC5B1 /* MoreMenu.swift */,
+				C928D72418E7465F81E49C2A /* StylePad.swift */,
+				7D290A780BD8421A985F9155 /* StyleScreen.swift */,
 			);
 			path = MoreMenu;
 			sourceTree = "<group>";
@@ -508,6 +519,7 @@
 				A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */,
 				2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */,
 				8F42E92D869146ACA448613D /* StylePresets.swift */,
+				E1AA96D5DD6F467EA6E15F00 /* StyleState.swift */,
 				B4D67BAFD8F08DEF967D9ADD /* Zoom */,
 				B2F52665D3000F1E9742A08C /* Focus */,
 				82AF8F5FF2942F982D1751B1 /* Layers */,
@@ -785,8 +797,11 @@
 				51096E1A5A79412F98263FA3 /* StyleFilter.swift in Sources */,
 				9A6844DC13704CB2DDF30B5F /* CaptureOptions.swift in Sources */,
 				591C4BB3F801449FBD5C7B03 /* StylePresets.swift in Sources */,
+				B1CE03CC6AAE43BBA3F64151 /* StyleState.swift in Sources */,
 				313F414D4A7351E09ADBDF16 /* LightController.swift in Sources */,
 				7726866022D45E7D49F72178 /* MoreMenu.swift in Sources */,
+				576BD08F02F24641A6B677AF /* StylePad.swift in Sources */,
+				9D90BF94DDF64EB38563F190 /* StyleScreen.swift in Sources */,
 				89D2A2DFFEFF31FE06433C18 /* ExposureRuler.swift in Sources */,
 				80F0B22AC31032397F32DDEB /* TimerCountdownView.swift in Sources */,
 				C520B789CB407D89E36C2442 /* ZoomState.swift in Sources */,
@@ -874,8 +889,11 @@
 				D2A87344937E49D8AC5464A5 /* StyleFilter.swift in Sources */,
 				D0D1E996ACA9255E443123A1 /* CaptureOptions.swift in Sources */,
 				39AC2A1E45854CAC9FC4C487 /* StylePresets.swift in Sources */,
+				79B578C79C204D6EBCFC3FEE /* StyleState.swift in Sources */,
 				8D6D71119B49F88872EF0850 /* LightController.swift in Sources */,
 				BD3076C17930F23325F6C966 /* MoreMenu.swift in Sources */,
+				BA88FDC592764A879B5FEB1A /* StylePad.swift in Sources */,
+				4FF639F7A25A4A899A4E403D /* StyleScreen.swift in Sources */,
 				608DD7CFFE1D373986C1905A /* ExposureRuler.swift in Sources */,
 				7A38E342AE2A3E6764662BE9 /* TimerCountdownView.swift in Sources */,
 				723B219DDB5F1EDF07036CF6 /* ZoomState.swift in Sources */,
