@@ -219,8 +219,10 @@ struct CameraUI<CameraModel: Camera>: View {
         quickSettings != nil || isShowingMoreMenu || isShowingStyleScreen
     }
 
+    /// 스타일 화면에서는 카드 위 분류 캡슐과 겹치므로 숨김
     private var isShowingLiveBadge: Bool {
-        camera.captureMode == .photo && (camera.captureActivity.isLivePhoto || liveNotice != nil)
+        camera.captureMode == .photo && !isShowingStyleScreen
+            && (camera.captureActivity.isLivePhoto || liveNotice != nil)
     }
 
     /// LIVE 켬 · 끔을 1.5초 동안 보여줌
