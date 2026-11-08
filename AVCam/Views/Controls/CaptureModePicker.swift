@@ -90,7 +90,7 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     private var capsule: some View {
         labels(capsuleModes, selected: camera.captureMode)
             .background {
-                highlight(size: highlightSize, fillOpacity: 0.08)
+                highlight(size: highlightSize, fillOpacity: AppDefaults.modeHighlightOpacity)
                     .offset(x: position(of: capsuleModes.firstIndex(of: camera.captureMode) ?? 0, count: capsuleModes.count))
             }
             .frame(width: capsuleSize.width, height: capsuleSize.height)
@@ -100,7 +100,7 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     /// 펼친 모드 줄: 강조 판은 가운데 고정, 글자 줄이 움직임
     private var strip: some View {
         ZStack {
-            highlight(size: expandedHighlightSize, fillOpacity: 0.08)
+            highlight(size: expandedHighlightSize, fillOpacity: AppDefaults.modeHighlightOpacity)
             labels(Self.displayOrder, selected: centeredMode)
                 .offset(x: clampedStripOffset)
         }

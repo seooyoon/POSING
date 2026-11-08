@@ -60,6 +60,8 @@ enum AppDefaults {
     static let filteredPreviewFrameRate = 30
     /// 미리보기 바깥에 비치는 장면을 어둡게 덮는 정도 (0 = 그대로, 1 = 검정)
     static let outsidePreviewDimOpacity = 0.55
+    /// 모드 선택 강조 판의 불투명도 (접힌 판 · 펼친 판 같이)
+    static let modeHighlightOpacity = 0.08
 
     // MARK: - 노출 감도 (기본 카메라처럼 천천히)
 
