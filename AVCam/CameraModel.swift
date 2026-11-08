@@ -366,6 +366,10 @@ final class CameraModel: Camera {
         await captureService.setFrontWide(isWide)
     }
 
+    func setOutsideBackdropVisible(_ isVisible: Bool) async {
+        await captureService.setUltraWideBackdropActive(isVisible)
+    }
+
     func lockFocusAndExposure(at point: CGPoint) async {
         await captureService.lockFocusAndExposure(at: point)
     }

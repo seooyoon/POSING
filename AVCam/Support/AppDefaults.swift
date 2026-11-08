@@ -60,6 +60,12 @@ enum AppDefaults {
     static let filteredPreviewFrameRate = 30
     /// 미리보기 바깥에 비치는 장면을 어둡게 덮는 정도 (0 = 그대로, 1 = 검정)
     static let outsidePreviewDimOpacity = 0.55
+    /// 미리보기 바깥을 초광각 렌즈 화면으로 채움 (멀티 카메라 세션). 문제가 생기면 false로 → 바깥은 검정
+    static let usesUltraWideBackdrop = true
+    /// 초광각 화면의 표시 배율 (트리플 카메라 0.5×). 바깥 배경 크기 = 미리보기 크기 × 지금 배율 / 이 값
+    static let ultraWideDisplayFactor: CGFloat = 0.5
+    /// 바깥 배경 크기 미세 조정 (실기기에서 미리보기와 이어지는 정도를 보고 맞춤)
+    static let ultraWideBackdropScale: CGFloat = 1.0
     /// 모드 선택 강조 판의 불투명도 (접힌 판 · 펼친 판 같이)
     static let modeHighlightOpacity = 0.08
 

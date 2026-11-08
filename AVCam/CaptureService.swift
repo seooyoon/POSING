@@ -37,9 +37,18 @@ actor CaptureService {
     nonisolated let previewSource: PreviewSource
     /// 미리보기 프레임 출력 (사진 모드에서 세션에 붙음: 바깥 배경 · 보정 미리보기)
     private let filteredFeed = FilteredPreviewFeed()
+    /// 미리보기 바깥 배경용 초광각 프레임 (멀티 카메라 세션에서만)
+    private let ultraWideFeed = UltraWideFeed()
     
     // The app's capture session.
-    private let captureSession = AVCaptureSession()
+    // 초광각을 같이 받으려면 멀티 카메라 세션 (프리셋 없이 형식을 직접 고름). 지원하지 않으면 일반 세션
+    private let captureSession: AVCaptureSession = AppDefaults.usesUltraWideBackdrop && AVCaptureMultiCamSession.isMultiCamSupported
+        ? AVCaptureMultiCamSession() : AVCaptureSession()
+    private var isMultiCam: Bool { captureSession is AVCaptureMultiCamSession }
+    /// 트리플 카메라 초광각 포트 → 초광각 프레임 출력 연결
+    private var ultraWideConnection: AVCaptureConnection?
+    /// 화면에 바깥 배경이 보이는 중 (안 보이면 초광각 연결을 꺼 둠)
+    private var isUltraWideBackdropActive = false
     
     // An object that manages the app's photo capture behavior.
     private let photoCapture = PhotoCapture()
@@ -99,7 +108,7 @@ actor CaptureService {
     
     init() {
         // Create a source object to connect the preview view with the capture session.
-        previewSource = DefaultPreviewSource(session: captureSession, filteredFeed: filteredFeed)
+        previewSource = DefaultPreviewSource(session: captureSession, filteredFeed: filteredFeed, ultraWideFeed: ultraWideFeed)
     }
     
     // MARK: - Authorization
@@ -169,8 +178,9 @@ actor CaptureService {
             try addInput(for: defaultMic)
 
             // Configure the session preset based on the current capture mode.
-            captureSession.sessionPreset = captureMode == .photo ? .photo : .high
+            setSessionPreset(captureMode == .photo ? .photo : .high)
             if captureMode == .photo {
+                selectMultiCamPhotoFormat(for: defaultCamera)
                 selectHighResolutionPhotoFormat(for: defaultCamera)
             }
 
@@ -182,6 +192,7 @@ actor CaptureService {
             // Add the photo capture output as the default output type.
             photoCapture.output.isDeferredStartEnabled = photoCapture.output.isDeferredStartSupported
             try addOutput(photoCapture.output)
+            if let activeVideoInput { connectUltraWidePort(of: activeVideoInput) }
             // If the capture mode is set to `video`, add a movie capture output.
             if captureMode == .video {
                 // Add the movie output as the default output type.
@@ -205,6 +216,7 @@ actor CaptureService {
             observeSubjectAreaChanges(of: defaultCamera)
             // Update the service's advertised capabilities.
             updateCaptureCapabilities()
+            logUltraWideStatus()
             
             isSetUp = true
         } catch {
@@ -419,13 +431,13 @@ actor CaptureService {
         switch captureMode {
         case .photo:
             // The app needs to remove the movie capture output to perform Live Photo capture.
-            captureSession.sessionPreset = .photo
+            setSessionPreset(.photo)
             captureSession.removeOutput(movieCapture.output)
             captureSession.removeOutput(timelapseCapture.output)
             // 사진 처리 중이면 끝난 뒤 capturePhoto에서 맞춤
             if photosInProgress == 0 { updateFilteredPreviewOutput() }
         case .video, .slowMotion, .timelapse:
-            captureSession.sessionPreset = .high
+            setSessionPreset(.high)
             if photosInProgress == 0 { updateFilteredPreviewOutput() }
             // 비디오 · 슬로 모션은 파일 출력, 타임랩스는 프레임 출력
             if captureMode == .timelapse {
@@ -503,6 +515,7 @@ actor CaptureService {
         do {
             // Attempt to connect a new input and device to the capture session.
             activeVideoInput = try addInput(for: device)
+            if let activeVideoInput { connectUltraWidePort(of: activeVideoInput) }
             if captureMode != .photo {
                 applyVideoMode()
             }
@@ -579,7 +592,10 @@ actor CaptureService {
         if let connection = filteredFeed.output.connection(with: .video), connection.isVideoRotationAngleSupported(angle) {
             connection.videoRotationAngle = angle
         }
-        // 흐린 배경 층도 같은 방향
+        // 바깥 배경(초광각)도 같은 방향
+        if let connection = ultraWideConnection, connection.isVideoRotationAngleSupported(angle) {
+            connection.videoRotationAngle = angle
+        }
         let connections = captureSession.connections.filter { $0.videoPreviewLayer != nil }
         Task { @MainActor in
             // Set initial rotation angle on the video preview.
@@ -602,6 +618,93 @@ actor CaptureService {
         return previewLayer
     }
     
+    // MARK: - 미리보기 바깥 배경 (초광각)
+
+    /// 멀티 카메라 세션은 프리셋을 쓸 수 없음 (형식을 직접 고름)
+    private func setSessionPreset(_ preset: AVCaptureSession.Preset) {
+        guard !isMultiCam else { return }
+        captureSession.sessionPreset = preset
+    }
+
+    /// 멀티 카메라 세션의 사진 형식: 사진 프리셋 대신 4:3 · 8비트 · 30fps 중
+    /// 사진 최대 크기(48MP) → 최고 화질 지원 → 영상 크기(4032 이하) 순으로 가장 좋은 것
+    private func selectMultiCamPhotoFormat(for device: AVCaptureDevice) {
+        guard isMultiCam else { return }
+        let pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+        let candidates = device.formats.filter { format in
+            let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            return Int(size.width) * 3 == Int(size.height) * 4 && size.width <= 4032
+                && CMFormatDescriptionGetMediaSubType(format.formatDescription) == pixelFormat
+                && format.videoSupportedFrameRateRanges.contains { $0.maxFrameRate >= 30 }
+        }
+        func rank(_ format: AVCaptureDevice.Format) -> (Int, Int, Int32) {
+            let photoArea = format.supportedMaxPhotoDimensions.map { Int($0.width) * Int($0.height) }.max() ?? 0
+            let width = CMVideoFormatDescriptionGetDimensions(format.formatDescription).width
+            return (photoArea, format.isHighestPhotoQualitySupported ? 1 : 0, width)
+        }
+        guard let format = candidates.max(by: { rank($0) < rank($1) }) else {
+            logger.notice("[UW] no 4:3 photo format for \(device.localizedName, privacy: .public)")
+            return
+        }
+        guard device.activeFormat != format else { return }
+        do {
+            try device.lockForConfiguration()
+            device.activeFormat = format
+            device.unlockForConfiguration()
+        } catch {
+            logger.error("Unable to select multi-cam photo format. \(error)")
+        }
+    }
+
+    /// 트리플 카메라의 초광각 포트를 초광각 프레임 출력에 연결 (멀티 카메라 세션 · 후면만).
+    /// 카메라를 바꾸면 이전 입력의 연결은 같이 사라지므로 새 입력마다 부름
+    private func connectUltraWidePort(of input: AVCaptureDeviceInput) {
+        ultraWideConnection = nil
+        guard isMultiCam, input.device.position == .back, input.device.isVirtualDevice else { return }
+        guard let port = input.ports(for: .video, sourceDeviceType: .builtInUltraWideCamera,
+                                     sourceDevicePosition: .back).first else {
+            logger.notice("[UW] no ultra wide port on \(input.device.localizedName, privacy: .public)")
+            return
+        }
+        let output = ultraWideFeed.output
+        if !captureSession.outputs.contains(output) {
+            guard captureSession.canAddOutput(output) else {
+                logger.notice("[UW] cannot add ultra wide output")
+                return
+            }
+            captureSession.addOutputWithNoConnections(output)
+        }
+        let connection = AVCaptureConnection(inputPorts: [port], output: output)
+        guard captureSession.canAddConnection(connection) else {
+            logger.notice("[UW] cannot add ultra wide connection")
+            return
+        }
+        captureSession.addConnection(connection)
+        connection.isEnabled = isUltraWideBackdropActive
+        ultraWideConnection = connection
+    }
+
+    /// 화면에 바깥 배경이 보일 때만 초광각 프레임을 받음 (안 보이면 꺼서 발열 · 배터리 절약)
+    func setUltraWideBackdropActive(_ isActive: Bool) {
+        isUltraWideBackdropActive = isActive
+        guard let connection = ultraWideConnection, connection.isEnabled != isActive else { return }
+        connection.isEnabled = isActive
+    }
+
+    /// 확인용: 멀티 카메라 세션에서 LIVE · 48MP · RAW가 그대로 되는지, 하드웨어 부담
+    private func logUltraWideStatus() {
+        let photo = photoCapture.output
+        let maxSize = photo.maxPhotoDimensions
+        let pressure = (captureSession as? AVCaptureMultiCamSession)?.systemPressureCost ?? 0
+        logger.notice("""
+            [UW] multicam: \(self.isMultiCam, privacy: .public) port: \(self.ultraWideConnection != nil, privacy: .public) \
+            live: \(photo.isLivePhotoCaptureSupported, privacy: .public) \
+            max: \(maxSize.width, privacy: .public)x\(maxSize.height, privacy: .public) \
+            raw: \(!photo.availableRawPhotoPixelFormatTypes.isEmpty, privacy: .public) \
+            cost: \(self.captureSession.hardwareCost, privacy: .public) pressure: \(pressure, privacy: .public)
+            """)
+    }
+
     // MARK: - 배율 · 접사
 
     /// 표시 배율로 설정. 버튼은 부드럽게(animated), 다이얼 · 두 손가락은 바로
@@ -1010,7 +1113,7 @@ actor CaptureService {
            currentDevice.format(for: mode.resolved(in: currentDevice.supportedVideoModes), prefersTenBit: true)?.isTenBitFormat == true {
             isHDRVideoEnabled = true
         } else {
-            captureSession.sessionPreset = .high
+            setSessionPreset(.high)
             isHDRVideoEnabled = false
         }
         // 형식을 바꾸면 프레임 길이가 풀리므로 고른 프레임률까지 같이 적용
@@ -1020,9 +1123,11 @@ actor CaptureService {
     /// 구성 묶음을 따로 열어 48MP 형식을 고르고, 바뀐 해상도를 화면에 알림
     private func applyHighResolutionPhotoFormat() {
         captureSession.beginConfiguration()
+        selectMultiCamPhotoFormat(for: currentDevice)
         selectHighResolutionPhotoFormat(for: currentDevice)
         captureSession.commitConfiguration()
         updateCaptureCapabilities()
+        logUltraWideStatus()
     }
 
     /// 사진 모드 프리셋(.photo) 형식이 48MP를 지원하지 않으면 48MP를 지원하는 형식으로 바꾼다

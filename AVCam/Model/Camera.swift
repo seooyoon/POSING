@@ -130,6 +130,9 @@ protocol Camera: AnyObject, SendableMetatype {
 
     /// 전면 화각 버튼: 넓게 ↔ 가깝게
     func setFrontWide(_ isWide: Bool) async
+
+    /// 미리보기 바깥 배경(초광각)이 화면에 보이는지. 안 보이면 초광각 프레임을 끔 (발열)
+    func setOutsideBackdropVisible(_ isVisible: Bool) async
     
     /// A Boolean value that indicates whether camera enables HDR video recording.
     var isHDRVideoEnabled: Bool { get set }
