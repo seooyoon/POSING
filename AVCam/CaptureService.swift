@@ -620,6 +620,11 @@ actor CaptureService {
         zoomController.setAutoMacroEnabled(isEnabled)
     }
 
+    /// 꽃을 끈 동안 피사체가 멀어졌는지 확인 (장면 밝기와 같이 주기적으로)
+    func refreshSubjectDistance() {
+        zoomController.updateSubjectDistance()
+    }
+
     func setFrontWide(_ isWide: Bool) {
         zoomController.setFrontWide(isWide)
     }
@@ -1032,6 +1037,7 @@ actor CaptureService {
             format.supportedMaxPhotoDimensions.map { Int($0.width) * Int($0.height) }.max() ?? 0
         }
         let current = device.activeFormat
+        logger.notice("[48MP] \(device.localizedName, privacy: .public) active: \(Self.describe(current), privacy: .public)")
         guard maxPhotoArea(current) < highResolutionArea else { return }
         let size = CMVideoFormatDescriptionGetDimensions(current.formatDescription)
         let pixelFormat = CMFormatDescriptionGetMediaSubType(current.formatDescription)
@@ -1049,11 +1055,15 @@ actor CaptureService {
             highResolution.filter(isSameSize),
             highResolution.filter(isSameRatio),
         ]
+        logger.notice("[48MP] candidates: \(groups.map(\.count), privacy: .public) of \(device.formats.count) formats")
         guard let candidates = groups.first(where: { !$0.isEmpty }),
               let format = candidates.first(where: \.isHighestPhotoQualitySupported) ?? candidates.first else {
-            logger.info("No 48MP photo format for \(device.localizedName).")
+            // 원인 확인용: 48MP를 지원하는 형식 목록
+            let all = device.formats.filter { maxPhotoArea($0) >= highResolutionArea }.map(Self.describe)
+            logger.notice("[48MP] none selected. 48MP formats: \(all, privacy: .public)")
             return
         }
+        logger.notice("[48MP] selected: \(Self.describe(format), privacy: .public)")
         do {
             try device.lockForConfiguration()
             device.activeFormat = format
@@ -1061,6 +1071,15 @@ actor CaptureService {
         } catch {
             logger.error("Unable to select 48MP photo format. \(error)")
         }
+    }
+
+    /// 로그용 형식 설명: 크기 · 픽셀 형식 · 사진 최대 크기들
+    private static func describe(_ format: AVCaptureDevice.Format) -> String {
+        let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+        let subtype = CMFormatDescriptionGetMediaSubType(format.formatDescription)
+        let code = String((0..<4).map { Character(UnicodeScalar(UInt8((subtype >> (24 - $0 * 8)) & 0xFF))) })
+        let photos = format.supportedMaxPhotoDimensions.map { "\($0.width)x\($0.height)" }.joined(separator: ",")
+        return "\(size.width)x\(size.height) \(code) photo[\(photos)]"
     }
 
     // MARK: - Internal state management
@@ -1076,6 +1095,8 @@ actor CaptureService {
         switch captureMode {
         case .photo:
             captureCapabilities = photoCapture.capabilities
+            let sizes = photoCapture.capabilities.photoDimensions.map { "\($0.width)x\($0.height)" }
+            logger.notice("[48MP] capabilities: \(sizes, privacy: .public)")
         case .video, .slowMotion:
             captureCapabilities = movieCapture.capabilities
         case .timelapse:

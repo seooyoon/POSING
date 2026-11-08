@@ -13,11 +13,12 @@ extension CameraModel {
     
     // Set up camera's state observations.
     func observeState() {
-        // 장면 밝기를 0.5초마다 확인 (노출 값만 읽음)
+        // 장면 밝기 · 꽃 버튼용 피사체 거리를 0.5초마다 확인 (노출 · 초점 값만 읽음)
         Task { [weak self] in
             while let service = self?.captureService {
                 let ev = await service.sceneEV
                 self?.sceneBrightness.update(ev: ev)
+                await service.refreshSubjectDistance()
                 try? await Task.sleep(for: .seconds(0.5))
             }
         }
