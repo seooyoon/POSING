@@ -156,11 +156,15 @@ final class ZoomController {
             isSubjectClose: isSubjectClose && display >= 0.99
         )
         // 조건이 맞으면 유지 시간을 늘리고, 잠깐 풀려도 유지 시간 동안은 계속 보임
+        // 1× 미만(초광각 화면)에서는 유지하지 않고 바로 숨김
         let now = Date.now
-        if state.wantsMacroButton {
+        if display < 0.99 {
+            macroButtonHoldUntil = .distantPast
+        } else if state.wantsMacroButton {
             macroButtonHoldUntil = now.addingTimeInterval(AppDefaults.macroButtonHoldDuration)
         }
-        state.showsMacroButton = state.wantsMacroButton || now < macroButtonHoldUntil
+        state.showsMacroButton = display >= 0.99
+            && (state.wantsMacroButton || now < macroButtonHoldUntil)
         return state
     }
 }
