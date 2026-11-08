@@ -24,7 +24,7 @@ struct CameraView<CameraModel: Camera>: View {
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
             ZStack(alignment: .topLeading) {
                 // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 기본 카메라처럼 장면이 어둡게 비침
-                // (docs/02_UI.md 5절). 배경 층은 계속 붙여 두고 스타일 화면에서는 숨기기만 함 (붙였다 떼면 멈춤)
+                // (docs/02_UI.md 5절). 배경은 계속 두고 스타일 화면에서는 숨기기만 함
                 Color.black
                 PreviewBackdrop(source: camera.previewSource)
                     .opacity(isShowingStyleScreen || camera.shouldFlashScreen ? 0 : 1)
@@ -46,8 +46,9 @@ struct CameraView<CameraModel: Camera>: View {
                     .modifier(StyleCardEffect(isActive: isShowingStyleScreen, layout: layout, clipsOutside: false))
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
-                OutsidePreviewDim(previewRect: layout.previewRect)
+                OutsidePreviewDim(previewRect: layout.previewRect, isSeeThrough: isOutsideSeeThrough)
                     .opacity(isShowingStyleScreen ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.25), value: isOutsideSeeThrough)
                     .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                     .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                     .animation(.spring(duration: 0.35, bounce: 0.1), value: isShowingStyleScreen)
@@ -82,6 +83,13 @@ struct CameraView<CameraModel: Camera>: View {
         .fullScreenCover(isPresented: $layers.isShowingSettings) {
             SettingsView(layers: layers, looks: looks)
         }
+    }
+
+    /// 미리보기 바깥이 비치는지. 기본 카메라는 더 넓은 렌즈로 바깥을 채우므로, 그런 렌즈가 없는
+    /// 0.5× · 접사 · 전면에서는 바깥 전체가 검정. 비디오 계열은 배경 프레임을 받지 않아 검정
+    private var isOutsideSeeThrough: Bool {
+        camera.captureMode == .photo && !camera.zoom.isFrontCamera
+            && camera.zoom.displayFactor >= 0.99 && !camera.zoom.isMacroActive
     }
 
     /// 미리보기에서 터치를 받는 영역 (미리보기 기준 좌표): 상단 바 아래부터, 셔터 자리는 뺌.
