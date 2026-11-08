@@ -706,9 +706,9 @@ actor CaptureService {
         }
         guard smudgeObservation == nil else { return }
         smudgeDevice = device
-        smudgeObservation = device.observe(\.cameraLensSmudgeDetectionStatus, options: [.initial, .new]) { [weak self] device, _ in
-            let status = device.cameraLensSmudgeDetectionStatus
-            Task { await self?.updateLensSmudge(status) }
+        // 알림마다 만든 작업은 순서가 바뀔 수 있어, 작업이 실행될 때 장치의 최신 결과를 다시 읽음
+        smudgeObservation = device.observe(\.cameraLensSmudgeDetectionStatus, options: [.initial, .new]) { [weak self] _, _ in
+            Task { await self?.updateLensSmudge() }
         }
     }
     private var smudgeObservation: NSKeyValueObservation?
@@ -737,7 +737,8 @@ actor CaptureService {
 
     /// 한 번 감지된 것만으로는 띄우지 않고, 확인 시간 동안 계속 얼룩이면 안내 (잘못 뜨는 것을 줄임).
     /// 깨끗하다는 결과가 나오면 바로 숨김
-    private func updateLensSmudge(_ status: AVCaptureCameraLensSmudgeDetectionStatus) {
+    private func updateLensSmudge() {
+        let status = smudgeDevice?.cameraLensSmudgeDetectionStatus ?? .disabled
         // 원인 확인용: 시스템 감지 결과 (0 꺼짐, 1 깨끗함, 2 얼룩, 3 판단 못 함)
         logger.notice("[Smudge] status \(status.rawValue)")
         switch status {
