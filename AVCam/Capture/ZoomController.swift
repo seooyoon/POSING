@@ -8,7 +8,6 @@
 
 @preconcurrency import AVFoundation
 import Combine
-import os
 
 final class ZoomController {
 
@@ -22,8 +21,8 @@ final class ZoomController {
     private var device: AVCaptureDevice?
     private var observations: [NSKeyValueObservation] = []
     private var isAutoMacroEnabled = true
-    /// 1× 렌즈 초점이 가장 가까운 쪽에 붙어 있음 (꽃을 끈 동안 꽃 버튼을 보일지). KVO 스레드에서도 읽어 잠금
-    private let subjectClose = OSAllocatedUnfairLock(initialState: false)
+    /// 꽃을 끈 동안 렌즈 초점이 가장 가까운 쪽에 붙어 있음 (꽃 버튼을 보일지)
+    private var isSubjectClose = false
 
     /// KVO는 아무 스레드에서나 오므로 직접 갱신하지 않고 CaptureService 액터로 넘김
     var onDeviceChange: (@Sendable () -> Void)?
@@ -32,7 +31,7 @@ final class ZoomController {
     func attach(to device: AVCaptureDevice) {
         self.device = device
         isAutoMacroEnabled = true
-        subjectClose.withLock { $0 = false }
+        isSubjectClose = false
         applyDefaultZoom()
         observations = [
             device.observe(\.videoZoomFactor, options: [.new]) { [weak self] _, _ in
@@ -42,20 +41,6 @@ final class ZoomController {
                 self?.onDeviceChange?()
             },
         ]
-        // 꽃을 끄면 1× 렌즈가 그대로 남으므로, 그 렌즈 초점 위치로 피사체가 가까운지 봄
-        if let wide = device.constituentDevices.first(where: { $0.deviceType == .builtInWideAngleCamera }) {
-            observations.append(wide.observe(\.lensPosition, options: [.new]) { [weak self] _, change in
-                guard let self, let position = change.newValue else { return }
-                // 가까움 ↔ 멀어짐이 바뀔 때만 화면 값을 다시 계산
-                let didChange = subjectClose.withLock { isClose in
-                    let next = isClose ? position < AppDefaults.macroFarLensPosition
-                                       : position <= AppDefaults.macroCloseLensPosition
-                    defer { isClose = next }
-                    return next != isClose
-                }
-                if didChange { onDeviceChange?() }
-            })
-        }
         refresh()
     }
 
@@ -112,10 +97,23 @@ final class ZoomController {
             device.unlockForConfiguration()
             isAutoMacroEnabled = isEnabled
             // 끄는 순간은 가까이 있는 중이므로 버튼을 유지하고, 1× 렌즈 초점이 멀어지면 숨김
-            if !isEnabled { subjectClose.withLock { $0 = true } }
+            if !isEnabled { isSubjectClose = true }
         } catch {
             logger.debug("Unable to change macro switching. \(error)")
         }
+        refresh()
+    }
+
+    /// 꽃을 끈 동안 지금 렌즈의 초점 위치로 가까움을 다시 판단 (CaptureService가 주기적으로 부름).
+    /// 초점 위치 KVO는 렌즈별로 잘 오지 않아 직접 읽음
+    func updateSubjectDistance() {
+        guard let device, !isAutoMacroEnabled, device.position == .back else { return }
+        let position = (device.activePrimaryConstituent ?? device).lensPosition
+        let next = isSubjectClose ? position < AppDefaults.macroFarLensPosition
+                                  : position <= AppDefaults.macroCloseLensPosition
+        guard next != isSubjectClose else { return }
+        logger.debug("Macro subject \(next ? "close" : "far") at lens position \(position)")
+        isSubjectClose = next
         refresh()
     }
 
@@ -151,7 +149,7 @@ final class ZoomController {
             isMacroActive: isUltraWideActive && display >= 0.99,
             isAutoMacroEnabled: isAutoMacroEnabled,
             supportsMacroSwitching: supportsMacroSwitching(device),
-            isSubjectClose: subjectClose.withLock { $0 } && display >= 0.99
+            isSubjectClose: isSubjectClose && display >= 0.99
         )
     }
 }

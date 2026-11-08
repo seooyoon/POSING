@@ -620,6 +620,11 @@ actor CaptureService {
         zoomController.setAutoMacroEnabled(isEnabled)
     }
 
+    /// 꽃을 끈 동안 피사체가 멀어졌는지 확인 (장면 밝기와 같이 주기적으로)
+    func refreshSubjectDistance() {
+        zoomController.updateSubjectDistance()
+    }
+
     func setFrontWide(_ isWide: Bool) {
         zoomController.setFrontWide(isWide)
     }
@@ -701,9 +706,9 @@ actor CaptureService {
         }
         guard smudgeObservation == nil else { return }
         smudgeDevice = device
-        smudgeObservation = device.observe(\.cameraLensSmudgeDetectionStatus, options: [.initial, .new]) { [weak self] device, _ in
-            let status = device.cameraLensSmudgeDetectionStatus
-            Task { await self?.updateLensSmudge(status) }
+        // 알림마다 만든 작업은 순서가 바뀔 수 있어, 작업이 실행될 때 장치의 최신 결과를 다시 읽음
+        smudgeObservation = device.observe(\.cameraLensSmudgeDetectionStatus, options: [.initial, .new]) { [weak self] _, _ in
+            Task { await self?.updateLensSmudge() }
         }
     }
     private var smudgeObservation: NSKeyValueObservation?
@@ -732,7 +737,10 @@ actor CaptureService {
 
     /// 한 번 감지된 것만으로는 띄우지 않고, 확인 시간 동안 계속 얼룩이면 안내 (잘못 뜨는 것을 줄임).
     /// 깨끗하다는 결과가 나오면 바로 숨김
-    private func updateLensSmudge(_ status: AVCaptureCameraLensSmudgeDetectionStatus) {
+    private func updateLensSmudge() {
+        let status = smudgeDevice?.cameraLensSmudgeDetectionStatus ?? .disabled
+        // 원인 확인용: 시스템 감지 결과 (0 꺼짐, 1 깨끗함, 2 얼룩, 3 판단 못 함)
+        logger.notice("[Smudge] status \(status.rawValue)")
         switch status {
         case .smudged:
             guard !isLensSmudged, smudgeConfirmTask == nil else { return }
@@ -744,11 +752,9 @@ actor CaptureService {
                     isLensSmudged = true
                 }
             }
-        case .smudgeNotDetected, .disabled:
-            clearLensSmudge()
-        // 결과가 아직 안정되지 않으면(움직이는 중 등) 이전 값 유지
+        // 깨끗함 · 꺼짐 · 판단 못 함(닦느라 움직이는 중 등)이면 숨김. 다시 얼룩이면 확인 뒤 다시 보임
         default:
-            break
+            clearLensSmudge()
         }
     }
 
@@ -1032,6 +1038,7 @@ actor CaptureService {
             format.supportedMaxPhotoDimensions.map { Int($0.width) * Int($0.height) }.max() ?? 0
         }
         let current = device.activeFormat
+        logger.notice("[48MP] \(device.localizedName, privacy: .public) active: \(Self.describe(current), privacy: .public)")
         guard maxPhotoArea(current) < highResolutionArea else { return }
         let size = CMVideoFormatDescriptionGetDimensions(current.formatDescription)
         let pixelFormat = CMFormatDescriptionGetMediaSubType(current.formatDescription)
@@ -1049,11 +1056,15 @@ actor CaptureService {
             highResolution.filter(isSameSize),
             highResolution.filter(isSameRatio),
         ]
+        logger.notice("[48MP] candidates: \(groups.map(\.count), privacy: .public) of \(device.formats.count) formats")
         guard let candidates = groups.first(where: { !$0.isEmpty }),
               let format = candidates.first(where: \.isHighestPhotoQualitySupported) ?? candidates.first else {
-            logger.info("No 48MP photo format for \(device.localizedName).")
+            // 원인 확인용: 48MP를 지원하는 형식 목록
+            let all = device.formats.filter { maxPhotoArea($0) >= highResolutionArea }.map(Self.describe)
+            logger.notice("[48MP] none selected. 48MP formats: \(all, privacy: .public)")
             return
         }
+        logger.notice("[48MP] selected: \(Self.describe(format), privacy: .public)")
         do {
             try device.lockForConfiguration()
             device.activeFormat = format
@@ -1061,6 +1072,15 @@ actor CaptureService {
         } catch {
             logger.error("Unable to select 48MP photo format. \(error)")
         }
+    }
+
+    /// 로그용 형식 설명: 크기 · 픽셀 형식 · 사진 최대 크기들
+    private static func describe(_ format: AVCaptureDevice.Format) -> String {
+        let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+        let subtype = CMFormatDescriptionGetMediaSubType(format.formatDescription)
+        let code = String((0..<4).map { Character(UnicodeScalar(UInt8((subtype >> (24 - $0 * 8)) & 0xFF))) })
+        let photos = format.supportedMaxPhotoDimensions.map { "\($0.width)x\($0.height)" }.joined(separator: ",")
+        return "\(size.width)x\(size.height) \(code) photo[\(photos)]"
     }
 
     // MARK: - Internal state management
@@ -1076,6 +1096,8 @@ actor CaptureService {
         switch captureMode {
         case .photo:
             captureCapabilities = photoCapture.capabilities
+            let sizes = photoCapture.capabilities.photoDimensions.map { "\($0.width)x\($0.height)" }
+            logger.notice("[48MP] capabilities: \(sizes, privacy: .public)")
         case .video, .slowMotion:
             captureCapabilities = movieCapture.capabilities
         case .timelapse:
