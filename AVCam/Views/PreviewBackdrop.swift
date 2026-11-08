@@ -2,9 +2,9 @@
 //  PreviewBackdrop.swift
 //  포징
 //
-//  미리보기 바깥(상단 바 · 하단 영역) 배경: 기본 카메라처럼 장면이 어둡게 비친다 (docs/02_UI.md 5절).
-//  두 번째 미리보기 층(AVCaptureVideoPreviewLayer)은 같은 세션에서 영상이 나오지 않아,
-//  프레임 출력(FilteredPreviewFeed)의 프레임을 AVSampleBufferDisplayLayer로 화면 전체에 그린다.
+//  미리보기 바깥(상단 바 · 하단 영역) 배경: 기본 카메라처럼 더 넓은 초광각 화면이 어둡게 비친다 (docs/02_UI.md 5절).
+//  초광각 프레임(UltraWideFeed)을 AVSampleBufferDisplayLayer로 그리고, 크기 · 위치는 CameraView가
+//  미리보기와 같은 배율 · 중심으로 맞춰 하나로 이어지게 한다.
 //  어둡게 덮거나 검정으로 가리는 것은 OutsidePreviewDim이 한다.
 //
 
@@ -14,7 +14,7 @@ import AVFoundation
 struct PreviewBackdrop: UIViewRepresentable {
 
     let source: PreviewSource
-    /// 바깥이 비쳐 배경이 실제로 보이는지. 안 보이면 프레임을 보내지 않음 (발열 줄이기)
+    /// 바깥이 비쳐 배경이 실제로 보이는지. 안 보이면 프레임을 받지 않음 (발열 줄이기)
     let isVisible: Bool
 
     func makeUIView(context: Context) -> BackdropView {
@@ -24,7 +24,7 @@ struct PreviewBackdrop: UIViewRepresentable {
     }
 
     func updateUIView(_ view: BackdropView, context: Context) {
-        source.filteredFeed.setBackdrop(isVisible ? view.displayLayer.sampleBufferRenderer : nil)
+        source.ultraWideFeed.setBackdrop(isVisible ? view.displayLayer.sampleBufferRenderer : nil)
     }
 
     static func dismantleUIView(_ view: BackdropView, coordinator: ()) {

@@ -23,12 +23,15 @@ struct CameraView<CameraModel: Camera>: View {
         GeometryReader { proxy in
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
             ZStack(alignment: .topLeading) {
-                // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 기본 카메라처럼 장면이 어둡게 비침
-                // (docs/02_UI.md 5절). 배경은 계속 두고 스타일 화면에서는 숨기기만 함
+                // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 기본 카메라처럼 초광각 화면이 어둡게 비침
+                // (docs/02_UI.md 5절). 미리보기와 같은 배율 · 중심으로 놓아 하나로 이어짐
                 Color.black
-                PreviewBackdrop(source: camera.previewSource,
-                                isVisible: isOutsideSeeThrough && !isShowingStyleScreen && !camera.shouldFlashScreen)
-                    .opacity(isShowingStyleScreen || camera.shouldFlashScreen ? 0 : 1)
+                let backdropSize = backdropSize(in: layout)
+                PreviewBackdrop(source: camera.previewSource, isVisible: isBackdropVisible)
+                    .frame(width: backdropSize.width, height: backdropSize.height)
+                    .position(x: layout.previewRect.midX, y: layout.previewRect.midY)
+                    .opacity(isBackdropVisible && !camera.shouldFlashScreen ? 1 : 0)
+                    .allowsHitTesting(false)
                 // 미리보기는 모드에 맞는 자리 · 비율로 (사진 4:3, 비디오 16:9)
                 // 비율을 바꿀 때 층 크기는 그대로 두고 확대 · 자르기만 움직임 (영상이 흔들리지 않게)
                 Color.clear
@@ -75,6 +78,10 @@ struct CameraView<CameraModel: Camera>: View {
             // 카메라 화면만 다크 고정. 설정 화면 · 사진 피커는 아이폰 설정을 따름 (docs/02_UI.md 10절)
             .environment(\.colorScheme, .dark)
         }
+        // 바깥 배경이 안 보이면 초광각 프레임을 끔 (발열)
+        .onChange(of: isBackdropVisible, initial: true) { _, isVisible in
+            Task { await camera.setOutsideBackdropVisible(isVisible) }
+        }
         // 모드 · 카메라가 바뀌면 초점 표시를 지움
         .onChange(of: camera.captureMode) { focus.clear() }
         .onChange(of: camera.isSwitchingVideoDevices) { focus.clear() }
@@ -91,6 +98,19 @@ struct CameraView<CameraModel: Camera>: View {
     private var isOutsideSeeThrough: Bool {
         camera.captureMode == .photo && !camera.zoom.isFrontCamera
             && camera.zoom.displayFactor >= 0.99 && !camera.zoom.isMacroActive
+    }
+
+    /// 바깥 배경(초광각)이 보이는지: 바깥이 비치고 스타일 화면이 아닐 때
+    private var isBackdropVisible: Bool {
+        AppDefaults.usesUltraWideBackdrop && isOutsideSeeThrough && !isShowingStyleScreen
+    }
+
+    /// 바깥 배경 크기: 미리보기에 보이는 4:3 영상 크기 × (지금 배율 / 초광각 배율).
+    /// 초광각은 더 넓게 찍으므로 그만큼 크게 그려야 미리보기와 같은 배율로 이어짐
+    private func backdropSize(in layout: CameraLayout) -> CGSize {
+        let scale = layout.previewScale * max(camera.zoom.displayFactor, 1)
+            / AppDefaults.ultraWideDisplayFactor * AppDefaults.ultraWideBackdropScale
+        return CGSize(width: layout.previewLayerSize.width * scale, height: layout.previewLayerSize.height * scale)
     }
 
     /// 미리보기에서 터치를 받는 영역 (미리보기 기준 좌표): 상단 바 아래부터, 셔터 자리는 뺌.
