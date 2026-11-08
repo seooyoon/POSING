@@ -738,6 +738,8 @@ actor CaptureService {
     /// 한 번 감지된 것만으로는 띄우지 않고, 확인 시간 동안 계속 얼룩이면 안내 (잘못 뜨는 것을 줄임).
     /// 깨끗하다는 결과가 나오면 바로 숨김
     private func updateLensSmudge(_ status: AVCaptureCameraLensSmudgeDetectionStatus) {
+        // 원인 확인용: 시스템 감지 결과 (0 꺼짐, 1 깨끗함, 2 얼룩, 3 판단 못 함)
+        logger.notice("[Smudge] status \(status.rawValue)")
         switch status {
         case .smudged:
             guard !isLensSmudged, smudgeConfirmTask == nil else { return }
@@ -749,11 +751,9 @@ actor CaptureService {
                     isLensSmudged = true
                 }
             }
-        case .smudgeNotDetected, .disabled:
-            clearLensSmudge()
-        // 결과가 아직 안정되지 않으면(움직이는 중 등) 이전 값 유지
+        // 깨끗함 · 꺼짐 · 판단 못 함(닦느라 움직이는 중 등)이면 숨김. 다시 얼룩이면 확인 뒤 다시 보임
         default:
-            break
+            clearLensSmudge()
         }
     }
 
