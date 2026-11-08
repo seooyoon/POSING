@@ -28,19 +28,16 @@ final class DeviceLookup {
                                                                          mediaType: .video,
                                                                          position: .unspecified)
         
-        // If the host doesn't currently define a system-preferred camera device, set the user's preferred selection to the back camera.
-        // 예전에 다른 후면 카메라(듀얼 등)가 저장돼 있으면 트리플 카메라로 바꿈
-        let backCamera = backCameraDiscoverySession.devices.first
-        let preferred = AVCaptureDevice.systemPreferredCamera
-        if preferred == nil || (preferred?.position == .back && preferred != backCamera) {
+        // 앱을 켤 때는 항상 후면 트리플 카메라로 시작 (기본 카메라와 같음). 지난번 전면을 기억하지 않음
+        if let backCamera = backCameraDiscoverySession.devices.first {
             AVCaptureDevice.userPreferredCamera = backCamera
         }
     }
     
-    /// Returns the system-preferred camera for the host system.
+    /// 시작 카메라: 후면 우선, 없으면 시스템 기본
     var defaultCamera: AVCaptureDevice {
         get throws {
-            guard let videoDevice = AVCaptureDevice.systemPreferredCamera else {
+            guard let videoDevice = backCameraDiscoverySession.devices.first ?? AVCaptureDevice.systemPreferredCamera else {
                 throw CameraError.videoDeviceUnavailable
             }
             return videoDevice
