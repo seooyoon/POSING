@@ -264,6 +264,9 @@ struct MacroButton<CameraModel: Camera>: View {
                 // 켬 ↔ 끔 모양도 서서히 바뀜
                 .contentTransition(.symbolEffect(.replace))
                 .animation(.easeInOut(duration: AppDefaults.macroButtonFadeDuration), value: isEnabled)
+                // 보이는 원보다 넓게 눌림 (작아서 미리보기 초점으로 빠지지 않게)
+                .frame(width: 44, height: 44)
+                .contentShape(.circle)
         }
         .buttonStyle(.plain)
     }
