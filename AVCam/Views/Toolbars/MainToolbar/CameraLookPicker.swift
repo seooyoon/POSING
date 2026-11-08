@@ -16,7 +16,7 @@ struct CameraLookButton: View {
 
     let looks: CameraLookState
     @Binding var isListOpen: Bool
-    /// 밀어서 고르는 중인 칸 (목록에 노란 테두리). 고르는 중이 아니면 nil
+    /// 밀어서 고르는 중인 칸 (목록에서 이 칸만 불투명). 고르는 중이 아니면 nil
     @Binding var highlightedID: String?
     let onSelect: (CameraLookItem) -> Void
 
@@ -146,15 +146,19 @@ struct CameraLookList: View {
 
     static let cellSize: CGFloat = 52
     private static let spacing: CGFloat = 10
+    /// 칸 아래 이름 자리 (카메라 버튼 이름과 같은 글자 · 간격)
+    private static var nameHeight: CGFloat { AppDefaults.cameraNameGap + AppDefaults.cameraNameFontSize + 3 }
+    /// 이름까지 포함한 칸 높이
+    private static var cellHeight: CGFloat { cellSize + nameHeight }
     /// 칸 사이 거리 (가운데끼리). 버튼을 밀 때 이만큼 움직이면 한 칸
-    static var cellPitch: CGFloat { cellSize + spacing }
+    static var cellPitch: CGFloat { cellHeight + spacing }
     private static let padding: CGFloat = 8
     static let width = cellSize + padding * 2
 
     let looks: CameraLookState
     /// 위쪽으로 펼칠 수 있는 높이. 넘치면 세로 스크롤
     let maxHeight: CGFloat
-    /// 버튼을 밀어서 고르는 중인 칸. 있으면 이 칸에 노란 테두리
+    /// 버튼을 밀어서 고르는 중인 칸. 있으면 이 칸이 선택된 모양
     var highlightedID: String?
     let onSelect: (CameraLookItem) -> Void
 
@@ -184,20 +188,27 @@ struct CameraLookList: View {
 
     var height: CGFloat {
         let count = CGFloat(looks.items.count)
-        return min(maxHeight, count * Self.cellSize + max(0, count - 1) * Self.spacing + Self.padding * 2)
+        return min(maxHeight, count * Self.cellHeight + max(0, count - 1) * Self.spacing + Self.padding * 2)
     }
 
+    /// 칸: 카메라 PNG + 아래 이름. 선택된 칸은 그대로, 나머지는 흐리게 (테두리 없음)
     private func cell(_ item: CameraLookItem) -> some View {
         let isSelected = (highlightedID ?? looks.selected?.id) == item.id
-        return Image(uiImage: item.image)
-            .resizable()
-            .scaledToFit()
-            .frame(width: Self.cellSize, height: Self.cellSize)
-            .overlay {
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.cameraYellow, lineWidth: isSelected ? 2 : 0)
-            }
-            .contentShape(.rect(cornerRadius: 10))
+        return VStack(spacing: AppDefaults.cameraNameGap) {
+            Image(uiImage: item.image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: Self.cellSize, height: Self.cellSize)
+            Text(item.name)
+                .font(.system(size: AppDefaults.cameraNameFontSize, weight: .medium))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(width: Self.width - 4, height: Self.cellHeight, alignment: .top)
+        .opacity(isSelected ? 1 : AppDefaults.cameraListUnselectedOpacity)
+        .animation(.easeOut(duration: 0.12), value: isSelected)
+        .contentShape(.rect)
             .onTapGesture { onSelect(item) }
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {}
             .accessibilityElement()

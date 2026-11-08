@@ -37,6 +37,8 @@ enum AppDefaults {
     /// 카메라 버튼 아래 이름 글자 크기 · 버튼과의 간격 (pt)
     static let cameraNameFontSize: CGFloat = 11
     static let cameraNameGap: CGFloat = 3
+    /// 카메라 목록에서 선택되지 않은 칸 투명도 (선택된 칸은 그대로)
+    static let cameraListUnselectedOpacity = 0.5
 
     // MARK: - 사진 형식
 
