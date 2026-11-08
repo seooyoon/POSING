@@ -14,14 +14,18 @@ import AVFoundation
 struct PreviewBackdrop: UIViewRepresentable {
 
     let source: PreviewSource
+    /// 바깥이 비쳐 배경이 실제로 보이는지. 안 보이면 프레임을 보내지 않음 (발열 줄이기)
+    let isVisible: Bool
 
     func makeUIView(context: Context) -> BackdropView {
         let view = BackdropView()
-        source.filteredFeed.setBackdrop(view.displayLayer.sampleBufferRenderer)
+        updateUIView(view, context: context)
         return view
     }
 
-    func updateUIView(_ view: BackdropView, context: Context) {}
+    func updateUIView(_ view: BackdropView, context: Context) {
+        source.filteredFeed.setBackdrop(isVisible ? view.displayLayer.sampleBufferRenderer : nil)
+    }
 
     static func dismantleUIView(_ view: BackdropView, coordinator: ()) {
         view.displayLayer.sampleBufferRenderer.flush()

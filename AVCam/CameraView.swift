@@ -26,7 +26,8 @@ struct CameraView<CameraModel: Camera>: View {
                 // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 기본 카메라처럼 장면이 어둡게 비침
                 // (docs/02_UI.md 5절). 배경은 계속 두고 스타일 화면에서는 숨기기만 함
                 Color.black
-                PreviewBackdrop(source: camera.previewSource)
+                PreviewBackdrop(source: camera.previewSource,
+                                isVisible: isOutsideSeeThrough && !isShowingStyleScreen && !camera.shouldFlashScreen)
                     .opacity(isShowingStyleScreen || camera.shouldFlashScreen ? 0 : 1)
                 // 미리보기는 모드에 맞는 자리 · 비율로 (사진 4:3, 비디오 16:9)
                 // 비율을 바꿀 때 층 크기는 그대로 두고 확대 · 자르기만 움직임 (영상이 흔들리지 않게)
