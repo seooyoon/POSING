@@ -96,6 +96,11 @@ final class ZoomController {
                 device.setPrimaryConstituentDeviceSwitchingBehavior(.auto, restrictedSwitchingBehaviorConditions: [])
             } else {
                 device.setPrimaryConstituentDeviceSwitchingBehavior(.restricted, restrictedSwitchingBehaviorConditions: .videoZoomChanged)
+                // 배율을 살짝 움직였다 되돌려 지금 배율의 렌즈(1×면 메인)로 바로 돌아가게 함
+                let zoom = device.videoZoomFactor
+                device.cancelVideoZoomRamp()
+                device.videoZoomFactor = min(zoom + 0.01, device.maxAvailableVideoZoomFactor)
+                device.videoZoomFactor = zoom
             }
             device.unlockForConfiguration()
             isAutoMacroEnabled = isEnabled
@@ -117,7 +122,7 @@ final class ZoomController {
         let next = isSubjectClose ? position < AppDefaults.macroFarLensPosition
                                   : position <= AppDefaults.macroCloseLensPosition
         guard next != isSubjectClose else { return }
-        logger.debug("Macro subject \(next ? "close" : "far") at lens position \(position)")
+        logger.notice("[Macro] subject \(next ? "close" : "far", privacy: .public) at lens position \(position, privacy: .public)")
         isSubjectClose = next
     }
 
