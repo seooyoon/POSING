@@ -40,8 +40,11 @@ struct ZoomState: Equatable, Sendable {
     /// 렌즈가 잠깐씩 바뀌어 깜빡이지 않게 ZoomController가 한동안 유지해서 넣음
     var showsMacroButton = false
 
-    /// 꽃 버튼을 보일 조건 (유지 시간 없이 지금 값만). 꽃을 끈 뒤 멀어지면 사라지고, 다시 가까워지면 꺼진 모양으로 나타남
-    var wantsMacroButton: Bool { isMacroActive || (supportsMacroSwitching && !isAutoMacroEnabled && isSubjectClose) }
+    /// 꽃 버튼을 보일 조건 (유지 시간 없이 지금 값만). 꽃을 끈 뒤 멀어지면 사라지고, 다시 가까워지면 꺼진 모양으로 나타남.
+    /// 꽃을 끈 동안은 렌즈 종류와 상관없이 초점 거리로만 판단 (끈 직후 초광각이 남아 있어도 멀어지면 사라지게)
+    var wantsMacroButton: Bool {
+        isAutoMacroEnabled ? isMacroActive : (supportsMacroSwitching && isSubjectClose)
+    }
 
     /// 지금 배율이 속한 버튼 (지금 배율보다 작거나 같은 버튼 중 가장 큰 것)
     var activePreset: CGFloat? {
