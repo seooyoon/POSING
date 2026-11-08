@@ -85,6 +85,8 @@ enum AppDefaults {
     static let macroCloseLensPosition: Float = 0.1
     /// 이 값 이상으로 멀어지면 꽃 버튼 숨김 (경계에서 깜빡이지 않게 두 값을 나눔)
     static let macroFarLensPosition: Float = 0.25
+    /// 꽃 버튼 조건이 잠깐 풀려도 버튼을 유지하는 시간 (초). 접사 렌즈가 오가며 깜빡이지 않게
+    static let macroButtonHoldDuration = 1.5
     /// 꽃 버튼이 나타나고 사라지는 시간 (초)
     static let macroButtonFadeDuration = 0.25
 

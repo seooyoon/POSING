@@ -23,6 +23,8 @@ final class ZoomController {
     private var isAutoMacroEnabled = true
     /// 꽃을 끈 동안 렌즈 초점이 가장 가까운 쪽에 붙어 있음 (꽃 버튼을 보일지)
     private var isSubjectClose = false
+    /// 꽃 버튼을 이 시각까지 유지 (접사 렌즈가 잠깐 바뀌어도 버튼이 깜빡이지 않게)
+    private var macroButtonHoldUntil = Date.distantPast
 
     /// KVO는 아무 스레드에서나 오므로 직접 갱신하지 않고 CaptureService 액터로 넘김
     var onDeviceChange: (@Sendable () -> Void)?
@@ -32,6 +34,7 @@ final class ZoomController {
         self.device = device
         isAutoMacroEnabled = true
         isSubjectClose = false
+        macroButtonHoldUntil = .distantPast
         applyDefaultZoom()
         observations = [
             device.observe(\.videoZoomFactor, options: [.new]) { [weak self] _, _ in
@@ -107,6 +110,8 @@ final class ZoomController {
     /// 꽃을 끈 동안 지금 렌즈의 초점 위치로 가까움을 다시 판단 (CaptureService가 주기적으로 부름).
     /// 초점 위치 KVO는 렌즈별로 잘 오지 않아 직접 읽음
     func updateSubjectDistance() {
+        // 꽃 버튼 유지 시간이 끝났는지도 여기서 다시 계산
+        defer { refresh() }
         guard let device, !isAutoMacroEnabled, device.position == .back else { return }
         let position = (device.activePrimaryConstituent ?? device).lensPosition
         let next = isSubjectClose ? position < AppDefaults.macroFarLensPosition
@@ -114,7 +119,6 @@ final class ZoomController {
         guard next != isSubjectClose else { return }
         logger.debug("Macro subject \(next ? "close" : "far") at lens position \(position)")
         isSubjectClose = next
-        refresh()
     }
 
     /// 렌즈 자동 전환을 바꿀 수 있는 카메라인지
@@ -142,7 +146,7 @@ final class ZoomController {
         let range = device.minAvailableVideoZoomFactor * multiplier
             ... min(device.maxAvailableVideoZoomFactor * multiplier, ZoomState.maxDisplayFactor)
         let isUltraWideActive = device.activePrimaryConstituent?.deviceType == .builtInUltraWideCamera
-        return ZoomState(
+        var state = ZoomState(
             displayFactor: display,
             range: range,
             presets: ZoomState.presetValues.filter { range.contains($0) },
@@ -151,5 +155,12 @@ final class ZoomController {
             supportsMacroSwitching: supportsMacroSwitching(device),
             isSubjectClose: isSubjectClose && display >= 0.99
         )
+        // 조건이 맞으면 유지 시간을 늘리고, 잠깐 풀려도 유지 시간 동안은 계속 보임
+        let now = Date.now
+        if state.wantsMacroButton {
+            macroButtonHoldUntil = now.addingTimeInterval(AppDefaults.macroButtonHoldDuration)
+        }
+        state.showsMacroButton = state.wantsMacroButton || now < macroButtonHoldUntil
+        return state
     }
 }

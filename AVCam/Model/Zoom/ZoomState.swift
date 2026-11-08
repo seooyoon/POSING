@@ -36,9 +36,12 @@ struct ZoomState: Equatable, Sendable {
 
     var isAvailable: Bool { !presets.isEmpty }
 
-    /// 꽃 버튼은 접사 중이거나, 접사 전환을 꺼 둔 채 아직 가까이 있을 때 보임.
-    /// 기본 카메라처럼 꽃을 끈 뒤 멀어지면 사라지고, 다시 가까워지면 꺼진 모양으로 나타남
-    var showsMacroButton: Bool { isMacroActive || (supportsMacroSwitching && !isAutoMacroEnabled && isSubjectClose) }
+    /// 꽃 버튼이 보임. 접사 중이거나, 접사 전환을 꺼 둔 채 아직 가까이 있을 때.
+    /// 렌즈가 잠깐씩 바뀌어 깜빡이지 않게 ZoomController가 한동안 유지해서 넣음
+    var showsMacroButton = false
+
+    /// 꽃 버튼을 보일 조건 (유지 시간 없이 지금 값만). 꽃을 끈 뒤 멀어지면 사라지고, 다시 가까워지면 꺼진 모양으로 나타남
+    var wantsMacroButton: Bool { isMacroActive || (supportsMacroSwitching && !isAutoMacroEnabled && isSubjectClose) }
 
     /// 지금 배율이 속한 버튼 (지금 배율보다 작거나 같은 버튼 중 가장 큰 것)
     var activePreset: CGFloat? {
