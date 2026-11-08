@@ -27,7 +27,11 @@ struct PreviewBackdrop: UIViewRepresentable {
         source.ultraWideFeed.setBackdrop(isVisible ? view.displayLayer.sampleBufferRenderer : nil)
     }
 
-    static func dismantleUIView(_ view: BackdropView, coordinator: ()) {
+    /// 뷰가 사라질 때 연결을 끊으려고 프레임 출력을 들고 있음
+    func makeCoordinator() -> UltraWideFeed { source.ultraWideFeed }
+
+    static func dismantleUIView(_ view: BackdropView, coordinator: UltraWideFeed) {
+        coordinator.setBackdrop(nil)
         view.displayLayer.sampleBufferRenderer.flush()
     }
 
