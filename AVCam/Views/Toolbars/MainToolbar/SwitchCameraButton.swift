@@ -22,8 +22,7 @@ struct SwitchCameraButton<CameraModel: Camera>: View {
                 .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(.white)
                 .frame(width: bottomRowButtonSize, height: bottomRowButtonSize)
-                .bottomGlass(isSceneDark: camera.isSceneDark, in: .circle)
-                .animation(.easeInOut(duration: 0.3), value: camera.isSceneDark)
+                .bottomGlass(in: .circle)
         }
         .buttonStyle(.plain)
         .disabled(camera.captureActivity.isRecording)

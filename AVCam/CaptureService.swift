@@ -35,9 +35,8 @@ actor CaptureService {
     
     /// A type that connects a preview destination with the capture session.
     nonisolated let previewSource: PreviewSource
-    /// 보정 미리보기 프레임 출력 (사진 모드 + 보정이 있을 때만 세션에 붙음)
+    /// 미리보기 프레임 출력 (사진 모드에서 세션에 붙음: 바깥 배경 · 보정 미리보기)
     private let filteredFeed = FilteredPreviewFeed()
-    private var wantsPreviewFiltering = false
     
     // The app's capture session.
     private let captureSession = AVCaptureSession()
@@ -597,9 +596,7 @@ actor CaptureService {
     
     private var videoPreviewLayer: AVCaptureVideoPreviewLayer {
         // Access the capture session's connected preview layer.
-        // 흐린 배경 층(PreviewBackdrop)이 아닌 메인 미리보기 층
-        guard let previewLayer = captureSession.connections.compactMap({ $0.videoPreviewLayer })
-            .first(where: { $0.name != PreviewBackdrop.BackdropView.layerName }) else {
+        guard let previewLayer = captureSession.connections.compactMap({ $0.videoPreviewLayer }).first else {
             fatalError("The app is misconfigured. The capture session should have a connection to a preview layer.")
         }
         return previewLayer
@@ -631,19 +628,17 @@ actor CaptureService {
 
     // MARK: - 보정 미리보기
 
-    /// 카메라 색감 · 스타일 보정이 있으면 미리보기 프레임 출력을 붙임.
-    /// 호출 순서와 상관없이 피드의 지금 상태를 기준으로 맞춤
+    /// 보정 설정이 바뀐 뒤 프레임 출력이 세션에 붙어 있는지 맞춤
     func refreshPreviewFiltering() {
-        wantsPreviewFiltering = filteredFeed.isFiltering
         // 사진 처리 중이면 끝난 뒤 맞춤 (세션 구성 변경과 겹치지 않게)
         guard photosInProgress == 0 else { return }
         updateFilteredPreviewOutput()
     }
 
-    /// 사진 모드 + 보정일 때만 출력을 세션에 둠. 보정이 없으면 기존 미리보기만 씀 (성능 · 배터리)
+    /// 사진 모드에서만 출력을 세션에 둠 (미리보기 바깥 배경 · 보정 미리보기). 비디오 계열은 바깥이 검정이라 떼어 둠
     private func updateFilteredPreviewOutput() {
         let output = filteredFeed.output
-        let shouldAttach = wantsPreviewFiltering && captureMode == .photo
+        let shouldAttach = captureMode == .photo
         guard shouldAttach != captureSession.outputs.contains(output) else { return }
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }

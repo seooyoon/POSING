@@ -68,9 +68,10 @@ extension AnyTransition {
 }
 
 extension View {
-    /// 하단 유리: 평소에는 밝은 유리, 어두운 장면에서는 어두운 유리 (기본 카메라와 같음)
-    func bottomGlass(isSceneDark: Bool, in shape: some Shape) -> some View {
-        glassEffect(.regular.tint(.white.opacity(isSceneDark ? 0.03 : 0.22)), in: shape)
+    /// 하단 유리: 틴트 없이 뒤에 비치는 것만 보임. 바깥이 검정이면 기본 카메라처럼 어두운 판,
+    /// 장면이 비치면 그 색이 비침
+    func bottomGlass(in shape: some Shape) -> some View {
+        glassEffect(.regular, in: shape)
     }
 
     /// 상단 바 캡슐 모양. 반투명 유리 판 위에 흰 글자

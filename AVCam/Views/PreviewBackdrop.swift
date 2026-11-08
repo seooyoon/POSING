@@ -3,37 +3,41 @@
 //  포징
 //
 //  미리보기 바깥(상단 바 · 하단 영역) 배경: 기본 카메라처럼 장면이 어둡게 비친다 (docs/02_UI.md 5절).
-//  같은 세션에 두 번째 미리보기 층을 화면 전체에 붙이고, 어둡게 덮는 것은 OutsidePreviewDim이 한다.
-//  층을 붙였다 떼면 세션이 다시 구성되어 앱이 멈추므로, 앱을 켤 때 한 번만 붙이고 보이기 · 숨기기만 한다.
+//  두 번째 미리보기 층(AVCaptureVideoPreviewLayer)은 같은 세션에서 영상이 나오지 않아,
+//  프레임 출력(FilteredPreviewFeed)의 프레임을 AVSampleBufferDisplayLayer로 화면 전체에 그린다.
+//  어둡게 덮거나 검정으로 가리는 것은 OutsidePreviewDim이 한다.
 //
 
 import SwiftUI
-@preconcurrency import AVFoundation
+import AVFoundation
 
 struct PreviewBackdrop: UIViewRepresentable {
 
     let source: PreviewSource
+    /// 바깥이 비쳐 배경이 실제로 보이는지. 안 보이면 프레임을 보내지 않음 (발열 줄이기)
+    let isVisible: Bool
 
     func makeUIView(context: Context) -> BackdropView {
         let view = BackdropView()
-        source.connect(to: view)
+        updateUIView(view, context: context)
         return view
     }
 
-    func updateUIView(_ view: BackdropView, context: Context) {}
+    func updateUIView(_ view: BackdropView, context: Context) {
+        source.filteredFeed.setBackdrop(isVisible ? view.displayLayer.sampleBufferRenderer : nil)
+    }
 
-    final class BackdropView: UIView, PreviewTarget {
+    static func dismantleUIView(_ view: BackdropView, coordinator: ()) {
+        view.displayLayer.sampleBufferRenderer.flush()
+    }
 
-        /// CaptureService가 메인 미리보기 층과 구분하는 이름
-        nonisolated static let layerName = "posing.backdrop"
+    final class BackdropView: UIView {
 
         init() {
             super.init(frame: .zero)
             backgroundColor = .black
             isUserInteractionEnabled = false
-            previewLayer.name = Self.layerName
-            previewLayer.videoGravity = .resizeAspectFill
-            // 늦게 시작(deferred start)은 쓰지 않음: 세션 구성이 바뀐 뒤 이 층만 검정으로 남는 경우가 있어서
+            displayLayer.videoGravity = .resizeAspectFill
     #if targetEnvironment(simulator)
             // 시뮬레이터는 카메라가 없어 샘플 이미지
             let imageView = UIImageView(image: UIImage(named: "video_mode"))
@@ -49,29 +53,25 @@ struct PreviewBackdrop: UIViewRepresentable {
         }
 
         override class var layerClass: AnyClass {
-            AVCaptureVideoPreviewLayer.self
+            AVSampleBufferDisplayLayer.self
         }
 
-        var previewLayer: AVCaptureVideoPreviewLayer {
-            layer as! AVCaptureVideoPreviewLayer
-        }
-
-        nonisolated func setSession(_ session: AVCaptureSession) {
-            Task { @MainActor in
-                previewLayer.session = session
-            }
+        var displayLayer: AVSampleBufferDisplayLayer {
+            layer as! AVSampleBufferDisplayLayer
         }
     }
 }
 
 /// 미리보기 자리 바깥을 어둡게 덮음. 바깥에 비치는 장면(배경 층, 1:1일 때 4:3 영상의 위아래)이 반투명하게 보임
+/// 비치지 않을 때(isSeeThrough = false)는 바깥 전체가 같이 검정 (기본 카메라와 같은 규칙)
 struct OutsidePreviewDim: View {
 
     let previewRect: CGRect
+    let isSeeThrough: Bool
 
     var body: some View {
         Color.black
-            .opacity(AppDefaults.outsidePreviewDimOpacity)
+            .opacity(isSeeThrough ? AppDefaults.outsidePreviewDimOpacity : 1)
             .mask {
                 ZStack(alignment: .topLeading) {
                     Rectangle()
