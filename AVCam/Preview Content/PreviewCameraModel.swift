@@ -54,6 +54,7 @@ class PreviewCameraModel: Camera {
         // Stubbed out for test purposes.
         func connect(to target: PreviewTarget) {}
         let filteredFeed = FilteredPreviewFeed()
+        let ultraWideFeed = UltraWideFeed()
     }
 
     let previewSource: PreviewSource = PreviewSourceStub()
@@ -143,6 +144,8 @@ class PreviewCameraModel: Camera {
     func setFrontWide(_ isWide: Bool) {
         zoom.isFrontWide = isWide
     }
+
+    func setOutsideBackdropVisible(_ isVisible: Bool) {}
     
     private func capabilities(for mode: CaptureMode) -> CaptureCapabilities {
         switch mode {

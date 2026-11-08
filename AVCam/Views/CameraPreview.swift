@@ -103,6 +103,8 @@ protocol PreviewSource: Sendable {
     func connect(to target: PreviewTarget)
     /// 보정 미리보기 프레임
     var filteredFeed: FilteredPreviewFeed { get }
+    /// 미리보기 바깥 배경용 초광각 프레임
+    var ultraWideFeed: UltraWideFeed { get }
 }
 
 /// A protocol that passes the app's capture session to the `CameraPreview` view.
@@ -116,10 +118,12 @@ struct DefaultPreviewSource: PreviewSource {
     
     private let session: AVCaptureSession
     let filteredFeed: FilteredPreviewFeed
+    let ultraWideFeed: UltraWideFeed
 
-    init(session: AVCaptureSession, filteredFeed: FilteredPreviewFeed) {
+    init(session: AVCaptureSession, filteredFeed: FilteredPreviewFeed, ultraWideFeed: UltraWideFeed) {
         self.session = session
         self.filteredFeed = filteredFeed
+        self.ultraWideFeed = ultraWideFeed
     }
     
     func connect(to target: PreviewTarget) {
