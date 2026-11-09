@@ -89,7 +89,14 @@ final class PhotoCapture: OutputService {
         /// Set the largest dimensions that the photo output supports.
         /// `CaptureService` automatically updates the photo output's `maxPhotoDimensions`
         /// when the capture pipeline changes.
-        photoSettings.maxPhotoDimensions = features.maxDimensions ?? photoOutput.maxPhotoDimensions
+        // 48MP를 고른 직후 아직 메인 렌즈로 바뀌기 전이면 출력이 지원하는 최대 크기로 찍음 (촬영 실패 방지)
+        let outputMax = photoOutput.maxPhotoDimensions
+        if let requested = features.maxDimensions,
+           Int(requested.width) * Int(requested.height) <= Int(outputMax.width) * Int(outputMax.height) {
+            photoSettings.maxPhotoDimensions = requested
+        } else {
+            photoSettings.maxPhotoDimensions = outputMax
+        }
         
         // Set the movie URL if the photo output supports Live Photo capture.
         // ProRAW는 LIVE와 함께 쓸 수 없음
