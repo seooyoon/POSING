@@ -139,8 +139,13 @@ final class ZoomController {
             return ZoomState(isFrontCamera: true,
                              isFrontWide: device.videoZoomFactor < Self.frontCloseZoomFactor - 0.01)
         }
-        // 렌즈가 하나인 후면 카메라는 배율 버튼 없음
-        guard device.isVirtualDevice else { return .unavailable }
+        // 메인 렌즈 하나(48MP 사진): 1 · 2 버튼과 확대만 (2는 확대)
+        guard device.isVirtualDevice else {
+            let range = device.minAvailableVideoZoomFactor
+                ... min(device.maxAvailableVideoZoomFactor, ZoomState.maxDisplayFactor)
+            return ZoomState(displayFactor: device.videoZoomFactor, range: range,
+                             presets: ZoomState.mainLensOnlyPresets.filter { range.contains($0) })
+        }
         let multiplier = device.displayVideoZoomFactorMultiplier
         let display = device.videoZoomFactor * multiplier
         let range = device.minAvailableVideoZoomFactor * multiplier

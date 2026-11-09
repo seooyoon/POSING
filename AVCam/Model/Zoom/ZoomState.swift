@@ -12,6 +12,8 @@ struct ZoomState: Equatable, Sendable {
 
     /// 기본 카메라 배율 버튼 값
     static let presetValues: [CGFloat] = [0.5, 1, 2, 5]
+    /// 메인 렌즈만 쓸 때(48MP 사진) 배율 버튼
+    static let mainLensOnlyPresets: [CGFloat] = [1, 2]
     /// 다이얼 최대 표시 배율
     static let maxDisplayFactor: CGFloat = 25
 

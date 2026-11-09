@@ -116,6 +116,8 @@ final class CameraModel: Camera {
             try await captureService.start(with: cameraState)
             observeState()
             status = .running
+            // 마지막 해상도가 48MP면 메인 렌즈로 시작
+            applyPhotoCapabilities(await captureService.captureCapabilities)
             updateTorch()
             updatePreviewFilter()
             observePreviewFilterInputs()
@@ -147,8 +149,11 @@ final class CameraModel: Camera {
             Task {
                 isSwitchingModes = true
                 defer { isSwitchingModes = false }
+                // 비디오 계열은 트리플 카메라로 (48MP 메인 렌즈는 사진에만)
+                if captureMode != .photo { await captureService.setMainLensOnly(false) }
                 // Update the configuration of the capture service for the new mode.
                 try? await captureService.setCaptureMode(captureMode)
+                updateMainLens()
                 // Update the persistent state value.
                 cameraState.captureMode = captureMode
                 updateTorch()
@@ -303,7 +308,15 @@ final class CameraModel: Camera {
             if photoCodec != .raw, photoResolution > PhotoResolution.maxWithLivePhoto, isLivePhotoEnabled {
                 isLivePhotoEnabled = false
             }
+            updateMainLens()
         }
+    }
+
+    /// 48MP 사진은 메인 렌즈만 써서 찍음 (트리플 카메라는 24MP까지). 그 밖에는 트리플 카메라
+    private func updateMainLens() {
+        guard status == .running else { return }
+        let wantsMainLens = captureMode == .photo && activeResolution > PhotoResolution.maxWithLivePhoto
+        Task { await captureService.setMainLensOnly(wantsMainLens) }
     }
 
     /// 고른 해상도에 맞는 장치 사진 크기
@@ -423,5 +436,7 @@ final class CameraModel: Camera {
         photoDimensions = capabilities.photoDimensions
         deviceResolutions = PhotoResolution.available(in: capabilities.photoDimensions)
         isRAWSupported = capabilities.isRAWSupported
+        // 앱 시작 · 전면에서 돌아올 때 48MP면 메인 렌즈로
+        updateMainLens()
     }
 }
