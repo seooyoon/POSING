@@ -57,6 +57,14 @@ final class DeviceLookup {
         }
     }
     
+    /// 후면 트리플 카메라 (배율에 따라 렌즈 자동 전환)
+    var backCamera: AVCaptureDevice? { backCameraDiscoverySession.devices.first }
+
+    /// 후면 메인 렌즈 하나. 트리플 카메라는 사진을 24MP까지만 주므로 48MP 사진은 이 카메라로 찍음
+    var mainBackCamera: AVCaptureDevice? {
+        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+    }
+
     var cameras: [AVCaptureDevice] {
         // Populate the cameras array with the available cameras.
         var cameras: [AVCaptureDevice] = []

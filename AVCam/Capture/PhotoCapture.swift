@@ -159,12 +159,31 @@ final class PhotoCapture: OutputService {
     private func updateCapabilities(for device: AVCaptureDevice) {
         capabilities = CaptureCapabilities(isLivePhotoCaptureSupported: photoOutput.isLivePhotoCaptureSupported,
                                            isFlashSupported: photoOutput.supportedFlashModes.contains(.on),
-                                           photoDimensions: Self.sortedByArea(device.activeFormat.supportedMaxPhotoDimensions),
+                                           photoDimensions: Self.photoDimensions(for: device),
                                            isRAWSupported: photoOutput.isAppleProRAWSupported)
     }
 
+    /// 고를 수 있는 사진 크기. 트리플 카메라는 24MP까지만 주므로, 메인 렌즈가 더 큰 크기(48MP)를 지원하면
+    /// 그 크기도 넣음 (그 해상도를 고르면 CameraModel이 메인 렌즈로 바꿈)
+    private static func photoDimensions(for device: AVCaptureDevice) -> [CMVideoDimensions] {
+        var dimensions = sortedByArea(device.activeFormat.supportedMaxPhotoDimensions)
+        guard device.isVirtualDevice,
+              let main = device.constituentDevices.first(where: { $0.deviceType == .builtInWideAngleCamera }),
+              let largest = sortedByArea(main.formats.flatMap(\.supportedMaxPhotoDimensions)).last else {
+            return dimensions
+        }
+        if area(largest) > dimensions.last.map(area) ?? 0 {
+            dimensions.append(largest)
+        }
+        return dimensions
+    }
+
     private static func sortedByArea(_ dimensions: [CMVideoDimensions]) -> [CMVideoDimensions] {
-        dimensions.sorted { Int($0.width) * Int($0.height) < Int($1.width) * Int($1.height) }
+        dimensions.sorted { area($0) < area($1) }
+    }
+
+    private static func area(_ dimensions: CMVideoDimensions) -> Int {
+        Int(dimensions.width) * Int(dimensions.height)
     }
 }
 
