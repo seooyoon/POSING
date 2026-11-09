@@ -40,6 +40,7 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
                         .foregroundStyle(Color.cameraYellow)
                         .tapTarget(width: iconWidth)
                 }
+                .accessibilityLabel("스타일")
                 .transition(.opacity)
             }
 
