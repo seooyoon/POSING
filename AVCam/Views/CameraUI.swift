@@ -30,7 +30,9 @@ struct CameraUI<CameraModel: Camera>: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings)
+            TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings) {
+                isShowingStyleScreen = true
+            }
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.topBarCenterY)
                 // 빠른 설정 판 · 더보기 메뉴 · 스타일 화면이 열리면 사라짐 (기본 카메라와 같음)
