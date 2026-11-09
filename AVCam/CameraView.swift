@@ -23,12 +23,9 @@ struct CameraView<CameraModel: Camera>: View {
         GeometryReader { proxy in
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
             ZStack(alignment: .topLeading) {
-                // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 기본 카메라처럼 장면이 어둡게 비침
-                // (docs/02_UI.md 5절). 배경은 계속 두고 스타일 화면에서는 숨기기만 함
+                // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 검정이고,
+                // 1:1 · 16:9에서 잘려 나가는 4:3 부분만 미리보기와 같은 크기로 어둡게 비침 (docs/02_UI.md 5절)
                 Color.black
-                PreviewBackdrop(source: camera.previewSource,
-                                isVisible: isOutsideSeeThrough && !isShowingStyleScreen && !camera.shouldFlashScreen)
-                    .opacity(isShowingStyleScreen || camera.shouldFlashScreen ? 0 : 1)
                 // 미리보기는 모드에 맞는 자리 · 비율로 (사진 4:3, 비디오 16:9)
                 // 비율을 바꿀 때 층 크기는 그대로 두고 확대 · 자르기만 움직임 (영상이 흔들리지 않게)
                 Color.clear
@@ -86,8 +83,7 @@ struct CameraView<CameraModel: Camera>: View {
         }
     }
 
-    /// 미리보기 바깥이 비치는지. 기본 카메라는 더 넓은 렌즈로 바깥을 채우므로, 그런 렌즈가 없는
-    /// 0.5× · 접사 · 전면에서는 바깥 전체가 검정. 비디오 계열은 배경 프레임을 받지 않아 검정
+    /// 1:1 · 16:9에서 잘려 나가는 4:3 부분이 비치는지. 기본 카메라처럼 0.5× · 접사 · 전면 · 비디오 계열은 검정
     private var isOutsideSeeThrough: Bool {
         camera.captureMode == .photo && !camera.zoom.isFrontCamera
             && camera.zoom.displayFactor >= 0.99 && !camera.zoom.isMacroActive
