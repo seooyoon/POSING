@@ -11,6 +11,7 @@
 - 버튼 → `videoZoomFactor`: `.5`=1, `1`=2, `2`=4, `5`=10
 - 후면은 기본 카메라처럼 **1×**(`videoZoomFactor = 1 / displayVideoZoomFactorMultiplier`)로 시작. 모드 전환(프리셋 변경) 뒤에도 다시 1×로
 - 48MP: `.photo` 프리셋 형식의 `supportedMaxPhotoDimensions`에 48MP가 없으면, 같은 크기·픽셀 형식에서 48MP를 지원하는 `device.formats` 중 하나로 `activeFormat`을 바꿈 (프리셋은 inputPriority가 됨)
+- 48MP (실기기 확인): 후면 트리플 카메라는 형식 55개 모두 사진 최대 24MP(5712×4284). 48MP(JPEG 48 · RAW 48)를 고르면 메인 렌즈(`builtInWideAngleCamera`) 하나로 바꿔 찍고, 다른 해상도 · 비디오 · 전면이면 트리플 카메라로 돌아감. 메인 렌즈만 쓰는 동안 배율 버튼은 1 · 2(확대), 0.5× · 5× · 접사 없음. 사용자가 고른 카메라(userPreferredCamera)는 바꾸지 않음
 - 최대 25× 표시 = `videoZoomFactor 50`, 단 `maxAvailableVideoZoomFactor`보다 크면 그 값으로 제한
 - 버튼 전환은 `ramp(toVideoZoomFactor:withRate:)`로 부드럽게, 다이얼·손가락은 즉시 설정
 - 전면은 `builtInTrueDepthCamera`. 화각 버튼(넓게/가깝게)의 실제 배율 값은 실기기 확인
