@@ -152,24 +152,31 @@ private struct MoreMenuButton<Icon: View>: View {
 }
 
 /// 스타일 버튼: 5 × 5 작은 점, 가운데는 고리 (기본 카메라 모양)
-private struct StyleIcon: View {
+/// 스타일 아이콘 (점 격자 가운데 고리). 더보기 메뉴 · 상단 스타일 사용 중 표시에 같이 씀
+struct StyleIcon: View {
+
+    var size: CGFloat = 30
+
     var body: some View {
         Canvas { context, size in
+            // 점 · 고리 크기는 30pt 기준에서 같이 줄어듦
+            let unit = size.width / 30
             let step = size.width / 5
             for row in 0..<5 {
                 for column in 0..<5 {
                     let center = CGPoint(x: (CGFloat(column) + 0.5) * step, y: (CGFloat(row) + 0.5) * step)
                     if row == 2 && column == 2 {
-                        let ring = CGRect(x: center.x - 2.5, y: center.y - 2.5, width: 5, height: 5)
-                        context.stroke(Path(ellipseIn: ring), with: .foreground, lineWidth: 1)
+                        let ring = CGRect(x: center.x - 2.5 * unit, y: center.y - 2.5 * unit, width: 5 * unit, height: 5 * unit)
+                        context.stroke(Path(ellipseIn: ring), with: .foreground, lineWidth: max(1, unit))
                     } else {
-                        let dot = CGRect(x: center.x - 0.9, y: center.y - 0.9, width: 1.8, height: 1.8)
+                        let radius = max(0.9 * unit, 0.8)
+                        let dot = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
                         context.fill(Path(ellipseIn: dot), with: .foreground)
                     }
                 }
             }
         }
-        .frame(width: 30, height: 30)
+        .frame(width: size, height: size)
     }
 }
 

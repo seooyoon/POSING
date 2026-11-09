@@ -14,6 +14,8 @@ struct TopBar<CameraModel: Camera>: View {
     @Binding var isShowingMoreMenu: Bool
     /// 열린 빠른 설정 판 (형식 버튼 · 오른쪽 묶음 꾹 누르기)
     @Binding var quickSettings: QuickSettingsKind?
+    /// 스타일 사용 중 아이콘을 누르면 스타일 화면
+    var onShowStyle: () -> Void = {}
 
     /// 초기화 탭 햅틱 트리거
     @State private var resetCount = 0
@@ -52,7 +54,8 @@ struct TopBar<CameraModel: Camera>: View {
                     layers.togglePanel(.my)
                 }
                 Spacer(minLength: 0)
-                TopControlsCapsule(camera: camera, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings)
+                TopControlsCapsule(camera: camera, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings,
+                                   onShowStyle: onShowStyle)
             }
         }
         .padding(.horizontal, CameraLayout.sideInset)
