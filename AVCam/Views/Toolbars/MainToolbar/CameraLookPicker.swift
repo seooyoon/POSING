@@ -36,7 +36,6 @@ struct CameraLookButton: View {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
-                    .rotatesWithDevice()
             }
         }
         .frame(width: CameraLookList.cellSize, height: CameraLookList.cellSize)
@@ -52,6 +51,8 @@ struct CameraLookButton: View {
                 .offset(y: AppDefaults.cameraNameGap + AppDefaults.cameraNameFontSize)
                 .allowsHitTesting(false)
         }
+        // 이미지와 아래 이름을 한 덩어리로 폰 방향대로 돌림 (이름은 늘 이미지 아래)
+        .rotatesWithDevice()
         .contentShape(.rect)
         // 탭 · 꾹 누르기 · 밀기를 한 제스처로
         .gesture(touchGesture)
@@ -206,6 +207,9 @@ struct CameraLookList: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
+        // 이미지와 이름을 한 덩어리로 폰 방향대로 돌림 (가로로 돌아도 목록 폭 안에 들어감)
+        .frame(width: Self.width - 4)
+        .rotatesWithDevice()
         .frame(width: Self.width - 4, height: Self.cellHeight, alignment: .top)
         .opacity(isSelected ? 1 : AppDefaults.cameraListUnselectedOpacity)
         .animation(.easeOut(duration: 0.12), value: isSelected)
