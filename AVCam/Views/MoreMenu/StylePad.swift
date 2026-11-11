@@ -12,9 +12,19 @@ import SwiftUI
 extension PhotoStyle {
     var tint: Color {
         switch self {
+        case .coolRose: Color(red: 0.58, green: 0.5, blue: 0.62)
+        case .bright: Color(red: 0.62, green: 0.58, blue: 0.5)
+        case .roseGold: Color(red: 0.64, green: 0.47, blue: 0.43)
+        case .gold: Color(red: 0.66, green: 0.55, blue: 0.36)
+        case .amber: Color(red: 0.68, green: 0.48, blue: 0.3)
         case .standard: Color(white: 0.35)
         case .neutral: Color(red: 0.62, green: 0.52, blue: 0.47)
+        case .luminous: Color(red: 0.5, green: 0.5, blue: 0.66)
+        case .natural: Color(red: 0.52, green: 0.58, blue: 0.5)
+        case .radiant: Color(red: 0.6, green: 0.45, blue: 0.68)
         case .dramatic: Color(red: 0.18, green: 0.42, blue: 0.58)
+        case .quiet: Color(red: 0.72, green: 0.6, blue: 0.38)
+        case .cozy: Color(red: 0.62, green: 0.38, blue: 0.48)
         case .elegant: Color(red: 0.36, green: 0.46, blue: 0.6)
         case .softMono: Color(white: 0.5)
         case .starkMono: Color(white: 0.2)

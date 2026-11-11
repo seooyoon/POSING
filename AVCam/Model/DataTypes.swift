@@ -100,9 +100,10 @@ struct Movie: Sendable {
     let url: URL
 }
 
-/// 사진 스타일 (docs/01_SPEC.md 8절). 순서는 고정
+/// 사진 스타일 (docs/01_SPEC.md 8절). 순서는 기본 카메라와 같게 고정 (표준 왼쪽은 색조, 오른쪽 뉴트럴 다음부터 무드)
 enum PhotoStyle: String, CaseIterable, Codable, Sendable {
-    case standard, neutral, dramatic, elegant, softMono, starkMono
+    case coolRose, bright, roseGold, gold, amber, standard, neutral
+    case luminous, natural, radiant, dramatic, quiet, cozy, elegant, softMono, starkMono
 }
 
 /// 스타일 하나의 값. 톤 · 색상 -100~100, 팔레트 0~100

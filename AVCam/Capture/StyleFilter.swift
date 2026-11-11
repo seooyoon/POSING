@@ -37,7 +37,21 @@ enum StyleFilter {
         if look.coolness != 0 {
             output = temperature(output, coolness: look.coolness)
         }
+        let gains = look.gains
+        if gains != (1, 1, 1) {
+            output = channelGains(output, red: gains.red, green: gains.green, blue: gains.blue)
+        }
         return output
+    }
+
+    /// 빨강 · 초록 · 파랑에 각각 배율을 곱함
+    private static func channelGains(_ image: CIImage, red: Double, green: Double, blue: Double) -> CIImage {
+        let filter = CIFilter.colorMatrix()
+        filter.inputImage = image
+        filter.rVector = CIVector(x: red, y: 0, z: 0, w: 0)
+        filter.gVector = CIVector(x: 0, y: green, z: 0, w: 0)
+        filter.bVector = CIVector(x: 0, y: 0, z: blue, w: 0)
+        return filter.outputImage ?? image
     }
 
     /// 마이너스 = 그림자 진하게 · 대비 강하게, 플러스 = 밝고 부드럽게
