@@ -43,6 +43,8 @@ struct CameraUI<CameraModel: Camera>: View {
                 Button {
                     quickSettings = nil
                     isShowingMoreMenu = false
+                    // 카메라 목록이 열려 있으면 닫음 (스타일 화면 첫 탭이 목록 닫기에 쓰이지 않게)
+                    isShowingCameraList = false
                     isShowingStyleScreen.toggle()
                 } label: {
                     StyleIcon(size: AppDefaults.statusStyleIconSize)
