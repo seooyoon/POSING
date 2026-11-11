@@ -30,6 +30,10 @@ enum AppDefaults {
 
     /// 꾹 누르기 인식 시간 (초). 햅틱 없음
     static let longPressDuration = 0.5
+    /// 두 번 빠르게 탭(즐겨찾기)으로 보는 간격 (초). 카메라 버튼은 이만큼 기다렸다가 목록을 엶
+    static let doubleTapInterval = 0.25
+    /// 즐겨찾기 별 배지 지름 (카메라 버튼 · 목록 칸)
+    static let favoriteBadgeSize: CGFloat = 18
     /// 배율 버튼 길게 누르기 → 다이얼 (기본 카메라처럼 조금 더 빠름)
     static let zoomDialLongPressDuration = 0.4
     /// 카메라 목록은 바깥 탭 또는 카메라 버튼 다시 탭으로 닫힘

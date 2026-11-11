@@ -3,13 +3,13 @@
 //  포징
 //
 //  셔터 왼쪽 카메라 버튼과 세로 카메라 목록 (docs/01_SPEC.md 7-1절, docs/02_UI.md 7절).
-//  버튼 아래에 지금 카메라 이름. 버튼은 꾹 누르거나 위아래로 밀어 카메라를 바꾸고, 목록 칸은 꾹 눌러도 아무 동작 없다.
+//  버튼 아래에 지금 카메라 이름. 버튼은 꾹 누르거나 위아래로 밀어 카메라를 바꾸고, 버튼 · 목록 칸을 두 번 빠르게 탭하면 즐겨찾기를 켜고 끈다.
 //
 
 import SwiftUI
 
 /// 지금 고른 카메라의 PNG가 그대로 버튼 모양, 아래에 이름.
-/// 탭 = 목록 열고 닫기. 꾹 누르거나 위아래로 밀면 목록이 열리고, 손을 떼지 않고 위아래로 움직이면
+/// 탭 = 목록 열고 닫기, 두 번 빠르게 탭 = 지금 카메라 즐겨찾기 켜고 끔. 꾹 누르거나 위아래로 밀면 목록이 열리고, 손을 떼지 않고 위아래로 움직이면
 /// 고른 칸이 손가락을 따라 바뀜 (모드 캡슐과 같은 방식). 움직인 뒤 손을 떼면 그 카메라로 바뀌고 목록이 닫힘,
 /// 꾹 누르기만 하고 떼면 목록은 열린 채로 남음
 struct CameraLookButton: View {
@@ -22,6 +22,8 @@ struct CameraLookButton: View {
 
     @State private var isPressed = false
     @State private var longPressTask: Task<Void, Never>?
+    /// 첫 탭 뒤 두 번째 탭을 기다리는 중 (안 오면 목록 열고 닫기)
+    @State private var pendingTapTask: Task<Void, Never>?
     /// 손가락이 움직여 탭이 아님
     @State private var hasMoved = false
     /// 고르기를 시작한 순간의 칸 · 손가락 위치
@@ -41,6 +43,14 @@ struct CameraLookButton: View {
             }
         }
         .frame(width: CameraLookList.cellSize, height: CameraLookList.cellSize)
+        // 즐겨찾기 별 (이미지 오른쪽 위)
+        .overlay(alignment: .topTrailing) {
+            if let selected = looks.selected, looks.isFavorite(selected) {
+                FavoriteStar()
+                    .offset(x: 5, y: -5)
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
         .scaleEffect(isPressed ? 0.9 : 1)
         .animation(.easeOut(duration: 0.12), value: isPressed)
         // 이미지만으로는 어떤 카메라인지 모를 수 있어 아래에 이름 (버튼 자리 · 크기는 그대로)
@@ -64,6 +74,7 @@ struct CameraLookButton: View {
         .accessibilityValue(looks.selected?.name ?? "")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { isListOpen.toggle() }
+        .accessibilityAction(named: isSelectedFavorite ? "즐겨찾기 해제" : "즐겨찾기") { toggleSelectedFavorite() }
         .accessibilityAdjustableAction { direction in
             step(direction == .increment ? 1 : -1)
         }
@@ -108,10 +119,35 @@ struct CameraLookButton: View {
                         onSelect(item)
                     }
                     isListOpen = false
-                } else if !hasMoved, !looks.listItems.isEmpty {
-                    isListOpen.toggle()
+                } else if !hasMoved {
+                    handleTap()
                 }
             }
+    }
+
+    private var isSelectedFavorite: Bool {
+        looks.selected.map(looks.isFavorite) ?? false
+    }
+
+    /// 두 번째 탭이면 즐겨찾기, 아니면 잠깐 기다렸다가 목록 열고 닫기
+    private func handleTap() {
+        if let task = pendingTapTask {
+            task.cancel()
+            pendingTapTask = nil
+            toggleSelectedFavorite()
+            return
+        }
+        pendingTapTask = Task {
+            try? await Task.sleep(for: .seconds(AppDefaults.doubleTapInterval))
+            guard !Task.isCancelled else { return }
+            pendingTapTask = nil
+            if !looks.listItems.isEmpty { isListOpen.toggle() }
+        }
+    }
+
+    private func toggleSelectedFavorite() {
+        guard let selected = looks.selected else { return }
+        withAnimation(.easeInOut(duration: 0.25)) { looks.toggleFavorite(selected) }
     }
 
     private func startLongPress() {
@@ -227,11 +263,11 @@ struct CameraLookList: View {
         .opacity(isSelected ? 1 : AppDefaults.cameraListUnselectedOpacity)
         .animation(.easeOut(duration: 0.12), value: isSelected)
         .contentShape(.rect)
-            .onTapGesture { onSelect(item) }
-            // 꾹 누르면 즐겨찾기 켜고 끔 (즐겨찾기는 목록 맨 위 · 왼쪽으로)
-            .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
+            // 두 번 빠르게 탭하면 즐겨찾기 켜고 끔 (즐겨찾기는 목록 맨 위 · 왼쪽으로). 한 번 탭은 그 카메라로
+            .onTapGesture(count: 2) {
                 withAnimation(.easeInOut(duration: 0.25)) { looks.toggleFavorite(item) }
             }
+            .onTapGesture { onSelect(item) }
             .accessibilityElement()
             .accessibilityLabel(item.name)
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
@@ -241,15 +277,21 @@ struct CameraLookList: View {
     }
 }
 
-/// 즐겨찾기 표시: 노란 별
+/// 즐겨찾기 표시: 어두운 동그라미 + 노란 테두리 + 노란 별
 struct FavoriteStar: View {
-    var size: CGFloat = 13
+    var size: CGFloat = AppDefaults.favoriteBadgeSize
 
     var body: some View {
-        Image(systemName: "star.fill")
-            .font(.system(size: size, weight: .semibold))
-            .foregroundStyle(Color.cameraYellow)
-            .shadow(color: .black.opacity(0.5), radius: 1.5)
+        Circle()
+            .fill(Color(white: 0.22))
+            .overlay(Circle().strokeBorder(Color.cameraYellow.opacity(0.75), lineWidth: size * 0.08))
+            .overlay(
+                Image(systemName: "star.fill")
+                    .font(.system(size: size * 0.5, weight: .semibold))
+                    .foregroundStyle(Color.cameraYellow)
+            )
+            .frame(width: size, height: size)
+            .shadow(color: .black.opacity(0.35), radius: 1.5)
             .accessibilityHidden(true)
     }
 }

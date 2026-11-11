@@ -148,7 +148,7 @@ final class CameraLookState {
         favoriteIDs.contains(item.id)
     }
 
-    /// 카메라 목록 · 설정에서 꾹 누르면 즐겨찾기 켜고 끔
+    /// 카메라 버튼 · 목록 · 설정에서 두 번 빠르게 탭하면 즐겨찾기 켜고 끔
     func toggleFavorite(_ item: CameraLookItem) {
         if favoriteIDs.contains(item.id) {
             favoriteIDs.remove(item.id)
