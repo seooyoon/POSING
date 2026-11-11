@@ -26,6 +26,13 @@ enum AppDefaults {
     /// 사진 여러 장 선택 허용. 선택 순서대로 맨 왼쪽에 쌓고 1번을 바로 적용
     static let allowsMultipleMYSelection = true
 
+    // MARK: - 앱 아이콘 (설정 맨 위 카드)
+
+    /// 지금 아이콘 미리보기 크기
+    static let appIconCurrentSize: CGFloat = 60
+    /// 펼친 가로 목록의 아이콘 크기
+    static let appIconListSize: CGFloat = 56
+
     // MARK: - 버튼 동작
 
     /// 꾹 누르기 인식 시간 (초). 햅틱 없음
