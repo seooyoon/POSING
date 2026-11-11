@@ -24,25 +24,64 @@ struct StyleScreenLayout {
     static let closeButtonCenterX: CGFloat = 62
     /// 셔터는 카드 아래쪽 안으로 올라옴
     static let shutterAboveCardBottom: CGFloat = 50
+    /// 값 캡슐은 4:3 카드 위쪽에서 이만큼 위 (비율과 상관없이 같은 자리)
+    static let valuesAboveCardTop: CGFloat = 38
+
+    // 1:1 (기본 카메라 1:1 스타일 화면에서 잰 값): 정사각형을 화면 폭으로 키워 좌우만 카드 폭으로 자름
+    /// 카드 위쪽이 4:3 미리보기 위쪽보다 내려오는 양
+    static let squareCardTopOffset: CGFloat = 51
+    /// 셔터는 카드 바로 아래 (셔터 위쪽이 카드 아래쪽에 닿음)
+    static let squareShutterBelowCardBottom: CGFloat = 38
+    /// 셔터 가운데 → 패드 가운데
+    static let squarePadBelowShutter: CGFloat = 122
+    /// 스타일 이름 · 점 묶음 가운데가 카드 아래쪽보다 위인 양
+    static let squareNameAboveCardBottom: CGFloat = 46
 
     let cardRect: CGRect
     /// 미리보기를 카드로 줄이는 배율
     let scale: CGFloat
+    /// 1:1: 셔터가 카드 아래에 있고 카드가 좌우로 잘림
+    let isSquare: Bool
+    /// 위쪽 값 캡슐 가운데
+    let valuesCenterY: CGFloat
 
     init(layout: CameraLayout) {
         let preview = layout.previewRect
         let width = layout.size.width - Self.cardInset * 2
-        // 16:9처럼 긴 미리보기도 4:3 카드 높이를 넘지 않게
-        let maxHeight = width * 4 / 3
-        scale = min(width / preview.width, maxHeight / preview.height)
-        let size = CGSize(width: preview.width * scale, height: preview.height * scale)
-        let top = layout.standardPhotoRect.minY + Self.cardTopOffset
-        cardRect = CGRect(x: (layout.size.width - size.width) / 2, y: top, width: size.width, height: size.height)
+        let standardTop = layout.standardPhotoRect.minY + Self.cardTopOffset
+        valuesCenterY = standardTop - Self.valuesAboveCardTop
+        isSquare = layout.photoAspect == .square && layout.captureMode == .photo
+        if isSquare {
+            // 정사각형을 화면 폭 그대로 두고, 좌우만 카드 폭으로 자름
+            scale = layout.size.width / preview.width
+            let height = preview.height * scale
+            cardRect = CGRect(x: (layout.size.width - width) / 2, y: standardTop - Self.cardTopOffset + Self.squareCardTopOffset,
+                              width: width, height: height)
+        } else {
+            // 16:9처럼 긴 미리보기도 4:3 카드 높이를 넘지 않게
+            let maxHeight = width * 4 / 3
+            scale = min(width / preview.width, maxHeight / preview.height)
+            let size = CGSize(width: preview.width * scale, height: preview.height * scale)
+            cardRect = CGRect(x: (layout.size.width - size.width) / 2, y: standardTop, width: size.width, height: size.height)
+        }
     }
 
-    var shutterCenterY: CGFloat { cardRect.maxY - Self.shutterAboveCardBottom }
-    var padCenterY: CGFloat { cardRect.maxY + Self.padTopGap + Self.padSize / 2 }
+    /// 미리보기(줄이기 전 좌표)에서 카드로 보이는 크기
+    var clipSize: CGSize { CGSize(width: cardRect.width / scale, height: cardRect.height / scale) }
+
+    var shutterCenterY: CGFloat {
+        isSquare ? cardRect.maxY + Self.squareShutterBelowCardBottom : cardRect.maxY - Self.shutterAboveCardBottom
+    }
+    var padCenterY: CGFloat {
+        isSquare ? shutterCenterY + Self.squarePadBelowShutter : cardRect.maxY + Self.padTopGap + Self.padSize / 2
+    }
     var sliderCenterY: CGFloat { padCenterY + Self.padSize / 2 + Self.sliderTopGap + Self.sliderSize.height / 2 }
+    /// 스타일 이름 · 점 묶음 가운데
+    var nameCenterY: CGFloat {
+        isSquare ? cardRect.maxY - Self.squareNameAboveCardBottom : shutterCenterY - 92
+    }
+    /// 셔터가 카드 안에 있음 (카드 터치 영역에서 셔터 자리를 빼야 함)
+    var isShutterInsideCard: Bool { !isSquare }
 }
 
 /// 카드 위 · 아래 글자와 패드 · 슬라이더 · 닫기 버튼
@@ -68,7 +107,7 @@ struct StyleScreenControls: View {
                 }
             }
             StyleValuesCapsule(selection: styles.selection)
-                .position(x: layout.centerX, y: card.minY - 38)
+                .position(x: layout.centerX, y: style.valuesCenterY)
             Text(styles.style.preset.category)
                 .styleCapsule()
                 .position(x: card.midX, y: card.minY + 22)
@@ -81,7 +120,7 @@ struct StyleScreenControls: View {
                     .background(.black.opacity(0.55), in: .rect(cornerRadius: 6))
                 StylePageDots(index: styles.index)
             }
-            .position(x: card.midX, y: style.shutterCenterY - 92)
+            .position(x: card.midX, y: style.nameCenterY)
 
             StylePad(styles: styles)
                 .frame(width: StyleScreenLayout.padSize, height: StyleScreenLayout.padSize)
@@ -100,6 +139,21 @@ struct StyleScreenControls: View {
             }
             .accessibilityLabel("스타일 닫기")
             .position(x: StyleScreenLayout.closeButtonCenterX, y: style.padCenterY)
+            // 스타일 초기화: 표준 · 모든 값 기본으로 (상단 바의 초기화 = 레이어 해제와는 다른 버튼)
+            Button {
+                styles.resetAll()
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.system(size: 19, weight: .regular))
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(Color(white: 0.12), in: .circle)
+            }
+            .disabled(styles.isAllDefault)
+            .opacity(styles.isAllDefault ? 0.35 : 1)
+            .animation(.easeInOut(duration: 0.2), value: styles.isAllDefault)
+            .accessibilityLabel("스타일 초기화")
+            .position(x: layout.size.width - StyleScreenLayout.closeButtonCenterX, y: style.padCenterY)
         }
         .frame(width: layout.size.width, height: layout.size.height)
         .accessibilityAction(.escape, onClose)

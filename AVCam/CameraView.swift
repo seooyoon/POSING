@@ -105,10 +105,15 @@ struct CameraView<CameraModel: Camera>: View {
         // 스타일 화면: 카드 전체가 터치 영역이고, 카드 안으로 올라온 셔터 자리만 뺌 (줄이기 전 좌표로)
         if isShowingStyleScreen {
             let card = StyleScreenLayout(layout: layout)
-            let side = 100 / card.scale
-            let shutterY = (card.shutterCenterY - card.cardRect.midY) / card.scale + rect.height / 2
-            var path = Path(CGRect(origin: .zero, size: rect.size))
-            path.addRect(CGRect(x: rect.width / 2 - side / 2, y: shutterY - side / 2, width: side, height: side))
+            // 카드로 보이는 부분만 (1:1은 좌우가 잘림)
+            let clip = card.clipSize
+            var path = Path(CGRect(x: (rect.width - clip.width) / 2, y: (rect.height - clip.height) / 2,
+                                   width: clip.width, height: clip.height))
+            if card.isShutterInsideCard {
+                let side = 100 / card.scale
+                let shutterY = (card.shutterCenterY - card.cardRect.midY) / card.scale + rect.height / 2
+                path.addRect(CGRect(x: rect.width / 2 - side / 2, y: shutterY - side / 2, width: side, height: side))
+            }
             return path
         }
         let top = max(rect.minY, layout.safeTop + CameraLayout.topBarHeight)
@@ -259,11 +264,14 @@ private struct StyleCardEffect: ViewModifier {
     func body(content: Content) -> some View {
         let card = StyleScreenLayout(layout: layout)
         let scale = isActive ? card.scale : 1
-        // 평소에는 자르는 모양을 화면보다 크게 넓혀 자르지 않은 것처럼 (카드로 줄어들 때 부드럽게 좁아짐)
-        let outset: CGFloat = isActive || clipsOutside ? 0 : -max(layout.size.width, layout.size.height)
+        // 카드일 때는 카드로 보이는 크기(1:1은 좌우가 잘림). 평소에는 자리 그대로이거나,
+        // 자르지 않을 때는 화면보다 크게 넓혀 자르지 않은 것처럼 (카드로 바뀔 때 부드럽게 좁아짐)
+        let preview = layout.previewRect.size
+        let huge = max(layout.size.width, layout.size.height) * 3
+        let clip = isActive ? card.clipSize : (clipsOutside ? preview : CGSize(width: huge, height: huge))
         content
-            .clipShape(RoundedRectangle(cornerRadius: isActive ? StyleScreenLayout.cardCornerRadius / scale : 0, style: .continuous)
-                .inset(by: outset))
+            .clipShape(CenteredRoundedRect(size: clip,
+                                           cornerRadius: isActive ? StyleScreenLayout.cardCornerRadius / scale : 0))
             .scaleEffect(scale)
             .position(x: layout.previewRect.midX,
                       y: isActive ? card.cardRect.midY : layout.previewRect.midY)
@@ -273,6 +281,27 @@ private struct StyleCardEffect: ViewModifier {
 
 #Preview {
     CameraView(camera: PreviewCameraModel(status: .running))
+}
+
+/// 가운데를 기준으로 정한 크기만큼 남기는 둥근 사각형 (크기 · 모서리가 부드럽게 바뀜)
+private struct CenteredRoundedRect: Shape {
+
+    var size: CGSize
+    var cornerRadius: CGFloat
+
+    var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, CGFloat> {
+        get { AnimatablePair(AnimatablePair(size.width, size.height), cornerRadius) }
+        set {
+            size = CGSize(width: newValue.first.first, height: newValue.first.second)
+            cornerRadius = newValue.second
+        }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let frame = CGRect(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2,
+                           width: size.width, height: size.height)
+        return Path(roundedRect: frame, cornerRadius: cornerRadius, style: .continuous)
+    }
 }
 
 enum SwipeDirection {
