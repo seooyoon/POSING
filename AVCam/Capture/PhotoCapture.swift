@@ -89,7 +89,14 @@ final class PhotoCapture: OutputService {
         /// Set the largest dimensions that the photo output supports.
         /// `CaptureService` automatically updates the photo output's `maxPhotoDimensions`
         /// when the capture pipeline changes.
-        photoSettings.maxPhotoDimensions = features.maxDimensions ?? photoOutput.maxPhotoDimensions
+        // 48MP를 고른 직후 아직 메인 렌즈로 바뀌기 전이면 출력이 지원하는 최대 크기로 찍음 (촬영 실패 방지)
+        let outputMax = photoOutput.maxPhotoDimensions
+        if let requested = features.maxDimensions,
+           Int(requested.width) * Int(requested.height) <= Int(outputMax.width) * Int(outputMax.height) {
+            photoSettings.maxPhotoDimensions = requested
+        } else {
+            photoSettings.maxPhotoDimensions = outputMax
+        }
         
         // Set the movie URL if the photo output supports Live Photo capture.
         // ProRAW는 LIVE와 함께 쓸 수 없음
@@ -159,12 +166,31 @@ final class PhotoCapture: OutputService {
     private func updateCapabilities(for device: AVCaptureDevice) {
         capabilities = CaptureCapabilities(isLivePhotoCaptureSupported: photoOutput.isLivePhotoCaptureSupported,
                                            isFlashSupported: photoOutput.supportedFlashModes.contains(.on),
-                                           photoDimensions: Self.sortedByArea(device.activeFormat.supportedMaxPhotoDimensions),
+                                           photoDimensions: Self.photoDimensions(for: device),
                                            isRAWSupported: photoOutput.isAppleProRAWSupported)
     }
 
+    /// 고를 수 있는 사진 크기. 트리플 카메라는 24MP까지만 주므로, 메인 렌즈가 더 큰 크기(48MP)를 지원하면
+    /// 그 크기도 넣음 (그 해상도를 고르면 CameraModel이 메인 렌즈로 바꿈)
+    private static func photoDimensions(for device: AVCaptureDevice) -> [CMVideoDimensions] {
+        var dimensions = sortedByArea(device.activeFormat.supportedMaxPhotoDimensions)
+        guard device.isVirtualDevice,
+              let main = device.constituentDevices.first(where: { $0.deviceType == .builtInWideAngleCamera }),
+              let largest = sortedByArea(main.formats.flatMap(\.supportedMaxPhotoDimensions)).last else {
+            return dimensions
+        }
+        if area(largest) > dimensions.last.map(area) ?? 0 {
+            dimensions.append(largest)
+        }
+        return dimensions
+    }
+
     private static func sortedByArea(_ dimensions: [CMVideoDimensions]) -> [CMVideoDimensions] {
-        dimensions.sorted { Int($0.width) * Int($0.height) < Int($1.width) * Int($1.height) }
+        dimensions.sorted { area($0) < area($1) }
+    }
+
+    private static func area(_ dimensions: CMVideoDimensions) -> Int {
+        Int(dimensions.width) * Int(dimensions.height)
     }
 }
 
@@ -249,7 +275,7 @@ private class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
-            logger.debug("Error capturing photo: \(String(describing: error))")
+            logger.notice("[Photo] processing error: \(String(describing: error), privacy: .public)")
             return
         }
         photoData = photo.fileDataRepresentation()

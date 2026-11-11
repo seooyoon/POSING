@@ -19,6 +19,8 @@ struct CameraView<CameraModel: Camera>: View {
     @State private var isShowingStyleScreen = false
     @State private var focus = FocusModel()
     @State private var level = LevelModel()
+    /// 렌즈를 바꾸는 동안 고정해 둘 바깥 비침 상태 (바꾸는 순간 배율 값이 흔들려 미리보기 길이가 출렁이지 않게)
+    @State private var frozenSeeThrough: Bool?
     var body: some View {
         GeometryReader { proxy in
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
@@ -74,7 +76,10 @@ struct CameraView<CameraModel: Camera>: View {
         }
         // 모드 · 카메라가 바뀌면 초점 표시를 지움
         .onChange(of: camera.captureMode) { focus.clear() }
-        .onChange(of: camera.isSwitchingVideoDevices) { focus.clear() }
+        .onChange(of: camera.isSwitchingVideoDevices) { _, isSwitching in
+            focus.clear()
+            frozenSeeThrough = isSwitching ? liveSeeThrough : nil
+        }
         // MY 꾹 누르기 → 사진 고르기
         .myPhotoPicker(isPresented: $layers.isPickingMY, layers: layers)
         // 초기화 꾹 누르기 → 설정 화면
@@ -85,6 +90,10 @@ struct CameraView<CameraModel: Camera>: View {
 
     /// 1:1 · 16:9에서 잘려 나가는 4:3 부분이 비치는지. 기본 카메라처럼 0.5× · 접사 · 전면 · 비디오 계열은 검정
     private var isOutsideSeeThrough: Bool {
+        frozenSeeThrough ?? liveSeeThrough
+    }
+
+    private var liveSeeThrough: Bool {
         camera.captureMode == .photo && !camera.zoom.isFrontCamera
             && camera.zoom.displayFactor >= 0.99 && !camera.zoom.isMacroActive
     }

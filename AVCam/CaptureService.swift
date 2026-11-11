@@ -478,6 +478,31 @@ actor CaptureService {
         AVCaptureDevice.userPreferredCamera = nextDevice
     }
     
+    /// 48MP 사진: 트리플 카메라 → 메인 렌즈 하나로, 끄면 다시 트리플 카메라로.
+    /// 사용자가 고른 카메라(userPreferredCamera)는 바꾸지 않음 (앱을 다시 켜면 트리플 카메라)
+    func setMainLensOnly(_ isOn: Bool) {
+        guard let target = mainLensTarget(isOn) else { return }
+        changeCaptureDevice(to: target)
+        logger.notice("[48MP] main lens only: \(isOn, privacy: .public), photo max: \(self.photoCapture.output.maxPhotoDimensions.width, privacy: .public)")
+    }
+
+    /// 메인 렌즈 켜기 · 끄기로 카메라를 바꿔야 하는지 (화면 흐림 효과를 줄지 미리 확인)
+    func needsMainLensChange(_ isOn: Bool) -> Bool {
+        mainLensTarget(isOn) != nil
+    }
+
+    /// 메인 렌즈 켜기 · 끄기로 바꿀 카메라. 이미 맞으면 nil
+    private func mainLensTarget(_ isOn: Bool) -> AVCaptureDevice? {
+        let device = currentDevice
+        guard device.position == .back else { return nil }
+        if isOn {
+            guard captureMode == .photo, device.isVirtualDevice else { return nil }
+            return deviceLookup.mainBackCamera
+        }
+        guard !device.isVirtualDevice, let triple = deviceLookup.backCamera, triple != device else { return nil }
+        return triple
+    }
+
     // Changes the device the service uses for video capture.
     private func changeCaptureDevice(to device: AVCaptureDevice) {
         applyCaptureDevice(device)
@@ -1036,7 +1061,6 @@ actor CaptureService {
             format.supportedMaxPhotoDimensions.map { Int($0.width) * Int($0.height) }.max() ?? 0
         }
         let current = device.activeFormat
-        logger.notice("[48MP] \(device.localizedName, privacy: .public) active: \(Self.describe(current), privacy: .public)")
         guard maxPhotoArea(current) < highResolutionArea else { return }
         let size = CMVideoFormatDescriptionGetDimensions(current.formatDescription)
         let pixelFormat = CMFormatDescriptionGetMediaSubType(current.formatDescription)
@@ -1054,12 +1078,8 @@ actor CaptureService {
             highResolution.filter(isSameSize),
             highResolution.filter(isSameRatio),
         ]
-        logger.notice("[48MP] candidates: \(groups.map(\.count), privacy: .public) of \(device.formats.count) formats")
         guard let candidates = groups.first(where: { !$0.isEmpty }),
               let format = candidates.first(where: \.isHighestPhotoQualitySupported) ?? candidates.first else {
-            // 원인 확인용: 48MP를 지원하는 형식 목록
-            let all = device.formats.filter { maxPhotoArea($0) >= highResolutionArea }.map(Self.describe)
-            logger.notice("[48MP] none selected. 48MP formats: \(all, privacy: .public)")
             return
         }
         logger.notice("[48MP] selected: \(Self.describe(format), privacy: .public)")
@@ -1094,8 +1114,6 @@ actor CaptureService {
         switch captureMode {
         case .photo:
             captureCapabilities = photoCapture.capabilities
-            let sizes = photoCapture.capabilities.photoDimensions.map { "\($0.width)x\($0.height)" }
-            logger.notice("[48MP] capabilities: \(sizes, privacy: .public)")
         case .video, .slowMotion:
             captureCapabilities = movieCapture.capabilities
         case .timelapse:
