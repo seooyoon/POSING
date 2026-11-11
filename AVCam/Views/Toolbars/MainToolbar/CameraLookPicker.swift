@@ -43,11 +43,11 @@ struct CameraLookButton: View {
             }
         }
         .frame(width: CameraLookList.cellSize, height: CameraLookList.cellSize)
-        // 즐겨찾기 하트 (이미지 오른쪽 위)
+        // 즐겨찾기 하트 (카메라 몸체 오른쪽 위 모서리에 살짝 겹쳐 그 위에)
         .overlay(alignment: .topTrailing) {
             if let selected = looks.selected, looks.isFavorite(selected) {
                 FavoriteHeart()
-                    .offset(x: 5, y: -5)
+                    .offset(x: -AppDefaults.favoriteHeartInset.width, y: AppDefaults.favoriteHeartInset.height)
                     .transition(.scale.combined(with: .opacity))
             }
         }
@@ -242,11 +242,11 @@ struct CameraLookList: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: Self.cellSize, height: Self.cellSize)
-                // 즐겨찾기 하트 (이미지 오른쪽 위)
+                // 즐겨찾기 하트 (카메라 몸체 오른쪽 위 모서리에 살짝 겹쳐 그 위에)
                 .overlay(alignment: .topTrailing) {
                     if looks.isFavorite(item) {
                         FavoriteHeart()
-                            .offset(x: 4, y: -4)
+                            .offset(x: -AppDefaults.favoriteHeartInset.width, y: AppDefaults.favoriteHeartInset.height)
                             .transition(.scale.combined(with: .opacity))
                     }
                 }
@@ -277,15 +277,15 @@ struct CameraLookList: View {
     }
 }
 
-/// 즐겨찾기 표시: 분홍 하트 (#FA1B58)
+/// 즐겨찾기 표시: 작은 회색 하트
 struct FavoriteHeart: View {
     var size: CGFloat = AppDefaults.favoriteBadgeSize
 
     var body: some View {
         Image(systemName: "heart.fill")
             .font(.system(size: size * 0.8, weight: .semibold))
-            .foregroundStyle(Color.favoritePink)
-            .shadow(color: .black.opacity(0.5), radius: 1.5)
+            .foregroundStyle(Color.favoriteGray)
+            .shadow(color: .black.opacity(0.4), radius: 1)
             .accessibilityHidden(true)
     }
 }

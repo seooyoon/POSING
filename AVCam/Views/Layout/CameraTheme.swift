@@ -10,8 +10,8 @@ import SwiftUI
 extension Color {
     /// 기본 카메라의 선택값 노란색 (#FFD60A)
     static let cameraYellow = Color(red: 1.0, green: 214 / 255, blue: 10 / 255)
-    /// 즐겨찾기 하트 색 (#FA1B58)
-    static let favoritePink = Color(red: 250 / 255, green: 27 / 255, blue: 88 / 255)
+    /// 즐겨찾기 하트 색: 눈에 덜 띄는 회색
+    static let favoriteGray = Color(white: 0.75)
 }
 
 extension CaptureMode {

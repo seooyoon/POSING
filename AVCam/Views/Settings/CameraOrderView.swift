@@ -32,7 +32,7 @@ struct CameraOrderView: View {
         return HStack {
             SettingsThumbnailRow(image: item.image, title: item.name, fillsFrame: false)
             if isFavorite {
-                FavoriteHeart(size: 20)
+                FavoriteHeart(size: 15)
             }
             Spacer()
             if isStart {
