@@ -140,23 +140,61 @@ struct StyleScreenControls: View {
             .accessibilityLabel("스타일 닫기")
             .position(x: StyleScreenLayout.closeButtonCenterX, y: style.padCenterY)
             // 스타일 초기화: 표준 · 모든 값 기본으로 (상단 바의 초기화 = 레이어 해제와는 다른 버튼)
-            Button {
-                styles.resetAll()
-            } label: {
-                Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: 19, weight: .regular))
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .background(Color(white: 0.12), in: .circle)
-            }
-            .disabled(styles.isAllDefault)
-            .opacity(styles.isAllDefault ? 0.35 : 1)
-            .animation(.easeInOut(duration: 0.2), value: styles.isAllDefault)
-            .accessibilityLabel("스타일 초기화")
-            .position(x: layout.size.width - StyleScreenLayout.closeButtonCenterX, y: style.padCenterY)
+            StyleResetButton(styles: styles)
+                .position(x: layout.size.width - StyleScreenLayout.closeButtonCenterX, y: style.padCenterY)
         }
         .frame(width: layout.size.width, height: layout.size.height)
         .accessibilityAction(.escape, onClose)
+    }
+}
+
+/// 스타일 초기화 버튼 (기본 카메라 화면 녹화 기준).
+/// 값을 바꿔야 서서히 나타나고, 누르면 커지며 밝아진 뒤 화살표가 시계 반대로 돌면서 서서히 사라짐
+private struct StyleResetButton: View {
+
+    let styles: StyleState
+    /// 사라질 때 화살표가 도는 각도
+    @State private var spin: Double = 0
+
+    var body: some View {
+        Button {
+            withAnimation(.easeOut(duration: AppDefaults.styleResetSpinDuration)) {
+                spin = AppDefaults.styleResetSpinDegrees
+            }
+            withAnimation(.easeInOut(duration: 0.3)) {
+                styles.resetAll()
+            }
+        } label: {
+            Image(systemName: "arrow.counterclockwise")
+                .font(.system(size: 19, weight: .regular))
+                .foregroundStyle(.white)
+                .rotationEffect(.degrees(spin))
+                .frame(width: 48, height: 48)
+        }
+        .buttonStyle(StyleResetButtonStyle())
+        .opacity(styles.isAllDefault ? 0 : 1)
+        .allowsHitTesting(!styles.isAllDefault)
+        .animation(styles.isAllDefault ? .easeOut(duration: AppDefaults.styleResetSpinDuration) : .easeIn(duration: 0.2),
+                   value: styles.isAllDefault)
+        // 다시 나타날 때는 돌기 전 모양으로 (애니메이션 없이)
+        .onChange(of: styles.isAllDefault) { _, isDefault in
+            guard !isDefault else { return }
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { spin = 0 }
+        }
+        .accessibilityHidden(styles.isAllDefault)
+        .accessibilityLabel("스타일 초기화")
+    }
+}
+
+/// 누르는 동안 커지고 배경이 밝아짐
+private struct StyleResetButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(Color(white: configuration.isPressed ? 0.3 : 0.12), in: .circle)
+            .scaleEffect(configuration.isPressed ? 1.25 : 1)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
 }
 

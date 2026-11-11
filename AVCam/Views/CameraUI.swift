@@ -30,15 +30,36 @@ struct CameraUI<CameraModel: Camera>: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings) {
-                isShowingStyleScreen = true
-            }
+            TopBar(camera: camera, layers: layers, isShowingMoreMenu: $isShowingMoreMenu, quickSettings: $quickSettings)
                 .frame(width: layout.size.width)
                 .position(x: layout.centerX, y: layout.topBarCenterY)
                 // 빠른 설정 판 · 더보기 메뉴 · 스타일 화면이 열리면 사라짐 (기본 카메라와 같음)
                 .opacity(isTopBarHidden ? 0 : 1)
                 .allowsHitTesting(!isTopBarHidden)
                 .blur(radius: isTopBarHidden ? 6 : 0)
+
+            // 스타일 아이콘: 기본 카메라처럼 맨 위 줄 다이내믹 아일랜드 오른쪽. 사진 모드면 표준에서도 항상 보임
+            if isShowingStyleIcon {
+                Button {
+                    quickSettings = nil
+                    isShowingMoreMenu = false
+                    // 카메라 목록이 열려 있으면 닫음 (스타일 화면 첫 탭이 목록 닫기에 쓰이지 않게)
+                    isShowingCameraList = false
+                    isShowingStyleScreen.toggle()
+                } label: {
+                    StyleIcon(size: AppDefaults.statusStyleIconSize)
+                        // 표준이 아닌 스타일을 쓰는 중이면 노란색
+                        .foregroundStyle(camera.photoStyle.changesImage ? Color.cameraYellow : .white)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("스타일")
+                .position(x: layout.size.width - AppDefaults.statusStyleIconTrailing, y: layout.safeTop / 2 + AppDefaults.statusStyleIconBelowCenter)
+                .transition(.opacity)
+                // 더보기 메뉴 · 빠른 설정 판의 바깥 탭 닫기 영역보다 위에 둬서, 열려 있어도 바로 스타일 화면으로
+                .zIndex(1)
+            }
 
             // 포즈 · MY 패널: 상단 바 바로 아래, 한 번에 하나만. 전환할 때는 내용만 바뀜
             if let kind = layers.openPanel {
@@ -226,6 +247,11 @@ struct CameraUI<CameraModel: Camera>: View {
     private func selectLook(_ item: CameraLookItem) {
         looks.select(item)
         camera.cameraLook = item.look
+    }
+
+    private var isShowingStyleIcon: Bool {
+        camera.status == .running && camera.captureMode == .photo
+            && !camera.captureActivity.isRecording && !camera.prefersMinimizedUI
     }
 
     private var isTopBarHidden: Bool {

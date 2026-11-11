@@ -2,8 +2,8 @@
 //  TopControlsCapsule.swift
 //  포징
 //
-//  상단 오른쪽 묶음: [스타일] · 플래시 · LIVE · •••. 꾹 누르면 플래시 · LIVE 빠른 설정 판
-//  표준이 아닌 스타일을 쓰는 동안 기본 카메라처럼 맨 앞에 노란 스타일 아이콘 (누르면 스타일 화면)
+//  상단 오른쪽 묶음: 플래시 · LIVE · •••. 꾹 누르면 플래시 · LIVE 빠른 설정 판
+//  스타일 아이콘은 기본 카메라처럼 맨 위 줄에 따로 있음 (CameraUI의 StyleStatusButton)
 //  기본 카메라의 야간 모드 아이콘은 만들 수 없어서 뺐다 (CLAUDE.md 4절 3번).
 //  비디오 모드에서는 LIVE가 없고, 플래시는 조명(전면은 조명이 없어 숨김).
 //
@@ -15,35 +15,11 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
     @State var camera: CameraModel
     @Binding var isShowingMoreMenu: Bool
     @Binding var quickSettings: QuickSettingsKind?
-    /// 스타일 아이콘을 누르면 스타일 화면
-    var onShowStyle: () -> Void = {}
 
-    /// 표준이 아닌 스타일을 쓰는 중 (사진 모드만)
-    private var showsStyle: Bool {
-        camera.captureMode == .photo && camera.photoStyle.changesImage
-    }
-
-    /// 아이콘 하나의 폭. 스타일 아이콘까지 4개면 상단 바가 넘치지 않게 좁힘
-    private var iconWidth: CGFloat {
-        showsStyle ? AppDefaults.topCapsuleCompactIconWidth : AppDefaults.topCapsuleIconWidth
-    }
+    private let iconWidth = AppDefaults.topCapsuleIconWidth
 
     var body: some View {
         HStack(spacing: 0) {
-            if showsStyle {
-                Button {
-                    guard quickSettings == nil else { return }
-                    isShowingMoreMenu = false
-                    onShowStyle()
-                } label: {
-                    StyleIcon(size: AppDefaults.topCapsuleStyleIconSize)
-                        .foregroundStyle(Color.cameraYellow)
-                        .tapTarget(width: iconWidth)
-                }
-                .accessibilityLabel("스타일")
-                .transition(.opacity)
-            }
-
             if !(camera.captureMode.isMovie && camera.zoom.isFrontCamera) {
                 Button {
                     guard quickSettings == nil else { return }
@@ -79,7 +55,6 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
             }
         }
         .buttonStyle(.plain)
-        .animation(.easeInOut(duration: 0.25), value: showsStyle)
         .topBarCapsule(horizontalPadding: 5)
         // 꾹 누르면 기본 카메라처럼 플래시 · LIVE 빠른 설정 판
         .simultaneousGesture(

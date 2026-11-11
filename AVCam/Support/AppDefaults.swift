@@ -64,10 +64,14 @@ enum AppDefaults {
     static let lensSwitchBlurHoldMilliseconds = 250
     /// 상단 오른쪽 묶음 아이콘 하나의 폭 (플래시 · LIVE · •••)
     static let topCapsuleIconWidth: CGFloat = 38
-    /// 스타일 사용 중 아이콘까지 4개일 때 아이콘 폭 (상단 바가 넘치지 않게)
-    static let topCapsuleCompactIconWidth: CGFloat = 30
-    /// 상단 스타일 사용 중 아이콘 크기
-    static let topCapsuleStyleIconSize: CGFloat = 22
+    /// 맨 위 줄(다이내믹 아일랜드 오른쪽) 스타일 아이콘 크기 · 화면 오른쪽 끝에서 아이콘 가운데까지 ·
+    /// 상단 안전 영역 가운데보다 아래인 양 (기본 카메라 화면에서 잰 값)
+    static let statusStyleIconSize: CGFloat = 15.5
+    static let statusStyleIconTrailing: CGFloat = 70
+    static let statusStyleIconBelowCenter: CGFloat = 1
+    /// 스타일 초기화 버튼이 사라질 때 화살표가 도는 각도(시계 반대 = 음수) · 걸리는 시간 (기본 카메라 녹화에서 잰 값)
+    static let styleResetSpinDegrees: Double = -200
+    static let styleResetSpinDuration: Double = 0.45
     /// 모드 선택 강조 판의 불투명도 (접힌 판 · 펼친 판 같이)
     static let modeHighlightOpacity = 0.08
 
