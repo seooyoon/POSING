@@ -128,6 +128,7 @@
 
 - `UIApplication.shared.setAlternateIconName("AppIcon-01")`, 기본으로 되돌릴 때는 `nil`. 현재 값은 `alternateIconName`
 - `supportsAlternateIcons` 확인. 무료 Personal Team 설치에서도 동작, 오프라인 동작
-- Xcode 빌드 설정: `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`에 `AppIcon-01 … AppIcon-10` (또는 "Include All App Icon Assets" 켜기)
+- Xcode 빌드 설정: 앱 타깃의 "Include All App Icon Assets"(`ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS`) 켬 → `AppIcon-01 … AppIcon-12`가 모두 들어감
+- 잠금 화면 캡처 확장은 아이콘을 바꿀 수 없어서(`UIApplication.shared` 못 씀) 확장 타깃에 `APP_EXTENSION` 조건을 두고 `#if !APP_EXTENSION`으로 아이콘 카드를 뺌
 - 목록 썸네일은 아이콘 세트를 직접 읽을 수 없으므로, 같은 그림의 작은 미리보기 이미지(`IconPreview-01` 등, 180px)를 일반 이미지로 함께 넣음
 - 바꾼 직후 iOS가 알림창을 띄움 (막을 수 없음). 알림이 뜨는 동안 카메라 화면이 아니라 설정 화면이므로 문제없음
