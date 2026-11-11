@@ -67,6 +67,9 @@ enum AppDefaults {
     static let statusStyleIconSize: CGFloat = 15.5
     static let statusStyleIconTrailing: CGFloat = 70
     static let statusStyleIconBelowCenter: CGFloat = 1
+    /// 스타일 초기화 버튼이 사라질 때 화살표가 도는 각도(시계 반대 = 음수) · 걸리는 시간 (기본 카메라 녹화에서 잰 값)
+    static let styleResetSpinDegrees: Double = -200
+    static let styleResetSpinDuration: Double = 0.45
     /// 모드 선택 강조 판의 불투명도 (접힌 판 · 펼친 판 같이)
     static let modeHighlightOpacity = 0.08
 
