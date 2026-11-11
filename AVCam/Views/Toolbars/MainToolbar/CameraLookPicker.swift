@@ -277,14 +277,14 @@ struct CameraLookList: View {
     }
 }
 
-/// 즐겨찾기 표시: 작은 회색 하트
+/// 즐겨찾기 표시: 작은 분홍 하트 (#FA1B58)
 struct FavoriteHeart: View {
     var size: CGFloat = AppDefaults.favoriteBadgeSize
 
     var body: some View {
         Image(systemName: "heart.fill")
             .font(.system(size: size * 0.8, weight: .semibold))
-            .foregroundStyle(Color.favoriteGray)
+            .foregroundStyle(Color.favoritePink)
             .shadow(color: .black.opacity(0.4), radius: 1)
             .accessibilityHidden(true)
     }
