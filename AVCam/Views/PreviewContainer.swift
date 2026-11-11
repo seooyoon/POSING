@@ -42,6 +42,8 @@ struct PreviewContainer<Content: View, CameraModel: Camera>: View {
     var previewView: some View {
         content
             .blur(radius: blurRadius, opaque: true)
+            // 흐림은 칸 밖으로 번지므로 미리보기 칸에 맞춰 자름 (렌즈 전환 중 위쪽에 띠가 생기지 않게)
+            .clipped()
             .overlay(Color.black.opacity(coverOpacity))
             .onChange(of: camera.isSwitchingModes, updateBlurRadius(_:_:))
             .onChange(of: camera.isSwitchingVideoDevices, updateBlurRadius(_:_:))
