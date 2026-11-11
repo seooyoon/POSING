@@ -25,10 +25,11 @@ final class StyleState {
 
     var index: Int { PhotoStyle.allCases.firstIndex(of: style) ?? 0 }
 
-    /// 왼쪽으로 밀면 다음 스타일. 끝에서는 멈춤
+    /// 왼쪽으로 밀면 다음 스타일. 기본 카메라처럼 끝에서 처음으로 이어짐 (무한 반복)
     func step(by offset: Int) {
         let styles = PhotoStyle.allCases
-        let next = min(max(index + offset, 0), styles.count - 1)
+        let count = styles.count
+        let next = ((index + offset) % count + count) % count
         guard styles[next] != style else { return }
         style = styles[next]
     }

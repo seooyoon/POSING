@@ -95,16 +95,13 @@ struct StyleScreenControls: View {
         let style = StyleScreenLayout(layout: layout)
         let card = style.cardRect
         ZStack(alignment: .topLeading) {
-            // 양옆 이웃 스타일 카드 (가장자리만 살짝 보임). 처음 · 마지막 스타일은 한쪽만
+            // 양옆 이웃 스타일 카드 (가장자리만 살짝 보임). 끝에서 처음으로 이어지므로 항상 양쪽
             ForEach([-1, 1], id: \.self) { side in
-                let neighbor = styles.index + side
-                if PhotoStyle.allCases.indices.contains(neighbor) {
-                    RoundedRectangle(cornerRadius: StyleScreenLayout.cardCornerRadius, style: .continuous)
-                        .fill(Color(white: 0.2))
-                        .frame(width: card.width, height: card.height)
-                        .position(x: card.midX + CGFloat(side) * (card.width + StyleScreenLayout.cardGap), y: card.midY)
-                        .allowsHitTesting(false)
-                }
+                RoundedRectangle(cornerRadius: StyleScreenLayout.cardCornerRadius, style: .continuous)
+                    .fill(Color(white: 0.2))
+                    .frame(width: card.width, height: card.height)
+                    .position(x: card.midX + CGFloat(side) * (card.width + StyleScreenLayout.cardGap), y: card.midY)
+                    .allowsHitTesting(false)
             }
             StyleValuesCapsule(selection: styles.selection)
                 .position(x: layout.centerX, y: style.valuesCenterY)
