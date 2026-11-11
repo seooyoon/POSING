@@ -318,7 +318,15 @@ final class CameraModel: Camera {
     private func updateMainLens() {
         guard status == .running else { return }
         let wantsMainLens = captureMode == .photo && activeResolution > PhotoResolution.maxWithLivePhoto
-        Task { await captureService.setMainLensOnly(wantsMainLens) }
+        Task {
+            // 렌즈를 바꾸는 동안 미리보기가 검게 깜빡이지 않게 전면 · 후면 전환처럼 흐리게 덮음
+            guard await captureService.needsMainLensChange(wantsMainLens) else { return }
+            isSwitchingVideoDevices = true
+            await captureService.setMainLensOnly(wantsMainLens)
+            // 새 렌즈 화면이 들어올 시간
+            try? await Task.sleep(for: .milliseconds(AppDefaults.lensSwitchBlurHoldMilliseconds))
+            isSwitchingVideoDevices = false
+        }
     }
 
     /// 고른 해상도에 맞는 장치 사진 크기

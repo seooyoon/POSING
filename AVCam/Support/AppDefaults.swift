@@ -60,6 +60,8 @@ enum AppDefaults {
     static let filteredPreviewFrameRate = 30
     /// 미리보기 바깥에 비치는 장면을 어둡게 덮는 정도 (0 = 그대로, 1 = 검정)
     static let outsidePreviewDimOpacity = 0.55
+    /// 48MP 메인 렌즈로 바꾼 뒤 흐림을 유지하는 시간 (ms). 새 렌즈 화면이 들어오는 동안 검게 깜빡이지 않게
+    static let lensSwitchBlurHoldMilliseconds = 250
     /// 상단 오른쪽 묶음 아이콘 하나의 폭 (플래시 · LIVE · •••)
     static let topCapsuleIconWidth: CGFloat = 38
     /// 스타일 사용 중 아이콘까지 4개일 때 아이콘 폭 (상단 바가 넘치지 않게)

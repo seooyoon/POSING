@@ -481,16 +481,26 @@ actor CaptureService {
     /// 48MP 사진: 트리플 카메라 → 메인 렌즈 하나로, 끄면 다시 트리플 카메라로.
     /// 사용자가 고른 카메라(userPreferredCamera)는 바꾸지 않음 (앱을 다시 켜면 트리플 카메라)
     func setMainLensOnly(_ isOn: Bool) {
-        let device = currentDevice
-        guard device.position == .back else { return }
-        if isOn {
-            guard captureMode == .photo, device.isVirtualDevice, let main = deviceLookup.mainBackCamera else { return }
-            changeCaptureDevice(to: main)
-        } else {
-            guard !device.isVirtualDevice, let triple = deviceLookup.backCamera, triple != device else { return }
-            changeCaptureDevice(to: triple)
-        }
+        guard let target = mainLensTarget(isOn) else { return }
+        changeCaptureDevice(to: target)
         logger.notice("[48MP] main lens only: \(isOn, privacy: .public), photo max: \(self.photoCapture.output.maxPhotoDimensions.width, privacy: .public)")
+    }
+
+    /// 메인 렌즈 켜기 · 끄기로 카메라를 바꿔야 하는지 (화면 흐림 효과를 줄지 미리 확인)
+    func needsMainLensChange(_ isOn: Bool) -> Bool {
+        mainLensTarget(isOn) != nil
+    }
+
+    /// 메인 렌즈 켜기 · 끄기로 바꿀 카메라. 이미 맞으면 nil
+    private func mainLensTarget(_ isOn: Bool) -> AVCaptureDevice? {
+        let device = currentDevice
+        guard device.position == .back else { return nil }
+        if isOn {
+            guard captureMode == .photo, device.isVirtualDevice else { return nil }
+            return deviceLookup.mainBackCamera
+        }
+        guard !device.isVirtualDevice, let triple = deviceLookup.backCamera, triple != device else { return nil }
+        return triple
     }
 
     // Changes the device the service uses for video capture.
