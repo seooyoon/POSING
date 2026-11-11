@@ -176,7 +176,7 @@ final class CameraModel: Camera {
     /// Captures a photo and writes it to the user's Photos library.
     func capturePhoto() async {
         // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
-        guard !isSwitchingVideoDevices, shutterOwner == nil else { return }
+        guard !isSwitchingVideoDevices, !isChangingMainLens, shutterOwner == nil else { return }
         let owner = UUID()
         shutterOwner = owner
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
@@ -314,11 +314,17 @@ final class CameraModel: Camera {
         }
     }
 
+    /// 렌즈 전환을 확인 · 진행하는 중 (흐림이 켜지기 전 틈에 셔터가 이전 렌즈 크기로 찍지 않게)
+    private var mainLensChangeCount = 0
+    private var isChangingMainLens: Bool { mainLensChangeCount > 0 }
+
     /// 48MP 사진은 메인 렌즈만 써서 찍음 (트리플 카메라는 24MP까지). 그 밖에는 트리플 카메라
     private func updateMainLens() {
         guard status == .running else { return }
         let wantsMainLens = captureMode == .photo && activeResolution > PhotoResolution.maxWithLivePhoto
+        mainLensChangeCount += 1
         Task {
+            defer { mainLensChangeCount -= 1 }
             // 렌즈를 바꾸는 동안 미리보기가 검게 깜빡이지 않게 전면 · 후면 전환처럼 흐리게 덮음
             guard await captureService.needsMainLensChange(wantsMainLens) else { return }
             isSwitchingVideoDevices = true
