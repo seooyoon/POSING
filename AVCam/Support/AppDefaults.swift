@@ -62,9 +62,11 @@ enum AppDefaults {
     static let outsidePreviewDimOpacity = 0.55
     /// 상단 오른쪽 묶음 아이콘 하나의 폭 (플래시 · LIVE · •••)
     static let topCapsuleIconWidth: CGFloat = 38
-    /// 맨 위 줄(다이내믹 아일랜드 오른쪽) 스타일 아이콘 크기 · 화면 오른쪽 끝에서 아이콘 가운데까지
-    static let statusStyleIconSize: CGFloat = 18
+    /// 맨 위 줄(다이내믹 아일랜드 오른쪽) 스타일 아이콘 크기 · 화면 오른쪽 끝에서 아이콘 가운데까지 ·
+    /// 상단 안전 영역 가운데보다 아래인 양 (기본 카메라 화면에서 잰 값)
+    static let statusStyleIconSize: CGFloat = 15.5
     static let statusStyleIconTrailing: CGFloat = 70
+    static let statusStyleIconBelowCenter: CGFloat = 1
     /// 모드 선택 강조 판의 불투명도 (접힌 판 · 펼친 판 같이)
     static let modeHighlightOpacity = 0.08
 

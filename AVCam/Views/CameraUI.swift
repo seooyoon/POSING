@@ -53,7 +53,7 @@ struct CameraUI<CameraModel: Camera>: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("스타일")
-                .position(x: layout.size.width - AppDefaults.statusStyleIconTrailing, y: layout.safeTop / 2)
+                .position(x: layout.size.width - AppDefaults.statusStyleIconTrailing, y: layout.safeTop / 2 + AppDefaults.statusStyleIconBelowCenter)
                 .transition(.opacity)
             }
 

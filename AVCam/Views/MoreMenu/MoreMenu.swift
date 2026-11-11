@@ -158,21 +158,19 @@ struct StyleIcon: View {
 
     var body: some View {
         Canvas { context, size in
-            // 점 · 고리 크기는 30pt 기준에서 같이 줄어듦
-            let unit = size.width / 30
+            // 크기 비율은 기본 카메라 화면에서 잰 값 (점 사이 간격 기준)
             let step = size.width / 5
             for row in 0..<5 {
                 for column in 0..<5 {
                     let center = CGPoint(x: (CGFloat(column) + 0.5) * step, y: (CGFloat(row) + 0.5) * step)
                     let dx = abs(column - 2), dy = abs(row - 2)
                     if dx == 0 && dy == 0 {
-                        let ring = CGRect(x: center.x - 2.55 * unit, y: center.y - 2.55 * unit, width: 5.1 * unit, height: 5.1 * unit)
-                        context.stroke(Path(ellipseIn: ring), with: .foreground, lineWidth: max(0.9 * unit, 1))
+                        let radius = 0.46 * step
+                        let ring = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
+                        context.stroke(Path(ellipseIn: ring), with: .foreground, lineWidth: 0.15 * step)
                     } else {
-                        // 기본 카메라처럼 가운데 가로 · 세로 줄이 가장 크고, 고리 대각선 옆이 중간, 바깥이 가장 작음
-                        let scale: CGFloat = dx == 0 || dy == 0 ? 1.65 : (dx == 1 && dy == 1 ? 1.35 : 1.0)
-                        // 작은 아이콘에서도 크기 차이가 남도록 최소 크기에 비율을 곱함
-                        let radius = max(unit, 0.8) * scale
+                        // 가운데 가로 · 세로 줄이 가장 크고, 고리 대각선 옆이 중간, 바깥이 가장 작음
+                        let radius = step * (dx == 0 || dy == 0 ? 0.22 : (dx == 1 && dy == 1 ? 0.16 : 0.11))
                         let dot = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
                         context.fill(Path(ellipseIn: dot), with: .foreground)
                     }
