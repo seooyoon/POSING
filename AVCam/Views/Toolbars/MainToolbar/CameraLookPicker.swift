@@ -29,6 +29,8 @@ struct CameraLookButton: View {
 
     /// 이만큼 움직이면 탭이 아니라 밀기
     private let moveThreshold: CGFloat = 10
+    /// 폰 방향 (목록 순서를 사용자가 보는 방향에 맞춤)
+    @Environment(\.iconAngle) private var iconAngle
 
     var body: some View {
         Group {
@@ -84,11 +86,11 @@ struct CameraLookButton: View {
                     }
                 }
                 if let start = dragStart {
-                    // 버튼 자리(-1)에서 시작해 위로 올리면 목록 위쪽 칸 (목록 첫 칸이 맨 아래)
-                    let items = looks.listItems
+                    // 버튼 자리(0)에서 시작해 위로 한 칸 올릴 때마다 버튼에서 먼 칸으로 (목록 맨 아래 칸이 버튼 바로 위)
+                    let items = looks.shownListItems(iconAngle: iconAngle)
                     let steps = Int(((start.translation - translation.height) / CameraLookList.cellPitch).rounded())
-                    let index = min(max(start.index + steps, -1), items.count - 1)
-                    highlightedID = items.indices.contains(index) ? items[index].id : nil
+                    let position = min(max(start.index + steps, 0), items.count)
+                    highlightedID = position > 0 ? items[items.count - position].id : nil
                 }
             }
             .onEnded { _ in
@@ -124,7 +126,7 @@ struct CameraLookButton: View {
     private func beginSelecting(at translation: CGFloat) {
         cancelLongPress()
         guard !looks.listItems.isEmpty else { return }
-        dragStart = (-1, translation)
+        dragStart = (0, translation)
         highlightedID = nil
         isListOpen = true
     }
@@ -142,7 +144,7 @@ struct CameraLookButton: View {
     }
 }
 
-/// 버튼 바로 위로 쌓이는 세로 목록. 목록 1번이 맨 아래
+/// 버튼 바로 위로 쌓이는 세로 목록. 이름순 처음이 사용자가 보기에 위쪽 · 왼쪽
 struct CameraLookList: View {
 
     static let cellSize: CGFloat = 52
@@ -163,13 +165,14 @@ struct CameraLookList: View {
     let maxHeight: CGFloat
     /// 버튼을 밀어서 고르는 중인 칸. 있으면 이 칸이 선택된 모양
     var highlightedID: String?
+    @Environment(\.iconAngle) private var iconAngle
     let onSelect: (CameraLookItem) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: Self.spacing) {
-                    ForEach(looks.listItems.reversed()) { item in
+                    ForEach(looks.shownListItems(iconAngle: iconAngle)) { item in
                         cell(item)
                             .id(item.id)
                     }
@@ -203,6 +206,14 @@ struct CameraLookList: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: Self.cellSize, height: Self.cellSize)
+                // 즐겨찾기 별 (이미지 오른쪽 위)
+                .overlay(alignment: .topTrailing) {
+                    if looks.isFavorite(item) {
+                        FavoriteStar()
+                            .offset(x: 4, y: -4)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
             Text(item.name)
                 .font(.system(size: AppDefaults.cameraNameFontSize, weight: .medium))
                 .foregroundStyle(.white)
@@ -217,10 +228,28 @@ struct CameraLookList: View {
         .animation(.easeOut(duration: 0.12), value: isSelected)
         .contentShape(.rect)
             .onTapGesture { onSelect(item) }
-            .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {}
+            // 꾹 누르면 즐겨찾기 켜고 끔 (즐겨찾기는 목록 맨 위 · 왼쪽으로)
+            .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
+                withAnimation(.easeInOut(duration: 0.25)) { looks.toggleFavorite(item) }
+            }
             .accessibilityElement()
             .accessibilityLabel(item.name)
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { onSelect(item) }
+            .accessibilityAction(named: looks.isFavorite(item) ? "즐겨찾기 해제" : "즐겨찾기") { looks.toggleFavorite(item) }
+            .accessibilityValue(looks.isFavorite(item) ? "즐겨찾기" : "")
+    }
+}
+
+/// 즐겨찾기 표시: 노란 별
+struct FavoriteStar: View {
+    var size: CGFloat = 13
+
+    var body: some View {
+        Image(systemName: "star.fill")
+            .font(.system(size: size, weight: .semibold))
+            .foregroundStyle(Color.cameraYellow)
+            .shadow(color: .black.opacity(0.5), radius: 1.5)
+            .accessibilityHidden(true)
     }
 }
