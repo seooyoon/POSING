@@ -55,6 +55,8 @@ struct CameraUI<CameraModel: Camera>: View {
                 .accessibilityLabel("스타일")
                 .position(x: layout.size.width - AppDefaults.statusStyleIconTrailing, y: layout.safeTop / 2 + AppDefaults.statusStyleIconBelowCenter)
                 .transition(.opacity)
+                // 더보기 메뉴 · 빠른 설정 판의 바깥 탭 닫기 영역보다 위에 둬서, 열려 있어도 바로 스타일 화면으로
+                .zIndex(1)
             }
 
             // 포즈 · MY 패널: 상단 바 바로 아래, 한 번에 하나만. 전환할 때는 내용만 바뀜
