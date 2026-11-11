@@ -62,10 +62,9 @@ enum AppDefaults {
     static let outsidePreviewDimOpacity = 0.55
     /// 상단 오른쪽 묶음 아이콘 하나의 폭 (플래시 · LIVE · •••)
     static let topCapsuleIconWidth: CGFloat = 38
-    /// 스타일 사용 중 아이콘까지 4개일 때 아이콘 폭 (상단 바가 넘치지 않게)
-    static let topCapsuleCompactIconWidth: CGFloat = 30
-    /// 상단 스타일 사용 중 아이콘 크기
-    static let topCapsuleStyleIconSize: CGFloat = 22
+    /// 맨 위 줄(다이내믹 아일랜드 오른쪽) 스타일 아이콘 크기 · 화면 오른쪽 끝에서 아이콘 가운데까지
+    static let statusStyleIconSize: CGFloat = 18
+    static let statusStyleIconTrailing: CGFloat = 70
     /// 모드 선택 강조 판의 불투명도 (접힌 판 · 펼친 판 같이)
     static let modeHighlightOpacity = 0.08
 
