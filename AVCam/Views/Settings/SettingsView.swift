@@ -87,14 +87,16 @@ struct AppIconOption: Identifiable {
     let name: String
     let preview: String
 
-    /// 기본 + 추가 12개 (Assets의 AppIcon-01 … AppIcon-12, IconPreview-00 … 12)
+    /// 기본 + 추가 12개, 설정에 보이는 순서대로 (번호 = Assets의 AppIcon-XX · IconPreview-XX)
     static let all: [AppIconOption] = {
-        let names = ["사람", "강아지", "고양이", "구름", "닭", "병아리", "쥐", "돼지", "원숭이", "토끼", "파랑 로고", "검정 로고"]
-        let extras = names.enumerated().map { index, name in
-            let number = String(format: "%02d", index + 1)
-            return AppIconOption(id: "AppIcon-\(number)", name: name, preview: "IconPreview-\(number)")
+        let extras: [(number: Int, name: String)] = [
+            (11, "파랑 로고"), (12, "검정 로고"), (10, "토끼"), (2, "강아지"), (3, "고양이"), (5, "닭"),
+            (6, "병아리"), (7, "쥐"), (8, "돼지"), (9, "원숭이"), (4, "구름"), (1, "사람"),
+        ]
+        return [AppIconOption(id: nil, name: "기본", preview: "IconPreview-00")] + extras.map { extra in
+            let number = String(format: "%02d", extra.number)
+            return AppIconOption(id: "AppIcon-\(number)", name: extra.name, preview: "IconPreview-\(number)")
         }
-        return [AppIconOption(id: nil, name: "기본", preview: "IconPreview-00")] + extras
     }()
 
     static func option(for id: String?) -> AppIconOption {
@@ -171,9 +173,10 @@ struct AppIconCard: View {
                                 .offset(x: 6, y: 6)
                         }
                     }
+                // 버튼 색(노랑)이 아니라 검정 글씨 (다크 모드면 흰 글씨)
                 Text(option.name)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
             }
             .frame(width: AppDefaults.appIconListSize + 12)
