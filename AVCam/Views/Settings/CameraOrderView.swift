@@ -18,7 +18,7 @@ struct CameraOrderView: View {
                     row(item)
                 }
             } footer: {
-                Text("체크한 카메라로 앱이 시작됩니다. 카메라 화면에서 바꾼 카메라는 앱을 다시 켜면 이 카메라로 돌아갑니다. 두 번 빠르게 탭하면 즐겨찾기(★)가 되고, 즐겨찾기가 먼저 보입니다. 순서는 이름순(가나다 · abc)입니다.")
+                Text("체크한 카메라로 앱이 시작됩니다. 카메라 화면에서 바꾼 카메라는 앱을 다시 켜면 이 카메라로 돌아갑니다. 두 번 빠르게 탭하면 즐겨찾기(♥)가 되고, 즐겨찾기가 먼저 보입니다. 순서는 이름순(가나다 · abc)입니다.")
             }
         }
         .listStyle(.insetGrouped)
@@ -32,7 +32,7 @@ struct CameraOrderView: View {
         return HStack {
             SettingsThumbnailRow(image: item.image, title: item.name, fillsFrame: false)
             if isFavorite {
-                FavoriteStar(size: 22)
+                FavoriteHeart(size: 20)
             }
             Spacer()
             if isStart {

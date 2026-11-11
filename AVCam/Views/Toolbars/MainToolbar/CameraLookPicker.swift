@@ -43,10 +43,10 @@ struct CameraLookButton: View {
             }
         }
         .frame(width: CameraLookList.cellSize, height: CameraLookList.cellSize)
-        // 즐겨찾기 별 (이미지 오른쪽 위)
+        // 즐겨찾기 하트 (이미지 오른쪽 위)
         .overlay(alignment: .topTrailing) {
             if let selected = looks.selected, looks.isFavorite(selected) {
-                FavoriteStar()
+                FavoriteHeart()
                     .offset(x: 5, y: -5)
                     .transition(.scale.combined(with: .opacity))
             }
@@ -242,10 +242,10 @@ struct CameraLookList: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: Self.cellSize, height: Self.cellSize)
-                // 즐겨찾기 별 (이미지 오른쪽 위)
+                // 즐겨찾기 하트 (이미지 오른쪽 위)
                 .overlay(alignment: .topTrailing) {
                     if looks.isFavorite(item) {
-                        FavoriteStar()
+                        FavoriteHeart()
                             .offset(x: 4, y: -4)
                             .transition(.scale.combined(with: .opacity))
                     }
@@ -277,21 +277,15 @@ struct CameraLookList: View {
     }
 }
 
-/// 즐겨찾기 표시: 어두운 동그라미 + 노란 테두리 + 노란 별
-struct FavoriteStar: View {
+/// 즐겨찾기 표시: 분홍 하트 (#FA1B58)
+struct FavoriteHeart: View {
     var size: CGFloat = AppDefaults.favoriteBadgeSize
 
     var body: some View {
-        Circle()
-            .fill(Color(white: 0.22))
-            .overlay(Circle().strokeBorder(Color.cameraYellow.opacity(0.75), lineWidth: size * 0.08))
-            .overlay(
-                Image(systemName: "star.fill")
-                    .font(.system(size: size * 0.5, weight: .semibold))
-                    .foregroundStyle(Color.cameraYellow)
-            )
-            .frame(width: size, height: size)
-            .shadow(color: .black.opacity(0.35), radius: 1.5)
+        Image(systemName: "heart.fill")
+            .font(.system(size: size * 0.8, weight: .semibold))
+            .foregroundStyle(Color.favoritePink)
+            .shadow(color: .black.opacity(0.5), radius: 1.5)
             .accessibilityHidden(true)
     }
 }
