@@ -36,6 +36,7 @@ struct CameraLookButton: View {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
+                    .rotatesWithDevice()
             }
         }
         .frame(width: CameraLookList.cellSize, height: CameraLookList.cellSize)

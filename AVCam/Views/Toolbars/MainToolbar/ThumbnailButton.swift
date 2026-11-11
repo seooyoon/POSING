@@ -40,6 +40,8 @@ struct ThumbnailButton<CameraModel: Camera>: View {
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .animation(.easeInOut(duration: 0.3), value: thumbnail)
+                // 원 안의 사진만 폰 방향대로 돎
+                .rotatesWithDevice()
         } else {
             // 아직 찍은 게 없으면 기본 카메라처럼 빈 어두운 원
             Circle()

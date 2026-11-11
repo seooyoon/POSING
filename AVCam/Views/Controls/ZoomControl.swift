@@ -131,6 +131,8 @@ struct ZoomControl<CameraModel: Camera>: View {
                 }
             }
             .foregroundStyle(isActive ? Color.cameraYellow : .white)
+            // 폰을 가로로 돌리면 숫자만 돎
+            .rotatesWithDevice()
             .frame(width: buttonSpacing, height: 44)
             .contentShape(.rect)
         }
@@ -236,6 +238,7 @@ struct FrontFieldOfViewButton<CameraModel: Camera>: View {
             Image(systemName: isWide ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white)
+                .rotatesWithDevice()
                 .frame(width: 36, height: 36)
                 .background(.black.opacity(0.4), in: .circle)
         }
@@ -264,6 +267,7 @@ struct MacroButton<CameraModel: Camera>: View {
                 // 켬 ↔ 끔 모양도 서서히 바뀜
                 .contentTransition(.symbolEffect(.replace))
                 .animation(.easeInOut(duration: AppDefaults.macroButtonFadeDuration), value: isEnabled)
+                .rotatesWithDevice()
                 // 보이는 원보다 넓게 눌림 (작아서 미리보기 초점으로 빠지지 않게)
                 .frame(width: 44, height: 44)
                 .contentShape(.circle)
