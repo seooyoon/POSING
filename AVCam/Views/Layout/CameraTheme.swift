@@ -85,3 +85,25 @@ extension View {
             .glassEffect(.regular.interactive(), in: .capsule)
     }
 }
+
+/// 폰 방향에 맞춰 아이콘 · 글자를 돌릴 각도 (CameraView가 LevelModel 값으로 넣어 줌)
+extension EnvironmentValues {
+    @Entry var iconAngle: Double = 0
+}
+
+private struct RotatesWithDevice: ViewModifier {
+    @Environment(\.iconAngle) private var angle
+
+    func body(content: Content) -> some View {
+        content
+            .rotationEffect(.degrees(angle))
+            .animation(.easeInOut(duration: AppDefaults.iconRotationDuration), value: angle)
+    }
+}
+
+extension View {
+    /// 화면은 세로로 두고 이 아이콘 · 글자만 폰 방향에 맞게 돌림 (기본 카메라와 같음)
+    func rotatesWithDevice() -> some View {
+        modifier(RotatesWithDevice())
+    }
+}

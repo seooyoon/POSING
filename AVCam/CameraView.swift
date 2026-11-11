@@ -69,6 +69,8 @@ struct CameraView<CameraModel: Camera>: View {
                          isShowingStyleScreen: $isShowingStyleScreen, layout: layout)
             }
             .ignoresSafeArea()
+            // 폰을 가로로 돌리면 아이콘 · 글자만 돌아감 (docs/02_UI.md 10절)
+            .environment(\.iconAngle, level.iconAngle)
             // 카메라 화면만 다크 고정. 설정 화면 · 사진 피커는 아이폰 설정을 따름 (docs/02_UI.md 10절)
             .environment(\.colorScheme, .dark)
         }
