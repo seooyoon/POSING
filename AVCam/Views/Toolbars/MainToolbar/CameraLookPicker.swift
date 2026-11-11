@@ -56,7 +56,7 @@ struct CameraLookButton: View {
         .contentShape(.rect)
         // 탭 · 꾹 누르기 · 밀기를 한 제스처로
         .gesture(touchGesture)
-        .sensoryFeedback(.selection, trigger: highlightedID) { old, new in old != nil && new != nil }
+        .sensoryFeedback(.selection, trigger: highlightedID) { old, new in old != new && dragStart != nil }
         .accessibilityElement()
         .accessibilityLabel("카메라")
         .accessibilityValue(looks.selected?.name ?? "")
@@ -84,12 +84,11 @@ struct CameraLookButton: View {
                     }
                 }
                 if let start = dragStart {
-                    // 위로 올리면 목록 위쪽 칸 (목록 1번이 맨 아래)
+                    // 버튼 자리(-1)에서 시작해 위로 올리면 목록 위쪽 칸 (목록 첫 칸이 맨 아래)
+                    let items = looks.listItems
                     let steps = Int(((start.translation - translation.height) / CameraLookList.cellPitch).rounded())
-                    let index = min(max(start.index + steps, 0), looks.items.count - 1)
-                    if looks.items.indices.contains(index) {
-                        highlightedID = looks.items[index].id
-                    }
+                    let index = min(max(start.index + steps, -1), items.count - 1)
+                    highlightedID = items.indices.contains(index) ? items[index].id : nil
                 }
             }
             .onEnded { _ in
@@ -103,11 +102,11 @@ struct CameraLookButton: View {
                 if dragStart != nil {
                     // 꾹 누르고 움직이지 않고 떼면 목록만 열어 둠 (칸을 탭해서 고를 수 있게)
                     guard hasMoved else { return }
-                    if let item = looks.items.first(where: { $0.id == highlightedID }) {
+                    if let item = looks.listItems.first(where: { $0.id == highlightedID }) {
                         onSelect(item)
                     }
                     isListOpen = false
-                } else if !hasMoved {
+                } else if !hasMoved, !looks.listItems.isEmpty {
                     isListOpen.toggle()
                 }
             }
@@ -121,12 +120,12 @@ struct CameraLookButton: View {
         }
     }
 
-    /// 목록을 열고 지금 카메라 칸에서 고르기 시작
+    /// 목록을 열고 버튼 자리에서 고르기 시작 (지금 카메라는 목록에 없음)
     private func beginSelecting(at translation: CGFloat) {
         cancelLongPress()
-        let index = looks.items.firstIndex { $0.id == looks.selected?.id } ?? 0
-        dragStart = (index, translation)
-        highlightedID = looks.items.indices.contains(index) ? looks.items[index].id : nil
+        guard !looks.listItems.isEmpty else { return }
+        dragStart = (-1, translation)
+        highlightedID = nil
         isListOpen = true
     }
 
@@ -170,7 +169,7 @@ struct CameraLookList: View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: Self.spacing) {
-                    ForEach(looks.items.reversed()) { item in
+                    ForEach(looks.listItems.reversed()) { item in
                         cell(item)
                             .id(item.id)
                     }
@@ -192,13 +191,13 @@ struct CameraLookList: View {
     }
 
     var height: CGFloat {
-        let count = CGFloat(looks.items.count)
+        let count = CGFloat(looks.listItems.count)
         return min(maxHeight, count * Self.cellHeight + max(0, count - 1) * Self.spacing + Self.padding * 2)
     }
 
-    /// 칸: 카메라 PNG + 아래 이름. 선택된 칸은 그대로, 나머지는 흐리게 (테두리 없음)
+    /// 칸: 카메라 PNG + 아래 이름. 버튼을 밀어 고르는 중이면 그 칸만 또렷하고 나머지는 흐리게 (테두리 없음)
     private func cell(_ item: CameraLookItem) -> some View {
-        let isSelected = (highlightedID ?? looks.selected?.id) == item.id
+        let isSelected = highlightedID == nil || highlightedID == item.id
         return VStack(spacing: AppDefaults.cameraNameGap) {
             Image(uiImage: item.image)
                 .resizable()

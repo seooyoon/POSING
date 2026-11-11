@@ -127,6 +127,11 @@ final class CameraLookState {
         items.first { $0.id == selectedID } ?? items.first
     }
 
+    /// 카메라 목록에 보이는 카메라: 지금 고른 카메라는 버튼에 있으므로 뺌
+    var listItems: [CameraLookItem] {
+        items.filter { $0.id != selected?.id }
+    }
+
     func select(_ item: CameraLookItem) {
         selectedID = item.id
     }
