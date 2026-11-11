@@ -52,6 +52,17 @@ final class StyleState {
         update(style.preset.defaults)
     }
 
+    /// 스타일 초기화 버튼: 표준 스타일 · 모든 스타일 값 기본으로
+    func resetAll() {
+        values.removeAll()
+        style = .standard
+    }
+
+    /// 표준 스타일이고 바꾼 값이 하나도 없음 (초기화 버튼을 흐리게)
+    var isAllDefault: Bool {
+        style == .standard && values.allSatisfy { $0.value == $0.key.preset.defaults }
+    }
+
     private func update(_ value: StyleValues) {
         guard value != current else { return }
         values[style] = value
