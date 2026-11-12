@@ -34,7 +34,7 @@
 - 시작점: 애플 공식 예제 **AVCam** (https://developer.apple.com/documentation/avfoundation/avcam-building-a-camera-app). 이 예제 프로젝트 위에 기능을 얹는다. 처음부터 새로 짜지 않는다.
 - 언어/UI: Swift, SwiftUI. 카메라는 AVFoundation.
 - 최소 iOS: 26.0 (AVCam 최신판 기준). 대상 기기: iPhone 16 Pro (세로 화면 고정).
-- **외부 라이브러리 금지** (SPM 패키지 포함). 애플 기본 프레임워크만: SwiftUI, AVFoundation, Photos, PhotosUI, CoreMotion, CoreImage, ImageIO.
+- **외부 라이브러리 금지** (SPM 패키지 포함). 애플 기본 프레임워크만: SwiftUI, AVFoundation, Photos, PhotosUI, CoreMotion, CoreImage, ImageIO, Vision (POSING 플래시 사진의 사람 영역 인식, 기기 안 처리).
 - **네트워크 코드 금지.** 앱은 완전히 오프라인으로 동작해야 한다.
 - 아이콘은 SF Symbols만 사용 (기본 카메라와 같은 심볼을 고른다).
 - 서명: 서윤의 무료 Personal Team. 번들 ID는 `com.seoyun.posing` (충돌 시 서윤에게 확인).

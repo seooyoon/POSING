@@ -60,7 +60,9 @@
 | --- | --- | --- |
 | `camera_01_기본.png` | 512 × 512px, **투명 배경** PNG | 카메라 버튼·목록에 그대로 보이는 이미지 |
 | `camera_02_POSING.png` | 512 × 512px, 투명 배경 PNG | 〃 (흰색 · 베이지 카메라. 옛 이름 IXUS750) |
-| `camera_02_POSING.cube` | 색 보정 3D LUT (.cube, 17×17×17) | POSING 디카 색감. 서윤이 준 비교 사진으로 계산해 넣음 (#119) |
+| `camera_02_POSING.cube` | 색 보정 3D LUT (.cube, 17×17×17) | POSING 디카 색감 (플래시 끔). 서윤이 준 비교 사진으로 계산해 넣음 (#119, #120에서 보라 기운 제거) |
+| `camera_02_POSING_flash.cube` | 〃 | 플래시가 터진 사진에만 쓰는 색감 (#120). 없으면 기본 `.cube` |
+| `camera_02_POSING.json` | 디카 질감 값 (선택) | 부드럽게 · 노이즈 · 가장자리 어둡게 · 빠른 처리 우선 · 플래시 사람 밝게 / 배경 어둡게 (`docs/05_TECH_NOTES.md` 4-2절) |
 | `camera_03_테스트1.png` | 512 × 512px, 투명 배경 PNG (민트 카메라) | 목록 확인용 임시 카메라. 여행 전에 실제 카메라로 바꾸거나 삭제 |
 
 - 넣는 위치: `Posing/Resources/Cameras/` (폴더 참조)
