@@ -50,6 +50,7 @@ struct CameraUI<CameraModel: Camera>: View {
                     StyleIcon(size: AppDefaults.statusStyleIconSize)
                         // 표준이 아닌 스타일을 쓰는 중이면 노란색
                         .foregroundStyle(camera.photoStyle.changesImage ? Color.cameraYellow : .white)
+                        .rotatesWithDevice()
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }

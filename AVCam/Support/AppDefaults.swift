@@ -36,7 +36,7 @@ enum AppDefaults {
     static let closesCameraListOnOutsideTap = true
     /// 카메라 버튼 아래 이름 글자 크기 · 버튼과의 간격 (pt)
     static let cameraNameFontSize: CGFloat = 11
-    static let cameraNameGap: CGFloat = 3
+    static let cameraNameGap: CGFloat = 1
     /// 카메라 목록에서 선택되지 않은 칸 투명도 (선택된 칸은 그대로)
     static let cameraListUnselectedOpacity = 0.5
 
@@ -69,6 +69,11 @@ enum AppDefaults {
     static let statusStyleIconSize: CGFloat = 15.5
     static let statusStyleIconTrailing: CGFloat = 70
     static let statusStyleIconBelowCenter: CGFloat = 1
+    /// 폰을 이 각도(도)보다 많이 돌리면 아이콘을 가로로, 이 각도보다 적게 기울면 다시 세로로
+    static let iconLandscapeAngle = 60.0
+    static let iconPortraitAngle = 30.0
+    /// 아이콘이 돌아가는 시간
+    static let iconRotationDuration = 0.3
     /// 스타일 초기화 버튼이 사라질 때 화살표가 도는 각도(시계 반대 = 음수) · 걸리는 시간 (기본 카메라 녹화에서 잰 값)
     static let styleResetSpinDegrees: Double = -200
     static let styleResetSpinDuration: Double = 0.45

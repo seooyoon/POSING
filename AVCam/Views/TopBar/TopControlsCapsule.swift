@@ -27,6 +27,7 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
                 } label: {
                     Image(systemName: camera.flashMode.symbolName)
                         .foregroundStyle(camera.flashMode == .on ? Color.cameraYellow : .white)
+                        .rotatesWithDevice()
                         .tapTarget(width: iconWidth)
                 }
             }
@@ -38,6 +39,7 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
                 } label: {
                     Image(systemName: camera.isLivePhotoActive ? "livephoto" : "livephoto.slash")
                         .foregroundStyle(camera.isLivePhotoActive ? Color.cameraYellow : .white)
+                        .rotatesWithDevice()
                         .tapTarget(width: iconWidth)
                 }
                 // 비율이 4:3이 아니거나 RAW면 LIVE 자동 끔 (꺼짐 표시)
@@ -51,6 +53,7 @@ struct TopControlsCapsule<CameraModel: Camera>: View {
             } label: {
                 MoreIcon()
                     .foregroundStyle(isShowingMoreMenu ? Color.cameraYellow : .white)
+                    .rotatesWithDevice()
                     .tapTarget(width: iconWidth)
             }
         }

@@ -51,6 +51,8 @@ struct CameraLookButton: View {
                 .offset(y: AppDefaults.cameraNameGap + AppDefaults.cameraNameFontSize)
                 .allowsHitTesting(false)
         }
+        // 이미지와 아래 이름을 한 덩어리로 폰 방향대로 돌림 (이름은 늘 이미지 아래)
+        .rotatesWithDevice()
         .contentShape(.rect)
         // 탭 · 꾹 누르기 · 밀기를 한 제스처로
         .gesture(touchGesture)
@@ -153,7 +155,9 @@ struct CameraLookList: View {
     /// 칸 사이 거리 (가운데끼리). 버튼을 밀 때 이만큼 움직이면 한 칸
     static var cellPitch: CGFloat { cellHeight + spacing }
     private static let padding: CGFloat = 8
-    static let width = cellSize + padding * 2
+    /// 좌우 여백. 가로로 돌렸을 때 이미지 + 이름 덩어리(약 66pt) 양옆에도 여백이 남게 위아래보다 넉넉히
+    private static let sidePadding: CGFloat = 13
+    static let width = cellSize + sidePadding * 2
 
     let looks: CameraLookState
     /// 위쪽으로 펼칠 수 있는 높이. 넘치면 세로 스크롤
@@ -171,7 +175,8 @@ struct CameraLookList: View {
                             .id(item.id)
                     }
                 }
-                .padding(Self.padding)
+                .padding(.vertical, Self.padding)
+                .padding(.horizontal, Self.sidePadding)
             }
             // 밀어서 고르는 칸이 가려지지 않게 스크롤
             .onChange(of: highlightedID) { _, id in
@@ -205,7 +210,10 @@ struct CameraLookList: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
-        .frame(width: Self.width - 4, height: Self.cellHeight, alignment: .top)
+        // 이미지와 이름을 한 덩어리로 폰 방향대로 돌림 (가로로 돌아도 목록 폭 안에 들어감)
+        .frame(width: Self.cellSize + 12)
+        .rotatesWithDevice()
+        .frame(width: Self.cellSize, height: Self.cellHeight, alignment: .top)
         .opacity(isSelected ? 1 : AppDefaults.cameraListUnselectedOpacity)
         .animation(.easeOut(duration: 0.12), value: isSelected)
         .contentShape(.rect)

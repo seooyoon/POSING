@@ -21,6 +21,7 @@ struct SwitchCameraButton<CameraModel: Camera>: View {
             Image(systemName: "arrow.triangle.2.circlepath")
                 .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(.white)
+                .rotatesWithDevice()
                 .frame(width: bottomRowButtonSize, height: bottomRowButtonSize)
                 .bottomGlass(in: .circle)
         }
