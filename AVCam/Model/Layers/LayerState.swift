@@ -57,7 +57,12 @@ struct LayerSlot {
 final class LayerState {
 
     var pose = LayerSlot(defaultOpacity: AppDefaults.poseOpacity)
+    /// MY 선택 상태. `my.items`는 직접 추가한 '내 사진' 패키지의 사진
     var my = LayerSlot(defaultOpacity: AppDefaults.myOpacity)
+    /// 앱에 넣어 둔 MY 패키지 (순서 고정)
+    let myPackages: [MYPackage]
+    /// MY 패널에서 들어가 있는 패키지. nil이면 패키지 목록. 패널을 닫았다 열어도 그대로
+    private(set) var openMYPackageID: String?
     /// 지금 열린 패널. 포즈 · MY 패널은 같은 자리에 하나만
     private(set) var openPanel: LayerKind?
     /// MY 꾹 누르기로 사진 피커를 띄움
@@ -65,7 +70,12 @@ final class LayerState {
     /// 초기화 꾹 누르기로 설정 화면을 띄움
     var isShowingSettings = false
 
-    init(poses: [LayerItem] = PoseLibrary.load(), myItems: [LayerItem] = MYLibrary.load()) {
+    /// 직접 추가한 사진 묶음의 id (패키지 목록 맨 왼쪽)
+    static let userPackageID = "내 사진"
+
+    init(poses: [LayerItem] = PoseLibrary.load(), myItems: [LayerItem] = MYLibrary.load(),
+         myPackages: [MYPackage] = MYPackageLibrary.load()) {
+        self.myPackages = myPackages
         pose.items = poses
         my.items = myItems
     }
@@ -87,6 +97,30 @@ final class LayerState {
     /// 미리보기를 탭하면 열린 패널만 닫음 (선택한 레이어는 그대로)
     func closePanel() {
         openPanel = nil
+    }
+
+    // MARK: - MY 패키지
+
+    /// 패키지 목록에서 패키지를 누르면 그 안으로
+    func openMYPackage(_ id: String) {
+        openMYPackageID = id
+    }
+
+    /// 패키지 안에서 맨 왼쪽 대표 이미지를 누르면 다시 패키지 목록으로
+    func closeMYPackage() {
+        openMYPackageID = nil
+    }
+
+    /// 패키지 안의 사진. '내 사진'은 직접 추가한 사진
+    func myItems(inPackage id: String) -> [LayerItem] {
+        id == Self.userPackageID ? my.items : myPackages.first { $0.id == id }?.items ?? []
+    }
+
+    /// 지금 고른 MY 사진이 들어 있는 패키지 (목록에서 그 패키지에 노란 테두리)
+    var selectedMYPackageID: String? {
+        guard let selected = my.selectedID else { return nil }
+        if my.items.contains(where: { $0.id == selected }) { return Self.userPackageID }
+        return myPackages.first { package in package.items.contains { $0.id == selected } }?.id
     }
 
     func toggle(_ item: LayerItem, in kind: LayerKind) {
@@ -116,6 +150,7 @@ final class LayerState {
         my.select(first)
         loadImage(of: first, in: .my)
         openPanel = .my
+        openMYPackageID = Self.userPackageID
         MYLibrary.saveOrder(my.items)
     }
 

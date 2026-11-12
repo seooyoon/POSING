@@ -2,7 +2,8 @@
 //  MYLibrary.swift
 //  포징
 //
-//  MY 목록 저장소 (docs/01_SPEC.md 5절). 고른 사진을 앱 Documents/MY 폴더에 복사하고,
+//  MY 저장소 (docs/01_SPEC.md 5절). 앱에 넣어 둔 MY 패키지와 '내 사진' 패키지.
+//  '내 사진'은 고른 사진을 앱 Documents/MY 폴더에 복사하고,
 //  목록 순서를 my_order.json, 이름을 my_names.json에 저장한다. 원본을 사진 앱에서 지워도 목록은 남는다.
 //
 
@@ -117,5 +118,55 @@ enum MYLibrary {
         CGImageDestinationAddImage(destination, cgImage, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { return nil }
         return output as Data
+    }
+}
+
+// MARK: - MY 패키지
+
+/// 앱에 넣어 둔 MY 사진 묶음 하나 (docs/04_ASSETS.md 1-1절). 사진 순서는 파일 번호순 고정
+struct MYPackage: Identifiable {
+    /// 폴더 이름 (`01_서윤 사진`)
+    let id: String
+    /// 목록에 보이는 이름 (`서윤 사진`)
+    let name: String
+    let cover: UIImage?
+    let items: [LayerItem]
+}
+
+/// 앱 번들 `MYPackages/번호_이름/` 폴더들을 읽는다. 폴더마다 `cover.jpg`(대표 이미지) + `01.jpg` `02.jpg` …
+enum MYPackageLibrary {
+
+    private static let folderName = "MYPackages"
+    private static let coverName = "cover"
+    private static let imageExtensions: Set<String> = ["jpg", "jpeg", "png", "heic"]
+
+    /// 폴더 번호순 패키지 목록. 사진이 하나도 없는 폴더는 건너뜀
+    static func load(bundle: Bundle = .main) -> [MYPackage] {
+        guard let root = bundle.url(forResource: folderName, withExtension: nil),
+              let folders = try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.isDirectoryKey])
+        else { return [] }
+        return folders
+            .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            .compactMap(package(at:))
+    }
+
+    private static func package(at folder: URL) -> MYPackage? {
+        let id = folder.lastPathComponent
+        // 01_서윤 사진 → 서윤 사진
+        let name = id.split(separator: "_", maxSplits: 1).last.map(String.init) ?? id
+        let files = ((try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [])
+            .filter { imageExtensions.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        let coverURL = files.first { $0.deletingPathExtension().lastPathComponent.lowercased() == coverName }
+        let items = files.filter { $0 != coverURL }.compactMap { url -> LayerItem? in
+            guard let thumbnail = ImageDownsampler.image(at: url, maxPixels: ImageDownsampler.thumbnailPixels) else { return nil }
+            // 패키지가 달라도 겹치지 않게 폴더 이름을 붙임
+            return LayerItem(id: "\(id)/\(url.lastPathComponent)", thumbnail: thumbnail, imageURL: url)
+        }
+        guard !items.isEmpty else { return nil }
+        // 대표 이미지가 없으면 첫 사진으로
+        let cover = coverURL.flatMap { ImageDownsampler.image(at: $0, maxPixels: ImageDownsampler.thumbnailPixels) } ?? items[0].thumbnail
+        return MYPackage(id: id, name: name, cover: cover, items: items)
     }
 }
