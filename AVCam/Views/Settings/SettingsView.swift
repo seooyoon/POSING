@@ -173,10 +173,11 @@ struct AppIconCard: View {
                                 .offset(x: 6, y: 6)
                         }
                     }
-                // 버튼 색(노랑)이 아니라 검정 글씨 (다크 모드면 흰 글씨)
+                // 고른 아이콘만 노랑, 나머지는 검정 글씨 (다크 모드면 흰 글씨).
+                // `.primary`는 버튼 안에서 노랑(tint)으로 바뀌어서 `Color.primary`를 직접 씀
                 Text(option.name)
                     .font(.caption)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(isPicked ? Color.accentColor : Color.primary)
                     .lineLimit(1)
             }
             .frame(width: AppDefaults.appIconListSize + 12)
