@@ -90,8 +90,8 @@ struct AppIconOption: Identifiable {
     /// 기본 + 추가 12개, 설정에 보이는 순서대로 (번호 = Assets의 AppIcon-XX · IconPreview-XX)
     static let all: [AppIconOption] = {
         let extras: [(number: Int, name: String)] = [
-            (11, "파랑 로고"), (12, "검정 로고"), (10, "토끼"), (2, "강아지"), (3, "고양이"), (5, "닭"),
-            (6, "병아리"), (7, "쥐"), (8, "돼지"), (9, "원숭이"), (4, "구름"), (1, "사람"),
+            (1, "사람"), (11, "파랑 로고"), (12, "검정 로고"), (10, "토끼"), (2, "강아지"), (3, "고양이"),
+            (5, "닭"), (6, "병아리"), (7, "쥐"), (8, "돼지"), (9, "원숭이"), (4, "구름"),
         ]
         return [AppIconOption(id: nil, name: "기본", preview: "IconPreview-00")] + extras.map { extra in
             let number = String(format: "%02d", extra.number)
