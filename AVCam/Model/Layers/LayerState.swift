@@ -61,6 +61,8 @@ final class LayerState {
     var my = LayerSlot(defaultOpacity: AppDefaults.myOpacity)
     /// 앱에 넣어 둔 MY 패키지 (순서 고정)
     let myPackages: [MYPackage]
+    /// '내 사진' 대표 이미지로 직접 고른 사진. nil이면 첫 사진
+    private(set) var myCustomCover: UIImage? = MYLibrary.loadCover()
     /// MY 패널에서 들어가 있는 패키지. nil이면 패키지 목록. 패널을 닫았다 열어도 그대로
     private(set) var openMYPackageID: String?
     /// 지금 열린 패널. 포즈 · MY 패널은 같은 자리에 하나만
@@ -109,6 +111,17 @@ final class LayerState {
     /// 패키지 안에서 맨 왼쪽 대표 이미지를 누르면 다시 패키지 목록으로
     func closeMYPackage() {
         openMYPackageID = nil
+    }
+
+    /// '내 사진' 대표 이미지: 직접 고른 사진, 없으면 첫 사진
+    var userPackageCover: UIImage? {
+        myCustomCover ?? my.items.first?.thumbnail
+    }
+
+    /// 설정에서 고른 대표 이미지 적용. nil이면 첫 사진으로 되돌림
+    func setMYCover(_ image: UIImage?) {
+        if image == nil { MYLibrary.deleteCover() }
+        myCustomCover = image
     }
 
     /// 패키지 안의 사진. '내 사진'은 직접 추가한 사진

@@ -28,6 +28,13 @@ enum MYLibrary {
         URL.documentsDirectory.appending(path: "my_names.json")
     }
 
+    /// '내 사진' 패키지 대표 이미지 (설정에서 고른 사진). 없으면 첫 사진
+    private static var coverFile: URL {
+        URL.documentsDirectory.appending(path: "my_cover.jpg")
+    }
+    /// 대표 이미지는 작게만 보이므로 긴 변을 줄여 저장
+    private static let maxCoverPixels = 600
+
     /// 이름 최대 글자 수 (띄어쓰기 포함)
     static let maxNameLength = 10
 
@@ -72,6 +79,26 @@ enum MYLibrary {
         }
     }
 
+    // MARK: - 내 사진 대표 이미지
+
+    static func loadCover() -> UIImage? {
+        ImageDownsampler.image(at: coverFile, maxPixels: ImageDownsampler.thumbnailPixels)
+    }
+
+    /// 사진 앱에서 고른 사진을 대표 이미지로 저장. 읽지 못하면 nil
+    static func saveCover(_ pickerItem: PhotosPickerItem) async -> UIImage? {
+        guard let data = try? await pickerItem.loadTransferable(type: Data.self),
+              let jpeg = downsampledJPEG(from: data, maxPixels: maxCoverPixels),
+              (try? jpeg.write(to: coverFile, options: .atomic)) != nil
+        else { return nil }
+        return loadCover()
+    }
+
+    /// 대표 이미지를 지워 첫 사진으로 되돌림
+    static func deleteCover() {
+        try? FileManager.default.removeItem(at: coverFile)
+    }
+
     // MARK: - 사진 추가
 
     /// 피커에서 고른 순서대로 사진을 복사해 목록 칸으로 만든다.
@@ -83,7 +110,7 @@ enum MYLibrary {
         for pickerItem in pickerItems {
             guard let data = try? await pickerItem.loadTransferable(type: Data.self) else { continue }
             let name = fileName(for: pickerItem.itemIdentifier)
-            guard let jpeg = downsampledJPEG(from: data) else { continue }
+            guard let jpeg = downsampledJPEG(from: data, maxPixels: maxImagePixels) else { continue }
             let url = folder.appending(path: name)
             guard (try? jpeg.write(to: url, options: .atomic)) != nil,
                   let item = item(named: name)
@@ -108,9 +135,9 @@ enum MYLibrary {
     }
 
     /// 방향을 바로잡고 긴 변을 줄인 JPEG
-    private static func downsampledJPEG(from data: Data) -> Data? {
+    private static func downsampledJPEG(from data: Data, maxPixels: Int) -> Data? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let cgImage = ImageDownsampler.cgImage(from: source, maxPixels: maxImagePixels)
+              let cgImage = ImageDownsampler.cgImage(from: source, maxPixels: maxPixels)
         else { return nil }
         let output = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(output, "public.jpeg" as CFString, 1, nil)

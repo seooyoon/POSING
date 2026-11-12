@@ -80,7 +80,7 @@ struct LayerPanel: View {
     private var packageList: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(alignment: .top, spacing: 8) {
-                packageCell(id: LayerState.userPackageID, name: LayerState.userPackageID, cover: layers.my.items.first?.thumbnail)
+                packageCell(id: LayerState.userPackageID, name: LayerState.userPackageID, cover: layers.userPackageCover)
                 ForEach(layers.myPackages) { package in
                     packageCell(id: package.id, name: package.name, cover: package.cover)
                 }
@@ -96,7 +96,7 @@ struct LayerPanel: View {
         let package = layers.myPackages.first { $0.id == id }
         let items = layers.myItems(inPackage: id)
         return HStack(alignment: .top, spacing: 0) {
-            packageCell(id: id, name: package?.name ?? id, cover: isUser ? items.first?.thumbnail : package?.cover)
+            packageCell(id: id, name: package?.name ?? id, cover: isUser ? layers.userPackageCover : package?.cover)
                 .padding(.leading, CameraLayout.sideInset)
             Rectangle()
                 .fill(.white.opacity(0.3))
