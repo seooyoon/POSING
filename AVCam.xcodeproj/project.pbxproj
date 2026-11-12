@@ -97,6 +97,7 @@
 		0C44BA3F7BFF122D45E4CE0C /* OpacitySlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789AE4A43BD97D21511D4689 /* OpacitySlider.swift */; };
 		2DE10EA706A5B7A52728CEDE /* OpacitySlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789AE4A43BD97D21511D4689 /* OpacitySlider.swift */; };
 		B27C2F7905D69CD88E1FD75C /* Poses in Resources */ = {isa = PBXBuildFile; fileRef = 24D270174CB96868C9FC6D94 /* Poses */; };
+		A17B0C3E5D2F4E6A8B9C0D11 /* MYPackages in Resources */ = {isa = PBXBuildFile; fileRef = A17B0C3E5D2F4E6A8B9C0D12 /* MYPackages */; };
 		26FB8E31F1E5FD785AA2D5B2 /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D823665F41CD435C177D75 /* AppDefaults.swift */; };
 		400B0FE41DA5B628F4D08E1B /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D823665F41CD435C177D75 /* AppDefaults.swift */; };
 		D3CFCB5FF9270E3F889E8BC8 /* CameraLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6DDC494B7C4BD70C8D6FC1 /* CameraLayout.swift */; };
@@ -266,6 +267,7 @@
 		C0F505727295AEF9F4C4F96F /* LayerPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerPanel.swift; sourceTree = "<group>"; };
 		789AE4A43BD97D21511D4689 /* OpacitySlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpacitySlider.swift; sourceTree = "<group>"; };
 		24D270174CB96868C9FC6D94 /* Poses */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Poses; sourceTree = "<group>"; };
+		A17B0C3E5D2F4E6A8B9C0D12 /* MYPackages */ = {isa = PBXFileReference; lastKnownFileType = folder; path = MYPackages; sourceTree = "<group>"; };
 		D5D823665F41CD435C177D75 /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
 		EB6DDC494B7C4BD70C8D6FC1 /* CameraLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLayout.swift; sourceTree = "<group>"; };
 		30DA51A26F36C14FDB0E877E /* CameraTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraTheme.swift; sourceTree = "<group>"; };
@@ -436,6 +438,7 @@
 			children = (
 				46E26086558540CB83BCD772 /* Cameras */,
 				24D270174CB96868C9FC6D94 /* Poses */,
+				A17B0C3E5D2F4E6A8B9C0D12 /* MYPackages */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -789,6 +792,7 @@
 			files = (
 				2BE4D5823CA14FC493EA31B5 /* Cameras in Resources */,
 				B27C2F7905D69CD88E1FD75C /* Poses in Resources */,
+				A17B0C3E5D2F4E6A8B9C0D11 /* MYPackages in Resources */,
 				C4F82CA5285ADDA3005D427A /* Preview Assets.xcassets in Resources */,
 				C4F82CA1285ADDA3005D427A /* Assets.xcassets in Resources */,
 			);
