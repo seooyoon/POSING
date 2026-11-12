@@ -3,7 +3,7 @@
 //  포징
 //
 //  저장 직전 사진에 입히는 색 보정 (docs/05_TECH_NOTES.md 4절).
-//  카메라 색감(.cube) → 스타일 순서.
+//  카메라 색감(.cube, 플래시 사진은 플래시 전용) → 스타일 → 디카 질감 순서.
 //  원본 메타데이터는 그대로 옮기고, CaptureService 액터 안에서 부른다 (메인 스레드 밖).
 //
 
@@ -16,23 +16,31 @@ enum PhotoFilter {
 
     private static let context = CIContext()
 
-    /// 카메라 색감(LUT) → 스타일 순으로 입힘. 실패하면 원본 데이터를 그대로 돌려줌 (사진을 잃지 않게)
-    static func apply(lut lutURL: URL?, style: StyleSelection?, to data: Data) -> Data {
-        let lut = lutURL.flatMap(CubeLUT.init(contentsOf:))
-        // LUT를 못 읽었고 스타일도 보정 없음이면 손대지 않음
-        guard lut != nil || style?.changesImage == true,
-              let input = CIImage(data: data),
-              let source = CGImageSourceCreateWithData(data as CFData, nil),
+    /// 카메라 색감(LUT) → (플래시 사진이면 사람 밝게 · 배경 어둡게) → 스타일 → 디카 질감 순으로 입힘.
+    /// 플래시가 터진 사진은 플래시 전용 색감을 씀. 실패하면 원본 데이터를 그대로 돌려줌 (사진을 잃지 않게)
+    static func apply(look: PhotoLook?, style: StyleSelection?, to data: Data) -> Data {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let type = CGImageSourceGetType(source)
         else { return data }
+        var properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
+        let flashFired = didFlashFire(properties)
+        let lutURL = flashFired ? (look?.flashLUTURL ?? look?.lutURL) : look?.lutURL
+        let lut = lutURL.flatMap(CubeLUT.init(contentsOf:))
+        let finish = look?.finish
+        let usesFalloff = flashFired && finish?.hasFlashFalloff == true
+        // 바꿀 것이 하나도 없으면 손대지 않음
+        guard lut != nil || style?.changesImage == true || finish?.hasTexture == true || usesFalloff,
+              let input = CIImage(data: data)
+        else { return data }
 
-        let output = filtered(input, lut: lut, style: style)
+        let orientation = (properties[kCGImagePropertyOrientation] as? UInt32).flatMap(CGImagePropertyOrientation.init(rawValue:)) ?? .up
+        let mask = usesFalloff ? DigicamFinish.personMask(for: input, orientation: orientation, context: context) : nil
+        let output = filtered(input, lut: lut, style: style, finish: finish, subjectMask: mask)
         // 원본과 같은 색공간으로 다시 씀 (기기 사진은 Display P3)
         guard let colorSpace = input.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB),
               let image = context.createCGImage(output, from: input.extent, format: .RGBA8, colorSpace: colorSpace)
         else { return data }
 
-        var properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
         properties[kCGImageDestinationLossyCompressionQuality] = 0.9
         let result = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(result, type, 1, nil) else { return data }
@@ -41,8 +49,17 @@ enum PhotoFilter {
         return result as Data
     }
 
-    /// 필터 체인. 미리보기(6단계)도 같은 함수를 쓴다
-    static func filtered(_ image: CIImage, lut: CubeLUT?, style: StyleSelection?) -> CIImage {
+    /// EXIF 플래시 값의 첫 비트 = 플래시가 터짐
+    private static func didFlashFire(_ properties: [CFString: Any]) -> Bool {
+        let exif = properties[kCGImagePropertyExifDictionary] as? [CFString: Any]
+        guard let flash = exif?[kCGImagePropertyExifFlash] as? Int else { return false }
+        return flash & 1 == 1
+    }
+
+    /// 필터 체인. 미리보기(6단계)도 같은 함수를 쓴다 (미리보기는 사람 마스크 없음)
+    static func filtered(_ image: CIImage, lut: CubeLUT?, style: StyleSelection?,
+                         finish: CameraFinish? = nil, subjectMask: CIImage? = nil,
+                         grainOffset: CGPoint = .zero) -> CIImage {
         var output = image
         if let lut, let sRGB = CGColorSpace(name: CGColorSpace.sRGB) {
             let filter = CIFilter.colorCubeWithColorSpace()
@@ -52,8 +69,14 @@ enum PhotoFilter {
             filter.colorSpace = sRGB
             output = filter.outputImage ?? output
         }
+        if let finish, let subjectMask {
+            output = DigicamFinish.applyFlashFalloff(output, finish: finish, mask: subjectMask)
+        }
         if let style, style.changesImage {
             output = StyleFilter.apply(style, to: output)
+        }
+        if let finish, finish.hasTexture {
+            output = DigicamFinish.applyTexture(output, finish: finish, grainOffset: grainOffset)
         }
         return output.cropped(to: image.extent)
     }

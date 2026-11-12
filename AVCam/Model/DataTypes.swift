@@ -119,14 +119,66 @@ struct StyleSelection: Equatable, Sendable {
     let values: StyleValues
 }
 
+/// 저장 사진에 입힐 카메라 색감 (CameraLook에서 만듦)
+struct PhotoLook: Sendable {
+    /// 기본 색감 (.cube)
+    let lutURL: URL?
+    /// 플래시가 터진 사진에 쓰는 색감. 없으면 `lutURL`
+    let flashLUTURL: URL?
+    /// 디카 질감 · 플래시 사람 밝게
+    let finish: CameraFinish?
+}
+
+/// 카메라별 디카 질감 값 (`camera_XX_이름.json`). 빠진 값은 0 / 끔
+struct CameraFinish: Equatable, Sendable, Decodable {
+    /// 살짝 부드럽게: 짧은 변 1000픽셀 기준 흐림 반경 (0 = 그대로)
+    var softness: Double = 0
+    /// 고운 노이즈 세기 (0 = 없음)
+    var grain: Double = 0
+    /// 가장자리 어둡게 0~1 (0 = 없음)
+    var vignette: Double = 0
+    /// 아이폰 자동 보정(여러 장 합성)을 줄임: 빠른 처리 우선으로 찍음
+    var prefersFastProcessing = false
+    /// 플래시 사진에서 사람 밝기 (EV, 양수 = 밝게)
+    var flashSubjectEV: Double = 0
+    /// 플래시 사진에서 배경 밝기 (EV, 음수 = 어둡게)
+    var flashBackgroundEV: Double = 0
+
+    var hasTexture: Bool { softness > 0 || grain > 0 || vignette > 0 }
+    var hasFlashFalloff: Bool { flashSubjectEV != 0 || flashBackgroundEV != 0 }
+
+    private enum CodingKeys: String, CodingKey {
+        case softness, grain, vignette, prefersFastProcessing, flashSubjectEV, flashBackgroundEV
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        softness = try values.decodeIfPresent(Double.self, forKey: .softness) ?? 0
+        grain = try values.decodeIfPresent(Double.self, forKey: .grain) ?? 0
+        vignette = try values.decodeIfPresent(Double.self, forKey: .vignette) ?? 0
+        prefersFastProcessing = try values.decodeIfPresent(Bool.self, forKey: .prefersFastProcessing) ?? false
+        flashSubjectEV = try values.decodeIfPresent(Double.self, forKey: .flashSubjectEV) ?? 0
+        flashBackgroundEV = try values.decodeIfPresent(Double.self, forKey: .flashBackgroundEV) ?? 0
+    }
+
+    /// json을 못 읽으면 nil (질감 없음)
+    init?(contentsOf url: URL) {
+        guard let data = try? Data(contentsOf: url),
+              let finish = try? JSONDecoder().decode(CameraFinish.self, from: data) else { return nil }
+        self = finish
+    }
+}
+
 struct PhotoFeatures {
     let isLivePhotoEnabled: Bool
     let qualityPrioritization: QualityPrioritization
     let flashMode: AVCaptureDevice.FlashMode
     /// 저장 전에 가운데를 잘라낼 비율 (긴 변 / 짧은 변). nil이면 원본 4:3
     let cropRatio: CGFloat?
-    /// 저장 전에 입힐 카메라 색감 LUT (.cube). nil이면 보정 없음
-    let lookLUTURL: URL?
+    /// 저장 전에 입힐 카메라 색감 (LUT · 플래시 LUT · 디카 질감). nil이면 보정 없음
+    let look: PhotoLook?
     /// 저장 전에 입힐 스타일. nil이면 보정 없음
     let style: StyleSelection?
     /// RAW(Apple ProRAW)로 찍음. 아니면 JPEG

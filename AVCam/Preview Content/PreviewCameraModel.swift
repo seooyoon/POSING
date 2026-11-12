@@ -35,7 +35,8 @@ class PreviewCameraModel: Camera {
     private func updatePreviewFilter() {
         let isPhoto = captureMode == .photo
         previewSource.filteredFeed.configure(lutURL: isPhoto ? cameraLook.lutURL : nil,
-                                             style: isPhoto ? photoStyle : nil)
+                                             style: isPhoto ? photoStyle : nil,
+                                             finish: isPhoto ? cameraLook.finish : nil)
     }
     var photoCodec = PhotoCodec.jpeg
     var photoResolution = 24

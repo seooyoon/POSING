@@ -22,10 +22,12 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
         var lutURL: URL?
         var lut: CubeLUT?
         var style: StyleSelection?
+        /// 디카 질감 (미리보기는 사람 밝게 없이 질감만)
+        var finish: CameraFinish?
         /// 새 프레임 · 새 보정이 들어올 때마다 1씩 늘어남. 그리는 쪽은 바뀌었을 때만 그림 (발열)
         var generation = 0
 
-        var isFiltering: Bool { lut != nil || style != nil }
+        var isFiltering: Bool { lut != nil || style != nil || finish != nil }
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
@@ -49,13 +51,14 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
 
     /// 보정 설정. LUT는 주소가 바뀔 때만 다시 읽음
     @MainActor
-    func configure(lutURL: URL?, style: StyleSelection?) {
+    func configure(lutURL: URL?, style: StyleSelection?, finish: CameraFinish? = nil) {
         let current = state.withLock { $0.lutURL == lutURL ? $0.lut : nil }
         let lut = current ?? lutURL.flatMap(CubeLUT.init(contentsOf:))
         let isFiltering = state.withLock { state in
             state.lutURL = lutURL
             state.lut = lut
             state.style = style?.changesImage == true ? style : nil
+            state.finish = finish?.hasTexture == true ? finish : nil
             // 끄면 지난 프레임을 버려서 다시 켤 때 옛 화면이 잠깐 보이지 않게
             if !state.isFiltering { state.image = nil }
             state.generation &+= 1
@@ -88,6 +91,9 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
         let current = state.withLock { $0 }
         guard current.isFiltering, current.generation != generation,
               let image = current.image ?? current.staticImage else { return nil }
-        return (PhotoFilter.filtered(image, lut: current.lut, style: current.style), current.generation)
+        // 노이즈 위치를 프레임마다 바꿔 화면에 무늬가 박혀 보이지 않게
+        let grainOffset = CGPoint(x: Double.random(in: 0..<256), y: Double.random(in: 0..<256))
+        return (PhotoFilter.filtered(image, lut: current.lut, style: current.style,
+                                     finish: current.finish, grainOffset: grainOffset), current.generation)
     }
 }
