@@ -40,16 +40,22 @@ enum CameraLookLibrary {
         let imageURL: URL?
     }
 
-    /// 설정에서 바꾼 순서를 적용한 카메라 목록. 순서에 없는 새 카메라는 번호순으로 뒤에 붙음
+    /// 이름순 카메라 목록: 한글(가나다) 먼저, 그다음 영어 · 숫자(abc). 새 카메라를 넣어도 자동으로 제자리
     static func load(bundle: Bundle = .main) -> [CameraLookItem] {
-        let entries = loadEntries(bundle: bundle)
-        let savedOrder = UserDefaults.standard.stringArray(forKey: SettingsKeys.cameraOrder) ?? []
-        let rank = Dictionary(savedOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-        return entries.enumerated()
-            .sorted { lhs, rhs in
-                (rank[lhs.element.look.id] ?? savedOrder.count + lhs.offset) < (rank[rhs.element.look.id] ?? savedOrder.count + rhs.offset)
-            }
-            .map { CameraLookItem(look: $0.element.look, name: $0.element.name, image: image(for: $0.element)) }
+        loadEntries(bundle: bundle)
+            .sorted { isOrderedBefore($0.name, $1.name) }
+            .map { CameraLookItem(look: $0.look, name: $0.name, image: image(for: $0)) }
+    }
+
+    private static func isOrderedBefore(_ lhs: String, _ rhs: String) -> Bool {
+        let lhsHangul = startsWithHangul(lhs), rhsHangul = startsWithHangul(rhs)
+        if lhsHangul != rhsHangul { return lhsHangul }
+        return lhs.localizedStandardCompare(rhs) == .orderedAscending
+    }
+
+    private static func startsWithHangul(_ name: String) -> Bool {
+        guard let scalar = name.unicodeScalars.first else { return false }
+        return (0xAC00...0xD7A3).contains(scalar.value) || (0x3131...0x318E).contains(scalar.value)
     }
 
     /// 앱을 켤 때 쓸 카메라 (설정에서 고정). 없거나 파일이 사라졌으면 기본 카메라
@@ -59,12 +65,17 @@ enum CameraLookLibrary {
         return looks.first { $0.id == savedID } ?? looks.first(where: \.isDefault) ?? .builtInDefault
     }
 
-    static func saveOrder(_ items: [CameraLookItem]) {
-        UserDefaults.standard.set(items.map(\.id), forKey: SettingsKeys.cameraOrder)
-    }
-
     static func saveStartLook(_ look: CameraLook) {
         UserDefaults.standard.set(look.id, forKey: SettingsKeys.startCamera)
+    }
+
+    /// 즐겨찾기한 카메라 id
+    static func loadFavorites() -> Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: SettingsKeys.favoriteCameras) ?? [])
+    }
+
+    static func saveFavorites(_ ids: Set<String>) {
+        UserDefaults.standard.set(ids.sorted(), forKey: SettingsKeys.favoriteCameras)
     }
 
     /// 번호 순서대로 정렬한 카메라. 기본 카메라는 파일이 없어도 항상 맨 앞에 있음
@@ -106,25 +117,60 @@ enum CameraLookLibrary {
     }
 }
 
-/// 카메라 목록, 지금 고른 카메라, 앱을 켤 때 쓸 카메라
+/// 카메라 목록, 지금 고른 카메라, 앱을 켤 때 쓸 카메라, 즐겨찾기
 @MainActor
 @Observable
 final class CameraLookState {
 
-    private(set) var items: [CameraLookItem]
+    /// 이름순 전체 카메라
+    private let allItems: [CameraLookItem]
+    /// 즐겨찾기한 카메라 id (저장)
+    private(set) var favoriteIDs: Set<String>
     /// 화면에서 고른 카메라 (저장하지 않음)
     private(set) var selectedID: String
     /// 시작 카메라 (설정에서 고정, 저장)
     private(set) var startID: String
 
-    init(items: [CameraLookItem] = CameraLookLibrary.load(), start: CameraLook = CameraLookLibrary.startLook()) {
-        self.items = items
+    init(items: [CameraLookItem] = CameraLookLibrary.load(), start: CameraLook = CameraLookLibrary.startLook(),
+         favorites: Set<String> = CameraLookLibrary.loadFavorites()) {
+        allItems = items
+        favoriteIDs = favorites
         selectedID = start.id
         startID = start.id
     }
 
+    /// 즐겨찾기가 먼저(그 안에서 이름순), 그다음 나머지(이름순)
+    var items: [CameraLookItem] {
+        allItems.filter { isFavorite($0) } + allItems.filter { !isFavorite($0) }
+    }
+
+    func isFavorite(_ item: CameraLookItem) -> Bool {
+        favoriteIDs.contains(item.id)
+    }
+
+    /// 카메라 버튼 · 목록 · 설정에서 두 번 빠르게 탭하면 즐겨찾기 켜고 끔
+    func toggleFavorite(_ item: CameraLookItem) {
+        if favoriteIDs.contains(item.id) {
+            favoriteIDs.remove(item.id)
+        } else {
+            favoriteIDs.insert(item.id)
+        }
+        CameraLookLibrary.saveFavorites(favoriteIDs)
+    }
+
     var selected: CameraLookItem? {
         items.first { $0.id == selectedID } ?? items.first
+    }
+
+    /// 카메라 목록에 보이는 카메라: 지금 고른 카메라는 버튼에 있으므로 뺌
+    var listItems: [CameraLookItem] {
+        items.filter { $0.id != selected?.id }
+    }
+
+    /// 목록에 위에서부터 놓는 순서. 사용자가 보기에 위쪽 · 왼쪽이 즐겨찾기 · 이름순 처음이 되게
+    /// (폰을 오른쪽으로 눕히면 화면 위가 오른쪽이 되므로 거꾸로)
+    func shownListItems(iconAngle: Double) -> [CameraLookItem] {
+        iconAngle < 0 ? listItems.reversed() : listItems
     }
 
     func select(_ item: CameraLookItem) {
@@ -141,8 +187,4 @@ final class CameraLookState {
         CameraLookLibrary.saveStartLook(item.look)
     }
 
-    func move(from source: IndexSet, to destination: Int) {
-        items.move(fromOffsets: source, toOffset: destination)
-        CameraLookLibrary.saveOrder(items)
-    }
 }

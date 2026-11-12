@@ -14,8 +14,8 @@ enum SettingsKeys {
     static let isCenterMarkEnabled = "isCenterMarkEnabled"
     /// 설정에서 바꾼 포즈 순서 (포즈 id 목록)
     static let poseOrder = "poseOrder"
-    /// 설정에서 바꾼 카메라 순서 (카메라 id 목록)
-    static let cameraOrder = "cameraOrder"
+    /// 즐겨찾기한 카메라 id 목록 (카메라 버튼 · 목록 · 설정에서 두 번 빠르게 탭)
+    static let favoriteCameras = "favoriteCameras"
     /// 앱을 켤 때 쓸 카메라 id (설정 > 카메라 목록)
     static let startCamera = "startCamera"
     /// 플래시 (자동 · 켬 · 끔)
