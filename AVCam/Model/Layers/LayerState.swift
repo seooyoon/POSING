@@ -116,13 +116,6 @@ final class LayerState {
         id == Self.userPackageID ? my.items : myPackages.first { $0.id == id }?.items ?? []
     }
 
-    /// 지금 고른 MY 사진이 들어 있는 패키지 (목록에서 그 패키지에 노란 테두리)
-    var selectedMYPackageID: String? {
-        guard let selected = my.selectedID else { return nil }
-        if my.items.contains(where: { $0.id == selected }) { return Self.userPackageID }
-        return myPackages.first { package in package.items.contains { $0.id == selected } }?.id
-    }
-
     func toggle(_ item: LayerItem, in kind: LayerKind) {
         self[kind].toggle(item)
         loadImage(of: item, in: kind)

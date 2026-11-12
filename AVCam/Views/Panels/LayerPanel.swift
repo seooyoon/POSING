@@ -116,7 +116,6 @@ struct LayerPanel: View {
     /// 패키지 칸: 대표 이미지 + 아래 이름. 목록에서는 들어가기, 패키지 안에서는 목록으로 돌아가기
     private func packageCell(id: String, name: String, cover: UIImage?) -> some View {
         let isOpen = layers.openMYPackageID == id
-        let hasSelection = layers.selectedMYPackageID == id
         return VStack(spacing: 2) {
             Group {
                 if let cover {
@@ -133,12 +132,8 @@ struct LayerPanel: View {
                 }
             }
             .frame(width: thumbnailSize, height: thumbnailSize)
+            // 대표 이미지에는 노란 테두리 없음 (선택 표시는 사진 칸에만)
             .clipShape(.rect(cornerRadius: 8))
-            .overlay {
-                // 고른 사진이 이 패키지 안에 있으면 노란 테두리
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.cameraYellow, lineWidth: hasSelection ? 2 : 0)
-            }
             nameLabel(name)
         }
         .contentShape(.rect(cornerRadius: 8))
