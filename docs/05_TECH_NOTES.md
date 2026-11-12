@@ -38,7 +38,8 @@
   - 색상: 채도·색 강도. `CIColorControls.saturation` (+ 약간의 `CIVibrance`). 흑백 스타일에서는 흑백 톤의 따뜻함/차가움으로 사용
   - 팔레트: 기본 룩의 세기. 원본과 룩 적용본을 `CIDissolveTransition`(또는 mix)으로 0~100% 섞기
   - 흑백 스타일: `CIPhotoEffectMono`/`CIColorControls saturation 0` 후 톤 커브
-- 룩 값은 참고 스크린샷(`docs/reference/style_*.png`)과 같은 장면을 나란히 찍어 비교하며 맞춤. 숫자는 코드 한 곳(`StylePresets.swift`)에 모아 쉽게 고치게
+- 룩 = 채도 · 대비 · 밝기(`CIColorControls`) + 색온도 + 빨강 · 초록 · 파랑 배율(`CIColorMatrix`). 미리보기와 저장 사진에 같은 보정(`PhotoFilter.filtered`)을 적용하며 카메라 화이트밸런스는 건드리지 않음
+- 룩 값은 참고 스크린샷(`docs/reference/style_*.png`)과 같은 장면을 나란히 찍어 비교하며 맞춤. 새로 넣은 10개는 기본 카메라 화면 녹화에서 스타일마다 표준과의 색 분포 차이를 계산해 맞춤. 숫자는 코드 한 곳(`StylePresets.swift`)에 모아 쉽게 고치게
 - **미리보기**: 보정이 보이려면 `AVCaptureVideoPreviewLayer` 대신 `AVCaptureVideoDataOutput` → CIImage → 필터 → `MTKView`(Metal) 렌더링 필요
   - 표준(보정 없음)일 때는 기존 미리보기 레이어를 쓰고, 다른 스타일일 때만 Metal 미리보기로 바꾸는 방식도 가능 (성능·배터리 유리)
   - Metal 미리보기를 쓰면 탭 초점 좌표 변환을 직접 계산해야 함 (미리보기 레이어의 변환 함수를 못 씀)

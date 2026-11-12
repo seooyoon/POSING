@@ -239,16 +239,48 @@ private struct StylePageDots: View {
 
     let index: Int
 
+    /// 기본 카메라처럼 점은 5개만 보이고, 고른 스타일이 창 끝에 닿으면 창이 따라 움직임
+    private static let visibleCount = 5
+    @State private var windowStart: Int?
+
+    private var count: Int { PhotoStyle.allCases.count }
+
+    private var start: Int { windowStart ?? Self.initialStart(index: index, count: count) }
+
     var body: some View {
         HStack(spacing: 8) {
-            ForEach(PhotoStyle.allCases.indices, id: \.self) { position in
+            ForEach(start..<min(start + Self.visibleCount, count), id: \.self) { position in
                 Circle()
-                    .fill(.white.opacity(position == index ? 1 : 0.45))
-                    .frame(width: position == index ? 7 : 5, height: position == index ? 7 : 5)
+                    .fill(.white.opacity(position == index ? 1 : 0.5))
+                    .frame(width: size(at: position), height: size(at: position))
             }
         }
+        .frame(height: 7)
+        // 첫 이동도 지금 창을 기준으로 밀리게, 처음 창 위치를 저장
+        .onAppear {
+            if windowStart == nil { windowStart = Self.initialStart(index: index, count: count) }
+        }
         .animation(.easeOut(duration: 0.2), value: index)
+        .animation(.easeOut(duration: 0.2), value: start)
+        .onChange(of: index) { _, newIndex in
+            var next = start
+            // 창 양 끝 바로 안쪽까지 오면 한 칸씩 밀림 (처음 · 마지막에서는 끝까지)
+            if newIndex < next + 1 { next = newIndex - 1 }
+            if newIndex > next + Self.visibleCount - 2 { next = newIndex - Self.visibleCount + 2 }
+            windowStart = min(max(next, 0), max(count - Self.visibleCount, 0))
+        }
         .accessibilityHidden(true)
+    }
+
+    /// 창 끝 점은 그 너머에 스타일이 더 있으면 작게
+    private func size(at position: Int) -> CGFloat {
+        let isLeadingEdge = position == start && start > 0
+        let isTrailingEdge = position == start + Self.visibleCount - 1 && position < count - 1
+        return isLeadingEdge || isTrailingEdge ? 4.5 : 7
+    }
+
+    private static func initialStart(index: Int, count: Int) -> Int {
+        min(max(index - 2, 0), max(count - visibleCount, 0))
     }
 }
 
