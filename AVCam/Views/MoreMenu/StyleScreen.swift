@@ -256,6 +256,10 @@ private struct StylePageDots: View {
             }
         }
         .frame(height: 7)
+        // 첫 이동도 지금 창을 기준으로 밀리게, 처음 창 위치를 저장
+        .onAppear {
+            if windowStart == nil { windowStart = Self.initialStart(index: index, count: count) }
+        }
         .animation(.easeOut(duration: 0.2), value: index)
         .animation(.easeOut(duration: 0.2), value: start)
         .onChange(of: index) { _, newIndex in
