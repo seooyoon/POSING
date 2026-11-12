@@ -49,7 +49,7 @@ struct MYListView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("MY 목록")
+        .navigationTitle("MY 내 사진")
         .toolbar {
             EditToggleButton(editMode: $editMode)
         }
