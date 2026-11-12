@@ -162,6 +162,9 @@ struct CameraLookButton: View {
     private func beginSelecting(at translation: CGFloat) {
         cancelLongPress()
         guard !looks.listItems.isEmpty else { return }
+        // 첫 탭 대기가 남아 있으면 끝날 때 목록을 닫아 버리므로 취소
+        pendingTapTask?.cancel()
+        pendingTapTask = nil
         dragStart = (0, translation)
         highlightedID = nil
         isListOpen = true
@@ -270,7 +273,7 @@ struct CameraLookList: View {
             .onTapGesture { onSelect(item) }
             .accessibilityElement()
             .accessibilityLabel(item.name)
-            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAddTraits(highlightedID == item.id ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { onSelect(item) }
             .accessibilityAction(named: looks.isFavorite(item) ? "즐겨찾기 해제" : "즐겨찾기") { looks.toggleFavorite(item) }
             .accessibilityValue(looks.isFavorite(item) ? "즐겨찾기" : "")
