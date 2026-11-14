@@ -99,11 +99,14 @@ enum DigicamFinish {
             "inputGVector": CIVector(x: gain, y: 0, z: 0, w: 0),
             "inputBVector": CIVector(x: gain, y: 0, z: 0, w: 0),
             "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0),
-            "inputBiasVector": CIVector(x: -gain / 2, y: -gain / 2, z: -gain / 2, w: 0),
+            // 알파가 0이면 합성할 때 노이즈 색도 0이 되므로 1로 둠
+            "inputBiasVector": CIVector(x: -gain / 2, y: -gain / 2, z: -gain / 2, w: 1),
         ])
         .transformed(by: CGAffineTransform(translationX: offset.x, y: offset.y).scaledBy(x: size, y: size))
         let perceptual = image.applyingFilter("CILinearToSRGBToneCurve")
+        // 더하면 알파도 2가 되므로 다시 1로
         let grained = mono.applyingFilter("CIAdditionCompositing", parameters: [kCIInputBackgroundImageKey: perceptual])
+            .settingAlphaOne(in: image.extent)
         return grained.applyingFilter("CISRGBToneCurveToLinear").cropped(to: image.extent)
     }
 
