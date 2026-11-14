@@ -85,12 +85,15 @@ enum MYLibrary {
         ImageDownsampler.image(at: coverFile, maxPixels: ImageDownsampler.thumbnailPixels)
     }
 
-    /// 사진 앱에서 고른 사진을 대표 이미지로 저장. 읽지 못하면 nil
-    static func saveCover(_ pickerItem: PhotosPickerItem) async -> UIImage? {
-        guard let data = try? await pickerItem.loadTransferable(type: Data.self),
-              let jpeg = downsampledJPEG(from: data, maxPixels: maxCoverPixels),
-              (try? jpeg.write(to: coverFile, options: .atomic)) != nil
-        else { return nil }
+    /// 사진 앱에서 고른 사진을 대표 이미지 크기 JPEG로 준비 (아직 저장하지 않음). 읽지 못하면 nil
+    static func prepareCover(_ pickerItem: PhotosPickerItem) async -> Data? {
+        guard let data = try? await pickerItem.loadTransferable(type: Data.self) else { return nil }
+        return downsampledJPEG(from: data, maxPixels: maxCoverPixels)
+    }
+
+    /// 준비한 대표 이미지를 저장. 실패하면 nil
+    static func writeCover(_ jpeg: Data) -> UIImage? {
+        guard (try? jpeg.write(to: coverFile, options: .atomic)) != nil else { return nil }
         return loadCover()
     }
 

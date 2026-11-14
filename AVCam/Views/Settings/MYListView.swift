@@ -24,6 +24,7 @@ struct MYListView: View {
     }
     @State private var isPicking = false
     @State private var coverSelection: PhotosPickerItem?
+    @State private var showsCoverError = false
 
     var body: some View {
         List {
@@ -35,7 +36,7 @@ struct MYListView: View {
                 }
                 if layers.myCustomCover != nil {
                     Button("첫 사진으로 되돌리기", role: .destructive) {
-                        layers.setMYCover(nil)
+                        layers.resetMYCover()
                     }
                 }
             } header: {
@@ -79,10 +80,15 @@ struct MYListView: View {
             guard let item else { return }
             coverSelection = nil
             Task {
-                if let cover = await MYLibrary.saveCover(item) {
-                    layers.setMYCover(cover)
+                if await !layers.updateMYCover(item) {
+                    showsCoverError = true
                 }
             }
+        }
+        .alert("대표 이미지를 바꾸지 못했어요", isPresented: $showsCoverError) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text("iCloud에만 있는 사진은 인터넷 연결이 필요할 수 있어요. 다른 사진을 골라 주세요.")
         }
     }
 

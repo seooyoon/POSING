@@ -6,6 +6,7 @@
 //  포즈 1개 + MY 1개까지 동시에 선택하고, 패널은 한 번에 하나만 연다.
 //
 
+import PhotosUI
 import SwiftUI
 
 /// 레이어 한 종류(포즈 또는 MY)의 목록과 선택 상태
@@ -118,10 +119,26 @@ final class LayerState {
         myCustomCover ?? my.items.first?.thumbnail
     }
 
-    /// 설정에서 고른 대표 이미지 적용. nil이면 첫 사진으로 되돌림
-    func setMYCover(_ image: UIImage?) {
-        if image == nil { MYLibrary.deleteCover() }
-        myCustomCover = image
+    /// 대표 이미지 요청 번호: 새로 고르거나 되돌리면 늘어나서, 늦게 끝난 이전 요청은 버림
+    private var coverRequest = 0
+
+    /// 첫 사진으로 되돌림 (진행 중인 대표 이미지 요청도 무효)
+    func resetMYCover() {
+        coverRequest += 1
+        MYLibrary.deleteCover()
+        myCustomCover = nil
+    }
+
+    /// 사진 앱에서 고른 사진을 대표 이미지로. 실패하면 false (최신 요청이 아니어서 버린 경우는 true)
+    func updateMYCover(_ item: PhotosPickerItem) async -> Bool {
+        coverRequest += 1
+        let request = coverRequest
+        guard let jpeg = await MYLibrary.prepareCover(item) else { return request != coverRequest }
+        // 기다리는 사이 새로 고르거나 되돌렸으면 기록하지 않음
+        guard request == coverRequest else { return true }
+        guard let cover = MYLibrary.writeCover(jpeg) else { return false }
+        myCustomCover = cover
+        return true
     }
 
     /// 패키지 안의 사진. '내 사진'은 직접 추가한 사진
