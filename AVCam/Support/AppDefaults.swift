@@ -26,6 +26,13 @@ enum AppDefaults {
     /// 사진 여러 장 선택 허용. 선택 순서대로 맨 왼쪽에 쌓고 1번을 바로 적용
     static let allowsMultipleMYSelection = true
 
+    // MARK: - 앱 아이콘 (설정 맨 위 카드)
+
+    /// 지금 아이콘 미리보기 크기
+    static let appIconCurrentSize: CGFloat = 60
+    /// 펼친 가로 목록의 아이콘 크기
+    static let appIconListSize: CGFloat = 56
+
     // MARK: - 버튼 동작
 
     /// 꾹 누르기 인식 시간 (초). 햅틱 없음
@@ -35,7 +42,7 @@ enum AppDefaults {
     /// 즐겨찾기 하트 크기 (카메라 버튼 · 목록 칸)
     static let favoriteBadgeSize: CGFloat = 14
     /// 하트를 이미지 오른쪽 위 모서리에서 안쪽으로 옮기는 거리. 카메라 PNG 둘레가 투명이라 몸체 모서리에 살짝 겹치게
-    static let favoriteHeartInset = CGSize(width: 2, height: 6)
+    static let favoriteHeartInset = CGSize(width: 0, height: 5)
     /// 배율 버튼 길게 누르기 → 다이얼 (기본 카메라처럼 조금 더 빠름)
     static let zoomDialLongPressDuration = 0.4
     /// 카메라 목록은 바깥 탭 또는 카메라 버튼 다시 탭으로 닫힘
