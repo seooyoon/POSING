@@ -6,6 +6,7 @@
 //  포즈 1개 + MY 1개까지 동시에 선택하고, 패널은 한 번에 하나만 연다.
 //
 
+import PhotosUI
 import SwiftUI
 
 /// 레이어 한 종류(포즈 또는 MY)의 목록과 선택 상태
@@ -57,7 +58,14 @@ struct LayerSlot {
 final class LayerState {
 
     var pose = LayerSlot(defaultOpacity: AppDefaults.poseOpacity)
+    /// MY 선택 상태. `my.items`는 직접 추가한 '내 사진' 패키지의 사진
     var my = LayerSlot(defaultOpacity: AppDefaults.myOpacity)
+    /// 앱에 넣어 둔 MY 패키지 (순서 고정)
+    let myPackages: [MYPackage]
+    /// '내 사진' 대표 이미지로 직접 고른 사진. nil이면 첫 사진
+    private(set) var myCustomCover: UIImage? = MYLibrary.loadCover()
+    /// MY 패널에서 들어가 있는 패키지. nil이면 패키지 목록. 패널을 닫았다 열어도 그대로
+    private(set) var openMYPackageID: String?
     /// 지금 열린 패널. 포즈 · MY 패널은 같은 자리에 하나만
     private(set) var openPanel: LayerKind?
     /// MY 꾹 누르기로 사진 피커를 띄움
@@ -65,7 +73,12 @@ final class LayerState {
     /// 초기화 꾹 누르기로 설정 화면을 띄움
     var isShowingSettings = false
 
-    init(poses: [LayerItem] = PoseLibrary.load(), myItems: [LayerItem] = MYLibrary.load()) {
+    /// 직접 추가한 사진 묶음의 id (패키지 목록 맨 왼쪽)
+    static let userPackageID = "내 사진"
+
+    init(poses: [LayerItem] = PoseLibrary.load(), myItems: [LayerItem] = MYLibrary.load(),
+         myPackages: [MYPackage] = MYPackageLibrary.load()) {
+        self.myPackages = myPackages
         pose.items = poses
         my.items = myItems
     }
@@ -87,6 +100,50 @@ final class LayerState {
     /// 미리보기를 탭하면 열린 패널만 닫음 (선택한 레이어는 그대로)
     func closePanel() {
         openPanel = nil
+    }
+
+    // MARK: - MY 패키지
+
+    /// 패키지 목록에서 패키지를 누르면 그 안으로
+    func openMYPackage(_ id: String) {
+        openMYPackageID = id
+    }
+
+    /// 패키지 안에서 맨 왼쪽 대표 이미지를 누르면 다시 패키지 목록으로
+    func closeMYPackage() {
+        openMYPackageID = nil
+    }
+
+    /// '내 사진' 대표 이미지: 직접 고른 사진, 없으면 첫 사진
+    var userPackageCover: UIImage? {
+        myCustomCover ?? my.items.first?.thumbnail
+    }
+
+    /// 대표 이미지 요청 번호: 새로 고르거나 되돌리면 늘어나서, 늦게 끝난 이전 요청은 버림
+    private var coverRequest = 0
+
+    /// 첫 사진으로 되돌림 (진행 중인 대표 이미지 요청도 무효)
+    func resetMYCover() {
+        coverRequest += 1
+        MYLibrary.deleteCover()
+        myCustomCover = nil
+    }
+
+    /// 사진 앱에서 고른 사진을 대표 이미지로. 실패하면 false (최신 요청이 아니어서 버린 경우는 true)
+    func updateMYCover(_ item: PhotosPickerItem) async -> Bool {
+        coverRequest += 1
+        let request = coverRequest
+        guard let jpeg = await MYLibrary.prepareCover(item) else { return request != coverRequest }
+        // 기다리는 사이 새로 고르거나 되돌렸으면 기록하지 않음
+        guard request == coverRequest else { return true }
+        guard let cover = MYLibrary.writeCover(jpeg) else { return false }
+        myCustomCover = cover
+        return true
+    }
+
+    /// 패키지 안의 사진. '내 사진'은 직접 추가한 사진
+    func myItems(inPackage id: String) -> [LayerItem] {
+        id == Self.userPackageID ? my.items : myPackages.first { $0.id == id }?.items ?? []
     }
 
     func toggle(_ item: LayerItem, in kind: LayerKind) {
@@ -116,6 +173,7 @@ final class LayerState {
         my.select(first)
         loadImage(of: first, in: .my)
         openPanel = .my
+        openMYPackageID = Self.userPackageID
         MYLibrary.saveOrder(my.items)
     }
 

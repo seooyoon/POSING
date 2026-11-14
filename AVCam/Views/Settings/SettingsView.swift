@@ -43,7 +43,7 @@ struct SettingsView: View {
                     NavigationLink("포즈 목록") {
                         PoseOrderView(layers: layers)
                     }
-                    NavigationLink("MY 목록") {
+                    NavigationLink("MY 내 사진") {
                         MYListView(layers: layers)
                     }
                     NavigationLink {
@@ -54,7 +54,7 @@ struct SettingsView: View {
                 } header: {
                     Text("목록")
                 } footer: {
-                    Text("포즈 · MY는 바꾼 순서가 카메라 화면 목록에 그대로 보입니다. 카메라 목록 오른쪽 이름은 앱을 켤 때 쓰는 카메라입니다.")
+                    Text("포즈 · 내 사진은 바꾼 순서가 카메라 화면 목록에 그대로 보입니다. MY의 다른 패키지는 순서가 정해져 있습니다. 카메라 목록 오른쪽 이름은 앱을 켤 때 쓰는 카메라입니다.")
                 }
 
                 Section("정보") {
