@@ -3,7 +3,7 @@
 //  포징
 //
 //  셔터 왼쪽 카메라 버튼의 데이터 (docs/01_SPEC.md 7-1절, docs/04_ASSETS.md 3-1절).
-//  앱 번들 Cameras 폴더의 `camera_XX_이름.png` + 선택 `camera_XX_이름.cube`를 읽는다.
+//  앱 번들 Cameras 폴더의 `camera_XX_이름.png` + 선택 `camera_XX_이름.cube` · `camera_XX_이름_flash.cube` · `camera_XX_이름.json`을 읽는다.
 //
 
 import UIKit
@@ -13,6 +13,13 @@ struct CameraLook: Equatable, Sendable {
     let id: String
     let isDefault: Bool
     let lutURL: URL?
+    /// 플래시가 터진 사진에 쓰는 색감. 없으면 `lutURL`
+    var flashLUTURL: URL? = nil
+    /// 디카 질감 · 플래시 사람 밝게 (json). 없으면 질감 없음
+    var finish: CameraFinish? = nil
+    var photoLook: PhotoLook {
+        PhotoLook(lutURL: lutURL, flashLUTURL: flashLUTURL, finish: finish)
+    }
     /// 파일이 하나도 없을 때 쓰는 기본 카메라
     static let builtInDefault = CameraLook(id: "camera_00_\(CameraLookLibrary.defaultName)", isDefault: true, lutURL: nil)
 }
@@ -87,6 +94,12 @@ enum CameraLookLibrary {
             files.filter { $0.pathExtension.lowercased() == "cube" }.map { (fileStem($0), $0) },
             uniquingKeysWith: { first, _ in first }
         )
+        let finishes = Dictionary(
+            files.filter { $0.pathExtension.lowercased() == "json" }.compactMap { url in
+                CameraFinish(contentsOf: url).map { (fileStem(url), $0) }
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
         let entries = files
             .filter { $0.pathExtension.lowercased() == "png" && fileStem($0).hasPrefix(prefix) }
             .map { url -> Entry in
@@ -95,8 +108,10 @@ enum CameraLookLibrary {
                 let name = id.split(separator: "_", maxSplits: 2).last.map(String.init) ?? id
                 let isDefault = name == defaultName
                 // 기본 카메라는 보정 없음
-                return Entry(look: CameraLook(id: id, isDefault: isDefault, lutURL: isDefault ? nil : luts[id]),
-                             name: name, imageURL: url)
+                let look = isDefault
+                    ? CameraLook(id: id, isDefault: true, lutURL: nil)
+                    : CameraLook(id: id, isDefault: false, lutURL: luts[id], flashLUTURL: luts[id + "_flash"], finish: finishes[id])
+                return Entry(look: look, name: name, imageURL: url)
             }
             .sorted { $0.look.id.localizedStandardCompare($1.look.id) == .orderedAscending }
         guard entries.contains(where: \.look.isDefault) else {

@@ -187,12 +187,12 @@ final class CameraModel: Camera {
         do {
             let appliesPhotoFilters = activeCodec != .raw && !isLivePhotoActive
             let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoActive,
-                                              qualityPrioritization: qualityPrioritization,
+                                              qualityPrioritization: photoQualityPrioritization,
                                               flashMode: AVCaptureDevice.FlashMode(flashMode),
                                               // RAW(DNG)는 자를 수 없어 원본 4:3으로 저장
                                               cropRatio: activeCodec == .raw ? nil : photoAspect.cropLongToShort,
                                               // RAW(DNG)와 LIVE는 색감 · 스타일을 입히지 않음 (LIVE 영상 부분은 보정할 수 없어 짝이 어긋남)
-                                              lookLUTURL: appliesPhotoFilters ? cameraLook.lutURL : nil,
+                                              look: appliesPhotoFilters && !cameraLook.isDefault ? cameraLook.photoLook : nil,
                                               style: appliesPhotoFilters && photoStyle.changesImage ? photoStyle : nil,
                                               isRAW: activeCodec == .raw,
                                               maxDimensions: activeDimensions)
@@ -240,16 +240,16 @@ final class CameraModel: Camera {
     var photoStyle = StyleSelection.standard
 
     /// 저장본에 들어가는 보정과 같은 조건 (RAW · LIVE면 보정 없음)
-    private var previewFilterInputs: (lutURL: URL?, style: StyleSelection?) {
+    private var previewFilterInputs: (look: CameraLook?, style: StyleSelection?) {
         guard captureMode == .photo, activeCodec != .raw, !isLivePhotoActive else { return (nil, nil) }
-        return (cameraLook.lutURL, photoStyle)
+        return (cameraLook, photoStyle)
     }
 
     /// 사진 모드에서 카메라 색감 · 스타일 보정이 있으면 미리보기에도 보정 표시 (Metal 미리보기)
     private func updatePreviewFilter() {
         guard status == .running else { return }
         let inputs = previewFilterInputs
-        captureService.previewSource.filteredFeed.configure(lutURL: inputs.lutURL, style: inputs.style)
+        captureService.previewSource.filteredFeed.configure(lutURL: inputs.look?.lutURL, style: inputs.style, finish: inputs.look?.finish)
         Task { await captureService.refreshPreviewFiltering() }
     }
 
@@ -336,6 +336,15 @@ final class CameraModel: Camera {
     }
 
     /// 고른 해상도에 맞는 장치 사진 크기
+    /// 디카 카메라는 아이폰 자동 보정(여러 장 합성)을 줄이려고 빠른 처리 우선.
+    /// 빠른 처리는 12MP에서만 지원돼서 24 · 48MP는 그대로 (해상도가 몰래 줄지 않게)
+    private var photoQualityPrioritization: QualityPrioritization {
+        guard cameraLook.finish?.prefersFastProcessing == true,
+              let dimensions = activeDimensions,
+              Int(dimensions.width) * Int(dimensions.height) <= 12_600_000 else { return qualityPrioritization }
+        return .speed
+    }
+
     private var activeDimensions: CMVideoDimensions? {
         photoDimensions.last {
             PhotoResolution.megapixels(width: $0.width, height: $0.height) == activeResolution

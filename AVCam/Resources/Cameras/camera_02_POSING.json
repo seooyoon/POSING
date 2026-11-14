@@ -1,0 +1,8 @@
+{
+  "softness": 0.6,
+  "grain": 0.05,
+  "vignette": 0.35,
+  "prefersFastProcessing": true,
+  "flashSubjectEV": 0.3,
+  "flashBackgroundEV": -0.9
+}
