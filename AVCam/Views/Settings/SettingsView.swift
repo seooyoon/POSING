@@ -111,6 +111,9 @@ struct AppIconCard: View {
     @State private var current = UIApplication.shared.alternateIconName
     @State private var picked: String?
     @State private var isEditing = false
+    /// 아이콘을 바꾸는 중 (끝날 때까지 입력을 막음)
+    @State private var isApplying = false
+    @State private var showsError = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -148,7 +151,13 @@ struct AppIconCard: View {
                 .buttonStyle(.borderless)
             }
         }
+        .disabled(isApplying)
         .padding(.vertical, 4)
+        .alert("앱 아이콘을 바꾸지 못했어요", isPresented: $showsError) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text("잠시 뒤 다시 시도해 주세요.")
+        }
     }
 
     /// 목록의 아이콘 하나: 탭하면 선택 표시만 바뀜. 고른 아이콘은 파란 테두리 + 체크
@@ -189,16 +198,20 @@ struct AppIconCard: View {
 
     /// 홈 화면 아이콘 바꾸기. 바꾼 뒤 iOS가 알림을 한 번 띄움 (막을 수 없음)
     private func apply() {
+        guard !isApplying else { return }
+        isApplying = true
         let target = picked
         Task { @MainActor in
+            defer { isApplying = false }
             do {
                 try await UIApplication.shared.setAlternateIconName(target)
                 current = target
+                withAnimation { isEditing = false }
             } catch {
-                // 실패하면 그대로 둠
+                // 실패하면 고르던 화면을 그대로 두고 알림 (바로 다시 시도할 수 있게)
                 current = UIApplication.shared.alternateIconName
+                showsError = true
             }
-            withAnimation { isEditing = false }
         }
     }
 }
