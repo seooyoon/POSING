@@ -133,6 +133,8 @@ struct PhotoLook: Sendable {
 struct CameraFinish: Equatable, Sendable, Decodable {
     /// 살짝 부드럽게: 짧은 변 1000픽셀 기준 흐림 반경 (0 = 그대로)
     var softness: Double = 0
+    /// 디카처럼 또렷하게: 경계 대비 세기 (0 = 그대로)
+    var sharpness: Double = 0
     /// 고운 노이즈 세기 (0 = 없음)
     var grain: Double = 0
     /// 가장자리 어둡게 0~1 (0 = 없음)
@@ -144,11 +146,11 @@ struct CameraFinish: Equatable, Sendable, Decodable {
     /// 플래시 사진에서 배경 밝기 (EV, 음수 = 어둡게)
     var flashBackgroundEV: Double = 0
 
-    var hasTexture: Bool { softness > 0 || grain > 0 || vignette > 0 }
+    var hasTexture: Bool { softness > 0 || sharpness > 0 || grain > 0 || vignette > 0 }
     var hasFlashFalloff: Bool { flashSubjectEV != 0 || flashBackgroundEV != 0 }
 
     private enum CodingKeys: String, CodingKey {
-        case softness, grain, vignette, prefersFastProcessing, flashSubjectEV, flashBackgroundEV
+        case softness, sharpness, grain, vignette, prefersFastProcessing, flashSubjectEV, flashBackgroundEV
     }
 
     init() {}
@@ -156,6 +158,7 @@ struct CameraFinish: Equatable, Sendable, Decodable {
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         softness = try values.decodeIfPresent(Double.self, forKey: .softness) ?? 0
+        sharpness = try values.decodeIfPresent(Double.self, forKey: .sharpness) ?? 0
         grain = try values.decodeIfPresent(Double.self, forKey: .grain) ?? 0
         vignette = try values.decodeIfPresent(Double.self, forKey: .vignette) ?? 0
         prefersFastProcessing = try values.decodeIfPresent(Bool.self, forKey: .prefersFastProcessing) ?? false
