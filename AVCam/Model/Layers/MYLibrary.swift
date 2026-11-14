@@ -82,7 +82,9 @@ enum MYLibrary {
     // MARK: - 내 사진 대표 이미지
 
     static func loadCover() -> UIImage? {
-        ImageDownsampler.image(at: coverFile, maxPixels: ImageDownsampler.thumbnailPixels)
+        // 고른 적이 없으면 파일이 없음 (없는 파일을 읽으면 Xcode에 오류 기록이 남음)
+        guard FileManager.default.fileExists(atPath: coverFile.path(percentEncoded: false)) else { return nil }
+        return ImageDownsampler.image(at: coverFile, maxPixels: ImageDownsampler.thumbnailPixels)
     }
 
     /// 사진 앱에서 고른 사진을 대표 이미지 크기 JPEG로 준비 (아직 저장하지 않음). 읽지 못하면 nil
