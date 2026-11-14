@@ -55,7 +55,7 @@ enum DigicamFinish {
         return mask.clampedToExtent().applyingGaussianBlur(sigma: feather).cropped(to: image.extent)
     }
 
-    // MARK: - 질감: 부드럽게 · 노이즈 · 가장자리 어둡게
+    // MARK: - 질감: 부드럽게 · 또렷하게 · 노이즈 · 가장자리 어둡게
 
     /// `grainOffset`: 미리보기에서 프레임마다 노이즈 위치를 바꿔 화면에 무늬가 박혀 보이지 않게
     static func applyTexture(_ image: CIImage, finish: CameraFinish, grainOffset: CGPoint = .zero) -> CIImage {
@@ -64,6 +64,12 @@ enum DigicamFinish {
         var output = image
         if finish.softness > 0 {
             output = output.clampedToExtent().applyingGaussianBlur(sigma: finish.softness * unit).cropped(to: extent)
+        }
+        if finish.sharpness > 0 {
+            output = output.applyingFilter("CIUnsharpMask", parameters: [
+                kCIInputRadiusKey: FinishTuning.sharpenRadius * unit,
+                kCIInputIntensityKey: finish.sharpness,
+            ]).cropped(to: extent)
         }
         if finish.grain > 0 {
             output = addGrain(output, amount: finish.grain, size: max(1, unit * FinishTuning.grainSize), offset: grainOffset)
@@ -136,10 +142,12 @@ enum DigicamFinish {
 private enum FinishTuning {
     /// 사람 인식에 쓰는 이미지의 긴 변 (픽셀)
     static let maskLongSide: CGFloat = 1024
-    /// 사람이 이 비율보다 작으면 사람 없음으로 봄
-    static let minPersonCoverage = 0.03
+    /// 사람이 이 비율보다 작으면 사람 없음으로 봄 (발 · 손만 찍힌 사진은 하지 않게)
+    static let minPersonCoverage = 0.1
     /// 사람 경계를 부드럽게 (짧은 변 대비)
     static let maskFeather: CGFloat = 0.006
+    /// 또렷하게 할 경계 폭 (짧은 변 1000픽셀 기준)
+    static let sharpenRadius: CGFloat = 1.5
     /// 노이즈 알갱이 크기 (짧은 변 1000픽셀 기준)
     static let grainSize: CGFloat = 1.2
     /// 가장자리 어둡게가 시작되는 거리 (대각선 절반 대비)
