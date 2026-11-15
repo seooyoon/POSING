@@ -52,7 +52,7 @@ extension LayerState {
 
     /// 시작 투명도에 민 비율을 더해 5% 단위로 맞춤
     func setOpacity(_ kind: LayerKind, from start: Double, dragged fraction: Double) {
-        let range = AppDefaults.opacityRange
+        let range = AppDefaults.opacityRange(for: kind)
         let step = AppDefaults.opacityStep
         let snapped = ((start + fraction) / step).rounded() * step
         self[kind].opacity = min(max(snapped, range.lowerBound), range.upperBound)

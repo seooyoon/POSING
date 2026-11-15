@@ -29,7 +29,7 @@ struct LayerPanel: View {
             } else {
                 packageList
             }
-            OpacitySlider(value: $layers[kind].opacity, isEnabled: layers[kind].isSelected)
+            OpacitySlider(value: $layers[kind].opacity, isEnabled: layers[kind].isSelected, range: AppDefaults.opacityRange(for: kind))
                 .padding(.horizontal, CameraLayout.sideInset)
         }
         .padding(.vertical, 10)

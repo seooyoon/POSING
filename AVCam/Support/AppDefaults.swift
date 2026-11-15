@@ -16,10 +16,17 @@ enum AppDefaults {
     static let poseOpacity = 1.0
     /// MY 사진 투명도. 칸을 새로 고를 때마다 이 값에서 시작
     static let myOpacity = 0.35
-    /// 투명도 조절 범위 (5%~100%)
-    static let opacityRange = 0.05...1.0
+    /// 포즈 테두리 투명도 조절 범위 (5%~100%)
+    static let poseOpacityRange = 0.05...1.0
+    /// MY 사진 투명도 조절 범위 (5%~95%, 항상 조금은 비쳐 보이게)
+    static let myOpacityRange = 0.05...0.95
     /// 투명도 조절 단위 (5%)
     static let opacityStep = 0.05
+
+    /// 레이어별 투명도 조절 범위
+    static func opacityRange(for kind: LayerKind) -> ClosedRange<Double> {
+        kind == .my ? myOpacityRange : poseOpacityRange
+    }
     /// 미리보기를 좌우로 밀어 투명도 조절: 이만큼(pt) 밀면 0 → 100%
     static let opacityDragDistance: CGFloat = 300
 
