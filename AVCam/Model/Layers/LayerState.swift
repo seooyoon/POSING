@@ -14,6 +14,8 @@ struct LayerSlot {
     private(set) var selectedID: String?
     /// 화면에 겹치는 이미지. 고른 뒤 메인 스레드 밖에서 읽어 채움
     private(set) var image: UIImage?
+    /// MY 사진의 외곽선 · 얼굴 점 (사진을 다 읽은 뒤 따로 채움). 포즈는 항상 nil
+    private(set) var guide: UIImage?
     var opacity: Double
     let defaultOpacity: Double
 
@@ -37,6 +39,7 @@ struct LayerSlot {
     mutating func select(_ item: LayerItem) {
         selectedID = item.id
         image = nil
+        guide = nil
         opacity = defaultOpacity
     }
 
@@ -46,9 +49,15 @@ struct LayerSlot {
         self.image = image
     }
 
+    mutating func setGuide(_ guide: UIImage?, for id: String) {
+        guard selectedID == id else { return }
+        self.guide = guide
+    }
+
     mutating func deselect() {
         selectedID = nil
         image = nil
+        guide = nil
     }
 }
 
@@ -67,6 +76,8 @@ final class LayerState {
     private(set) var openPanel: LayerKind?
     /// 패키지 대표 이미지 꾹 누르기로 그 패키지에 사진을 추가하는 피커를 띄움
     var pickingMYPackageID: String?
+    /// MY 버튼을 누르고 있는 동안 원본 사진을 100%로 (가이드는 숨김)
+    var isPeekingMY = false
     /// 초기화 꾹 누르기로 설정 화면을 띄움
     var isShowingSettings = false
 
@@ -120,6 +131,7 @@ final class LayerState {
         pose.deselect()
         my.deselect()
         openPanel = nil
+        isPeekingMY = false
     }
 
     /// 새로 추가한 사진을 고른 순서대로 그 패키지 맨 왼쪽에 놓고, 1번을 바로 적용 + 그 패키지를 연 MY 패널.
@@ -209,6 +221,12 @@ final class LayerState {
                 await UIImage(contentsOfFile: url.path)?.byPreparingForDisplay()
             }.value
             self[kind].setImage(image, for: item.id)
+            // MY는 사진을 먼저 보여주고, 외곽선 · 얼굴 점은 인식이 끝나면 덧그림
+            guard kind == .my, let image, self[kind].selectedID == item.id else { return }
+            let guide = await Task.detached(priority: .userInitiated) {
+                MYGuideMaker.guide(for: image)?.preparingForDisplay()
+            }.value
+            self[kind].setGuide(guide, for: item.id)
         }
     }
 }

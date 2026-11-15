@@ -45,7 +45,8 @@ struct TopBar<CameraModel: Camera>: View {
                 }
                 PosingButton(title: "MY",
                              isActive: layers.openPanel == .my,
-                             showsDot: layers.my.isSelected) {
+                             showsDot: layers.my.isSelected,
+                             onHold: { layers.isPeekingMY = $0 }) {
                     layers.togglePanel(.my)
                 }
                 Spacer(minLength: 0)
@@ -70,6 +71,8 @@ struct PosingButton: View {
     var showsDot = false
     /// 꾹 누르기 동작. 없으면 꾹 눌러도 아무 반응 없음 (포즈 · MY)
     var onLongPress: (() -> Void)?
+    /// 꾹 누른 뒤 손을 뗄 때까지 true (MY 원본 보기). 있으면 onLongPress 대신 씀
+    var onHold: ((Bool) -> Void)?
     let action: () -> Void
 
     @State private var isPopped = false
@@ -91,10 +94,18 @@ struct PosingButton: View {
             .onTapGesture(perform: action)
             // 꾹 누르기는 항상 받아서, 포즈 · MY는 꾹 눌렀다 떼도 탭으로 처리되지 않게 함
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
+                if let onHold {
+                    onHold(true)
+                    return
+                }
                 guard let onLongPress else { return }
                 popAnimation()
                 onLongPress()
+            } onPressingChanged: { isPressing in
+                if !isPressing { onHold?(false) }
             }
+            // 누르는 중에 버튼이 사라져도(녹화 시작 등) 원본 보기가 남지 않게
+            .onDisappear { onHold?(false) }
     }
 
     /// 꾹 누르기 인식 시 살짝 커졌다 돌아옴
