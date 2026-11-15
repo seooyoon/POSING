@@ -3,7 +3,7 @@
 //  포징
 //
 //  미리보기를 밀어 투명도를 바꾸는 동안 위쪽 가운데에 "MY 35%"를 잠깐 띄움 (docs/02_UI.md 3절).
-//  패널이 열려 있으면 패널의 조절 바가 같은 값을 보여주므로 숨김.
+//  밀고 있는 레이어의 패널이 열려 있으면 패널의 조절 바가 같은 값을 보여주므로 숨김.
 //
 
 import SwiftUI
@@ -18,7 +18,7 @@ struct OpacityDragLabel: View {
 
     var body: some View {
         let value = kind.map { layers[$0].opacity } ?? 0
-        let isShown = kind != nil && layers.openPanel == nil
+        let isShown = kind != nil && layers.openPanel != kind
         HStack(spacing: 6) {
             Text(kind == .pose ? "포즈" : "MY")
                 .foregroundStyle(.white)
@@ -33,7 +33,7 @@ struct OpacityDragLabel: View {
         .rotatesWithDevice()
         .opacity(isShown ? 1 : 0)
         .animation(.easeOut(duration: 0.15), value: isShown)
-        // 패널이 열려 있으면 조절 바가 햅틱을 줌
+        // 그 레이어의 패널이 열려 있으면 조절 바가 햅틱을 줌
         .sensoryFeedback(.selection, trigger: value) { _, _ in isShown }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.top, topInset + 12)

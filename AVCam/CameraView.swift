@@ -213,8 +213,13 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
     @State private var dragAxis: Axis?
     /// 두 손가락 확대를 시작할 때 배율
     @State private var pinchStartZoom: CGFloat?
-    /// 투명도 밀기를 시작할 때 투명도
+    /// 투명도 밀기를 시작할 때 투명도 · 폰 방향 (도중에 폰을 돌려도 같은 방향 기준)
     @State private var opacityDragStart: Double?
+    @State private var opacityDragAngle: Double?
+    /// 레이어가 있을 때 노출 바 근처에서 시작한 밀기: 노출만 (투명도 · 모드 전환 없음)
+    @State private var isExposureOnlyDrag = false
+    /// 밀기가 취소되어 onEnded가 오지 않아도 상태를 비우기 위한 표시
+    @GestureState private var isDragging = false
     /// 폰 방향. 투명도는 보는 사람 기준 좌우로 밀 때 바뀜 (가로로 돌리면 화면 위아래)
     @Environment(\.iconAngle) private var iconAngle
 
@@ -236,6 +241,9 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
             .simultaneousGesture(touchTracker)
             // 위아래로 밀면 밝기, 좌우로 밀면 모드 전환 (기본 카메라와 같은 방향)
             .simultaneousGesture(dragGesture)
+            .onChange(of: isDragging) { _, isActive in
+                if !isActive { resetDrag() }
+            }
             // 두 손가락 벌리기/모으기 → 배율
             .simultaneousGesture(pinchGesture)
     }
@@ -262,9 +270,14 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
 
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 10)
+            .updating($isDragging) { _, isActive, _ in
+                isActive = true
+            }
             .onChanged { value in
                 if dragAxis == nil {
                     dragAxis = abs(value.translation.height) > abs(value.translation.width) ? .vertical : .horizontal
+                    isExposureOnlyDrag = onStyleSwipe == nil && layers.hasSelection
+                        && focus.canAdjustBias(startingAt: value.startLocation)
                     startOpacityDragIfNeeded(value)
                 }
                 // 레이어 투명도 (노출과 섞이지 않게 여기서 끝)
@@ -281,13 +294,9 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
                 Task { await camera.setExposureBias(bias) }
             }
             .onEnded { value in
-                defer {
-                    dragAxis = nil
-                    focus.endAdjusting()
-                    opacityDragKind = nil
-                    opacityDragStart = nil
-                }
+                defer { resetDrag() }
                 guard opacityDragKind == nil,
+                      !isExposureOnlyDrag,
                       dragAxis == .horizontal,
                       abs(value.translation.width) >= 50,
                       !camera.captureActivity.isRecording
@@ -301,6 +310,16 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
             }
     }
 
+    /// 끝나거나 취소된 밀기의 상태 비우기
+    private func resetDrag() {
+        dragAxis = nil
+        focus.endAdjusting()
+        opacityDragKind = nil
+        opacityDragStart = nil
+        opacityDragAngle = nil
+        isExposureOnlyDrag = false
+    }
+
     /// 레이어가 선택되어 있고 보는 사람 기준 좌우로 밀기 시작하면 투명도 조절.
     /// 노출 바에서 시작한 밀기 · 스타일 화면은 제외
     private func startOpacityDragIfNeeded(_ value: DragGesture.Value) {
@@ -310,13 +329,14 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
         else { return }
         let viewer = viewerTranslation(value.translation)
         guard abs(viewer.width) > abs(viewer.height) else { return }
+        opacityDragAngle = iconAngle
         opacityDragKind = kind
         opacityDragStart = layers[kind].opacity
     }
 
     /// 화면 좌표로 민 거리를 보는 사람 기준으로 (오른쪽 +, 아래 +)
     private func viewerTranslation(_ translation: CGSize) -> CGSize {
-        let angle = iconAngle * .pi / 180
+        let angle = (opacityDragAngle ?? iconAngle) * .pi / 180
         return CGSize(width: translation.width * cos(angle) + translation.height * sin(angle),
                       height: -translation.width * sin(angle) + translation.height * cos(angle))
     }
