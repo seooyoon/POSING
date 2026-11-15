@@ -33,7 +33,10 @@ enum SplitComposer {
         }
 
         guard let colorSpace = first.colorSpace ?? CGColorSpace(name: CGColorSpace.displayP3) else { return nil }
-        return context.jpegRepresentation(of: output.cropped(to: CGRect(origin: .zero, size: canvas)),
+        // 첫 사진의 촬영 정보 · 위치를 그대로 (사진 앱에서 찍은 시간 · 장소가 보이게)
+        let combined = output.cropped(to: CGRect(origin: .zero, size: canvas))
+            .settingProperties(uprightProperties(of: first))
+        return context.jpegRepresentation(of: combined,
                                           colorSpace: colorSpace,
                                           options: [kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: AppDefaults.splitJPEGQuality])
     }
@@ -50,19 +53,23 @@ enum SplitComposer {
             : CGSize(width: (extent.height * cellAspect).rounded(), height: extent.height)
         let rect = CGRect(x: (extent.midX - size.width / 2).rounded(), y: (extent.midY - size.height / 2).rounded(),
                           width: size.width, height: size.height)
-        // 방향은 이미 적용했으므로 메타데이터의 방향은 '그대로'로 (촬영 정보 · 위치는 유지)
+        let cropped = image.cropped(to: rect)
+            .transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
+            .settingProperties(uprightProperties(of: image))
+        guard let colorSpace = image.colorSpace ?? CGColorSpace(name: CGColorSpace.displayP3) else { return nil }
+        return context.jpegRepresentation(of: cropped, colorSpace: colorSpace,
+                                          options: [kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: AppDefaults.splitJPEGQuality])
+    }
+
+    /// 원본 메타데이터(촬영 정보 · 위치)에서 방향만 '그대로'로. 방향은 이미 픽셀에 적용했으므로
+    private static func uprightProperties(of image: CIImage) -> [String: Any] {
         var properties = image.properties
         properties[kCGImagePropertyOrientation as String] = 1
         if var tiff = properties[kCGImagePropertyTIFFDictionary as String] as? [String: Any] {
             tiff[kCGImagePropertyTIFFOrientation as String] = 1
             properties[kCGImagePropertyTIFFDictionary as String] = tiff
         }
-        let cropped = image.cropped(to: rect)
-            .transformed(by: CGAffineTransform(translationX: -rect.minX, y: -rect.minY))
-            .settingProperties(properties)
-        guard let colorSpace = image.colorSpace ?? CGColorSpace(name: CGColorSpace.displayP3) else { return nil }
-        return context.jpegRepresentation(of: cropped, colorSpace: colorSpace,
-                                          options: [kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: AppDefaults.splitJPEGQuality])
+        return properties
     }
 
     /// 사진을 칸에 꽉 차게 키우고 가운데만 남김
