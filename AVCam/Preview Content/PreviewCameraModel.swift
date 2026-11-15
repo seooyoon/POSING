@@ -11,7 +11,7 @@ import SwiftUI
 @Observable
 class PreviewCameraModel: Camera {
     
-    var isLivePhotoEnabled = true
+    var isLivePhotoEnabled = AppDefaults.isLivePhotoOnAtLaunch
     var prefersMinimizedUI = false
     var qualityPrioritization = QualityPrioritization.quality
     var shouldFlashScreen = false
@@ -98,13 +98,31 @@ class PreviewCameraModel: Camera {
             : ZoomState(isFrontCamera: true, isFrontWide: false)
     }
     
-    // 시뮬레이터 셔터 흉내: 화면을 깜빡이고 샘플 이미지를 썸네일로 보여줌 (05_TECH_NOTES 13절)
+    let splitShot = SplitShotState()
+
+    // 시뮬레이터 셔터 흉내: 화면을 깜빡이고 샘플 이미지를 썸네일로 보여줌 (05_TECH_NOTES 13절).
+    // 분할 사진이면 샘플 이미지를 지금 칸에 넣음
     func capturePhoto() {
         shouldFlashScreen = true
         withAnimation(.linear(duration: 0.01)) {
             shouldFlashScreen = false
         }
+        if let index = splitShot.captureIndex {
+            let session = splitShot.session
+            splitShot.beginCapture(at: index)
+            let shot = UIImage(named: "photo_mode")?.jpegData(compressionQuality: 0.9).map(SplitShot.make(from:))
+            splitShot.finishCapture(shot, at: index, session: session)
+            return
+        }
+        guard !splitShot.isActive else { return }
         thumbnail = UIImage(named: "photo_mode")?.cgImage
+    }
+
+    // 시뮬레이터: 저장 대신 처음부터
+    func saveSplitShot() async {
+        guard splitShot.isComplete else { return }
+        thumbnail = splitShot.shots.last??.thumbnail
+        splitShot.reset()
     }
 
     // 시뮬레이터에서도 타이머 화면을 확인

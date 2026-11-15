@@ -80,6 +80,12 @@ protocol Camera: AnyObject, SendableMetatype {
     /// 사진 비율 (4:3 → 16:9 → 1:1)
     var photoAspect: PhotoAspect { get set }
 
+    /// 분할 사진 (셔터 오른쪽 분할 버튼). 분할 중에는 셔터가 사진 앱 대신 칸에 넣음
+    var splitShot: SplitShotState { get }
+
+    /// 분할 사진 저장 버튼: 합친 사진(+ 칸별 원본)을 저장하고 처음부터
+    func saveSplitShot() async
+
     /// 고른 카메라의 색감 (셔터 왼쪽 카메라 버튼). 사진에만 적용
     var cameraLook: CameraLook { get set }
 
@@ -148,9 +154,9 @@ protocol Camera: AnyObject, SendableMetatype {
 }
 
 extension Camera {
-    /// LIVE를 쓸 수 있는지. 비율이 4:3이 아니거나 기본이 아닌 카메라 · 표준이 아닌 스타일(CLAUDE.md 6절), RAW면 자동 끔
+    /// LIVE를 쓸 수 있는지. 비율이 4:3이 아니거나 기본이 아닌 카메라 · 표준이 아닌 스타일(CLAUDE.md 6절), RAW, 분할 사진이면 자동 끔
     var isLivePhotoAvailable: Bool {
-        photoAspect == .fourThree && activeCodec != .raw
+        photoAspect == .fourThree && activeCodec != .raw && !splitShot.isActive
             && (cameraLook.isDefault || !AppDefaults.turnsOffLiveForNonDefaultCamera)
             && (!photoStyle.changesImage || !AppDefaults.turnsOffLiveForNonStandardStyle)
     }

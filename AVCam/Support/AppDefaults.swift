@@ -50,6 +50,10 @@ enum AppDefaults {
     /// 카메라 버튼 아래 이름 글자 크기 · 버튼과의 간격 (pt)
     static let cameraNameFontSize: CGFloat = 11
     static let cameraNameGap: CGFloat = 1
+    /// 카메라 버튼을 올리는 양 (pt): 카메라 그림(보이는 부분) 위 끝 ~ 이름 아래 끝의 가운데가 셔터 가운데에 오게 (화면에서 잰 값)
+    static let cameraButtonLift: CGFloat = 10
+    /// 버튼 칸 아래 끝에서 이름 아래 끝까지 (pt, 화면에서 잰 값)
+    static let cameraNameBottomBelowCell: CGFloat = 10
     /// 카메라 목록에서 선택되지 않은 칸 투명도 (선택된 칸은 그대로)
     static let cameraListUnselectedOpacity = 0.5
 
@@ -82,6 +86,10 @@ enum AppDefaults {
     static let statusStyleIconSize: CGFloat = 15.5
     static let statusStyleIconTrailing: CGFloat = 70
     static let statusStyleIconBelowCenter: CGFloat = 1
+    /// 상단 캡슐(형식 · 플래시 묶음 · 포즈/MY · 분할 토글) · 하단 모드 선택 판 바탕 회색 밝기 · 불투명도 (기본 카메라 화면 참고)
+    /// (검정 위에서는 0.22 × 0.6 ≈ 0.13 회색, 장면 위에서는 살짝 비침)
+    static let topBarCapsuleGray = 0.22
+    static let topBarCapsuleOpacity = 0.6
     /// 폰을 이 각도(도)보다 많이 돌리면 아이콘을 가로로, 이 각도보다 적게 기울면 다시 세로로
     static let iconLandscapeAngle = 60.0
     static let iconPortraitAngle = 30.0
@@ -90,8 +98,6 @@ enum AppDefaults {
     /// 스타일 초기화 버튼이 사라질 때 화살표가 도는 각도(시계 반대 = 음수) · 걸리는 시간 (기본 카메라 녹화에서 잰 값)
     static let styleResetSpinDegrees: Double = -200
     static let styleResetSpinDuration: Double = 0.45
-    /// 모드 선택 강조 판의 불투명도 (접힌 판 · 펼친 판 같이)
-    static let modeHighlightOpacity = 0.08
 
     // MARK: - 노출 감도 (기본 카메라처럼 천천히)
 
@@ -131,6 +137,9 @@ enum AppDefaults {
 
     // MARK: - 색감 · LIVE
 
+    /// 앱을 열 때 LIVE (끔)
+    static let isLivePhotoOnAtLaunch = false
+
     /// 카메라 색감과 스타일을 같이 쓰면 둘 다 적용 (카메라 색감 먼저 → 스타일)
     static let appliesCameraLookBeforeStyle = true
     /// 표준이 아닌 스타일일 때 LIVE 자동 끔
@@ -139,4 +148,26 @@ enum AppDefaults {
     static let turnsOffLiveForNonDefaultCamera = true
     /// 비율이 4:3이 아닐 때 LIVE 자동 끔
     static let turnsOffLiveForNonFourThreeRatio = true
+
+    // MARK: - 분할 사진 (docs/01_SPEC.md 7-2절)
+
+    /// 저장할 때 합친 사진과 함께 칸별 원본도 저장 (설정에서 바꿈)
+    static let savesSplitOriginals = true
+    /// 칸별 사진 목록(오른쪽 위 토글) 처음 상태
+    static let isSplitPanelOpen = true
+    /// 칸 목록 · 전체 보기에 쓰는 작은 그림 크기 (긴 변 픽셀)
+    static let splitThumbnailPixelSize = 600
+    /// 합친 사진 JPEG 품질
+    static let splitJPEGQuality = 0.92
+    /// 칸별 사진 목록에서 안 찍은 칸의 회색 밝기 (0 = 검정, 1 = 흰색)
+    static let splitEmptyCellGray = 0.12
+    /// 전체 미리보기 크게 보기의 좌우 여백
+    static let splitLargePreviewInset: CGFloat = 24
+    /// 칸별 사진 목록 칸 폭 · 지금 칸 테두리 두께 (pt)
+    static let splitPanelCellWidth: CGFloat = 52
+    static let splitCurrentBorderWidth: CGFloat = 1.5
+    /// 기본(1장)일 때 분할 버튼 자리에 보이는 POSING 로고 폭 (pt)
+    static let splitLogoWidth: CGFloat = 52
+    /// 오른쪽 위 묶음 · 전체 미리보기 칸과 미리보기 가장자리 사이
+    static let splitClusterInset: CGFloat = 10
 }
