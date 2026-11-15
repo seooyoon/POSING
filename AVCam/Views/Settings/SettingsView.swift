@@ -52,8 +52,11 @@ struct SettingsView: View {
                     NavigationLink("포즈 목록") {
                         PoseOrderView(layers: layers)
                     }
-                    NavigationLink("MY 내 사진") {
-                        MYListView(layers: layers)
+                    // MY 패키지마다 직접 추가한 사진
+                    ForEach(layers.myPackages) { package in
+                        NavigationLink("MY \(package.name)") {
+                            MYListView(layers: layers, packageID: package.id)
+                        }
                     }
                     NavigationLink {
                         CameraOrderView(looks: looks)
@@ -63,7 +66,7 @@ struct SettingsView: View {
                 } header: {
                     Text("목록")
                 } footer: {
-                    Text("포즈 · 내 사진은 바꾼 순서가 카메라 화면 목록에 그대로 보입니다. MY의 다른 패키지는 순서가 정해져 있습니다. 카메라 목록 오른쪽 이름은 앱을 켤 때 쓰는 카메라입니다.")
+                    Text("포즈와 MY 패키지에 직접 추가한 사진은 바꾼 순서가 카메라 화면 목록에 그대로 보입니다. 앱에 넣어 둔 MY 사진은 순서가 정해져 있습니다. 카메라 목록 오른쪽 이름은 앱을 켤 때 쓰는 카메라입니다.")
                 }
 
                 Section("정보") {

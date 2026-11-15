@@ -45,10 +45,7 @@ struct TopBar<CameraModel: Camera>: View {
                 }
                 PosingButton(title: "MY",
                              isActive: layers.openPanel == .my,
-                             showsDot: layers.my.isSelected,
-                             onLongPress: {
-                    layers.isPickingMY = true
-                }) {
+                             showsDot: layers.my.isSelected) {
                     layers.togglePanel(.my)
                 }
                 Spacer(minLength: 0)
@@ -71,7 +68,7 @@ struct PosingButton: View {
     var isActive = false
     /// 레이어가 선택되어 있으면 글자 아래 작은 점
     var showsDot = false
-    /// 꾹 누르기 동작. 없으면 꾹 눌러도 아무 반응 없음 (포즈)
+    /// 꾹 누르기 동작. 없으면 꾹 눌러도 아무 반응 없음 (포즈 · MY)
     var onLongPress: (() -> Void)?
     let action: () -> Void
 
@@ -92,7 +89,7 @@ struct PosingButton: View {
             .scaleEffect(isPopped ? 1.12 : 1)
             .contentShape(.capsule)
             .onTapGesture(perform: action)
-            // 꾹 누르기는 항상 받아서, 포즈는 꾹 눌렀다 떼도 탭으로 처리되지 않게 함
+            // 꾹 누르기는 항상 받아서, 포즈 · MY는 꾹 눌렀다 떼도 탭으로 처리되지 않게 함
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
                 guard let onLongPress else { return }
                 popAnimation()
