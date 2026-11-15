@@ -87,7 +87,7 @@ struct ZoomControl<CameraModel: Camera>: View {
     private var buttons: some View {
         ZStack {
             Circle()
-                .fill(.black.opacity(0.55))
+                .fill(circleColor)
                 .frame(width: 38, height: 38)
             HStack(spacing: 0) {
                 ForEach(camera.zoom.presets, id: \.self) { preset in
@@ -98,6 +98,13 @@ struct ZoomControl<CameraModel: Camera>: View {
             .animation(.spring(duration: 0.25, bounce: 0), value: activePreset)
         }
         .contentShape(.rect)
+    }
+
+    /// 분할 중(사진)에는 원 뒤가 검정으로 가려질 수 있어 상단 캡슐과 같은 회색, 아니면 어두운 반투명
+    private var circleColor: Color {
+        camera.captureMode == .photo && camera.splitShot.isActive
+            ? Color(white: AppDefaults.topBarCapsuleGray, opacity: AppDefaults.topBarCapsuleOpacity)
+            : .black.opacity(0.55)
     }
 
     /// 지금 버튼을 화면 가운데로 옮기는 거리
