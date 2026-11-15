@@ -237,7 +237,7 @@ struct SplitCellPanel<CameraModel: Camera>: View {
     /// 칸 하나의 높이 / 폭
     private func shotCellRatio(_ index: Int) -> CGFloat {
         let cell = split.layout.cellRect(index, in: CGSize(width: 1, height: heightRatio))
-        return cell.height / cell.width
+        return cell.width > 0 ? cell.height / cell.width : heightRatio
     }
 
     /// 묶음이 미리보기 안에 다 들어가는 칸 폭 (기본 52pt, 가로로 돌려 높이가 모자라면 줄임)
@@ -257,7 +257,7 @@ struct SplitCellPanel<CameraModel: Camera>: View {
     private func shotCell(_ index: Int, width cellWidth: CGFloat) -> some View {
         let height = cellWidth * shotCellRatio(index)
         let isCurrent = index == split.currentIndex
-        return SplitCellImage(shot: split.shots[index], number: index + 1,
+        return SplitCellImage(shot: split.shot(at: index), number: index + 1,
                               isPending: split.pendingIndices.contains(index),
                               numberSize: min(15, height * 0.6), rotatesNumber: false)
             .frame(width: cellWidth, height: height)
@@ -271,11 +271,11 @@ struct SplitCellPanel<CameraModel: Camera>: View {
             .onTapGesture { split.select(index) }
             // 찍은 칸을 꾹 누르면 그 사진만 크게
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
-                if split.shots[index] != nil { onPreview(.cell(index)) }
+                if split.shot(at: index) != nil { onPreview(.cell(index)) }
             }
             .accessibilityElement()
             .accessibilityLabel("\(index + 1)번 칸")
-            .accessibilityValue(split.shots[index] == nil ? "찍지 않음" : "찍음")
+            .accessibilityValue(split.shot(at: index) == nil ? "찍지 않음" : "찍음")
             .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
     }
 
@@ -302,7 +302,7 @@ struct SplitComposite: View {
         ZStack(alignment: .topLeading) {
             ForEach(0..<split.layout.count, id: \.self) { index in
                 let rect = split.layout.cellRect(index, in: size)
-                SplitCellImage(shot: split.shots[index], number: index + 1, numberSize: numberSize,
+                SplitCellImage(shot: split.shot(at: index), number: index + 1, numberSize: numberSize,
                                rotatesNumber: rotatesNumber)
                     .frame(width: rect.width, height: rect.height)
                     .offset(x: rect.minX, y: rect.minY)
@@ -335,7 +335,7 @@ struct SplitLargePreview: View {
                 SplitComposite(split: split, size: size, numberSize: 40)
                     .clipped()
             case .cell(let index):
-                SplitCellImage(shot: split.shots.indices.contains(index) ? split.shots[index] : nil,
+                SplitCellImage(shot: split.shot(at: index),
                                number: index + 1, numberSize: 40)
                     .frame(width: size.width, height: size.height)
             }

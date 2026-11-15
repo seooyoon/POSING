@@ -30,7 +30,10 @@ enum SplitLayout: Int, CaseIterable, Identifiable, Sendable {
     }
 
     /// `size` 안의 칸 자리
+    /// 없는 칸이면 빈 자리 (분할을 바꾼 직전 칸 수로 사라지는 중인 화면이 그려져도 멈추지 않게)
     func cellRect(_ index: Int, in size: CGSize) -> CGRect {
+        let cells = cells
+        guard cells.indices.contains(index) else { return .zero }
         let unit = cells[index]
         return CGRect(x: unit.minX * size.width, y: unit.minY * size.height,
                       width: unit.width * size.width, height: unit.height * size.height)
@@ -92,6 +95,11 @@ final class SplitShotState {
 
     /// 셔터를 누르면 찍을 칸 (분할이 아니거나 모두 찍었으면 nil)
     var captureIndex: Int? { isActive ? currentIndex : nil }
+
+    /// 칸 사진. 없는 칸이면 nil (화면에서 읽을 때는 이것만 씀)
+    func shot(at index: Int) -> SplitShot? {
+        shots.indices.contains(index) ? shots[index] : nil
+    }
 
     func reset() {
         shots = Array(repeating: nil, count: layout.count)
