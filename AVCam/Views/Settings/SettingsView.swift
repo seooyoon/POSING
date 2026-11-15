@@ -17,6 +17,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(SettingsKeys.isGridEnabled) private var isGridEnabled = AppDefaults.isGridEnabled
     @AppStorage(SettingsKeys.isCenterMarkEnabled) private var isCenterMarkEnabled = AppDefaults.isCenterMarkEnabled
+    @AppStorage(SettingsKeys.savesSplitOriginals) private var savesSplitOriginals = AppDefaults.savesSplitOriginals
 
     var body: some View {
         NavigationStack {
@@ -37,6 +38,14 @@ struct SettingsView: View {
                     Text("화면 표시")
                 } footer: {
                     Text("중심점은 화면 정가운데에 작은 십자(+)를 표시합니다.")
+                }
+
+                Section {
+                    Toggle("칸별 원본도 저장", isOn: $savesSplitOriginals)
+                } header: {
+                    Text("분할 사진")
+                } footer: {
+                    Text("켜면 합친 사진과 함께 칸마다 찍은 원본 사진도 사진 앱에 저장합니다.")
                 }
 
                 Section {
