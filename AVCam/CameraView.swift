@@ -102,8 +102,8 @@ struct CameraView<CameraModel: Camera>: View {
             focus.clear()
             frozenSeeThrough = isSwitching ? liveSeeThrough : nil
         }
-        // MY 꾹 누르기 → 사진 고르기
-        .myPhotoPicker(isPresented: $layers.isPickingMY, layers: layers)
+        // MY 패키지 대표 이미지 꾹 누르기 → 그 패키지에 사진 추가
+        .myPhotoPicker(packageID: $layers.pickingMYPackageID, layers: layers)
         // 초기화 꾹 누르기 → 설정 화면
         .fullScreenCover(isPresented: $layers.isShowingSettings) {
             SettingsView(layers: layers, looks: looks)

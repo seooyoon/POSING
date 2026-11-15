@@ -4,7 +4,7 @@
 //
 //  포즈 · MY 공통 패널: 가로 목록 한 줄 + 투명도 조절 바 (docs/01_SPEC.md 3절, docs/02_UI.md 3절).
 //  MY는 패키지 목록 → 패키지 안(대표 이미지 맨 왼쪽 고정 + 사진들) 두 단계.
-//  목록 칸은 꾹 눌러도 아무 동작 없다. 편집은 설정 화면에서만.
+//  대표 이미지를 꾹 누르면 그 패키지에 사진 추가. 사진 칸은 꾹 눌러도 아무 동작 없다. 편집은 설정 화면에서만.
 //
 
 import SwiftUI
@@ -17,6 +17,8 @@ struct LayerPanel: View {
     private let thumbnailSize: CGFloat = 56
     /// MY 칸 아래 이름 줄 높이 (패키지 목록 · 패키지 안 높이를 같게)
     private let nameHeight: CGFloat = 16
+    /// 꾹 눌러 살짝 커졌다 돌아오는 대표 이미지
+    @State private var poppedPackageID: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -76,13 +78,12 @@ struct LayerPanel: View {
 
     // MARK: - MY 패키지
 
-    /// 패키지 목록: 맨 왼쪽 '내 사진', 그다음 앱에 넣어 둔 패키지 (순서 고정)
+    /// 패키지 목록: 앱에 넣어 둔 패키지 (순서 고정)
     private var packageList: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(alignment: .top, spacing: 8) {
-                packageCell(id: LayerState.userPackageID, name: LayerState.userPackageID, cover: layers.userPackageCover)
                 ForEach(layers.myPackages) { package in
-                    packageCell(id: package.id, name: package.name, cover: package.cover)
+                    packageCell(package)
                 }
             }
             .padding(.horizontal, CameraLayout.sideInset)
@@ -91,59 +92,62 @@ struct LayerPanel: View {
     }
 
     /// 패키지 안: 대표 이미지는 맨 왼쪽에 고정 (누르면 목록으로), 오른쪽에 사진들
+    @ViewBuilder
     private func packageContents(_ id: String) -> some View {
-        let isUser = id == LayerState.userPackageID
-        let package = layers.myPackages.first { $0.id == id }
-        let items = layers.myItems(inPackage: id)
-        return HStack(alignment: .top, spacing: 0) {
-            packageCell(id: id, name: package?.name ?? id, cover: isUser ? layers.userPackageCover : package?.cover)
-                .padding(.leading, CameraLayout.sideInset)
-            Rectangle()
-                .fill(.white.opacity(0.3))
-                .frame(width: 1, height: thumbnailSize - 12)
-                .padding(.horizontal, 8)
-                .padding(.top, 6)
-            if items.isEmpty {
-                emptyMessage
-            } else {
-                list(items, showsNames: true)
+        if let package = layers.myPackage(id) {
+            HStack(alignment: .top, spacing: 0) {
+                packageCell(package)
+                    .padding(.leading, CameraLayout.sideInset)
+                Rectangle()
+                    .fill(.white.opacity(0.3))
+                    .frame(width: 1, height: thumbnailSize - 12)
+                    .padding(.horizontal, 8)
+                    .padding(.top, 6)
+                list(package.items, showsNames: true)
                     .contentMargins(.leading, 0, for: .scrollContent)
             }
+            .transition(.opacity)
         }
-        .transition(.opacity)
     }
 
-    /// 패키지 칸: 대표 이미지 + 아래 이름. 목록에서는 들어가기, 패키지 안에서는 목록으로 돌아가기
-    private func packageCell(id: String, name: String, cover: UIImage?) -> some View {
-        let isOpen = layers.openMYPackageID == id
+    /// 패키지 칸: 대표 이미지 + 아래 이름. 목록에서는 들어가기, 패키지 안에서는 목록으로 돌아가기.
+    /// 꾹 누르면 그 패키지에 사진 추가
+    private func packageCell(_ package: MYPackage) -> some View {
+        let isOpen = layers.openMYPackageID == package.id
         return VStack(spacing: 2) {
-            Group {
-                if let cover {
-                    Image(uiImage: cover)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    // 아직 사진이 없는 '내 사진'
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.system(size: 22))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(.white.opacity(0.15))
-                }
-            }
-            .frame(width: thumbnailSize, height: thumbnailSize)
-            // 대표 이미지에는 노란 테두리 없음 (선택 표시는 사진 칸에만)
-            .clipShape(.rect(cornerRadius: 8))
-            nameLabel(name)
+            Image(uiImage: package.cover)
+                .resizable()
+                .scaledToFill()
+                .frame(width: thumbnailSize, height: thumbnailSize)
+                // 대표 이미지에는 노란 테두리 없음 (선택 표시는 사진 칸에만)
+                .clipShape(.rect(cornerRadius: 8))
+                .scaleEffect(poppedPackageID == package.id ? 1.08 : 1)
+            nameLabel(package.name)
         }
         .contentShape(.rect(cornerRadius: 8))
         .onTapGesture {
-            if isOpen { layers.closeMYPackage() } else { layers.openMYPackage(id) }
+            if isOpen { layers.closeMYPackage() } else { layers.openMYPackage(package.id) }
+        }
+        .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
+            addPhotos(to: package.id)
         }
         .accessibilityElement()
-        .accessibilityLabel(name)
+        .accessibilityLabel(package.name)
         .accessibilityHint(isOpen ? "패키지 목록으로" : "패키지 열기")
         .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: "사진 추가") { addPhotos(to: package.id) }
+    }
+
+    /// 꾹 누르기 인식 시 살짝 커졌다 돌아오고 사진 피커를 띄움
+    private func addPhotos(to id: String) {
+        withAnimation(.easeOut(duration: 0.12)) {
+            poppedPackageID = id
+        } completion: {
+            withAnimation(.easeIn(duration: 0.12)) {
+                poppedPackageID = nil
+            }
+        }
+        layers.pickingMYPackageID = id
     }
 
     private func nameLabel(_ name: String) -> some View {
@@ -152,14 +156,6 @@ struct LayerPanel: View {
             .foregroundStyle(.white.opacity(0.9))
             .lineLimit(1)
             .frame(width: thumbnailSize + 8, height: nameHeight)
-    }
-
-    private var emptyMessage: some View {
-        Text("MY를 꾹 눌러 사진을 추가하세요")
-            .font(.system(size: 14))
-            .foregroundStyle(.white.opacity(0.8))
-            .frame(height: thumbnailSize)
-            .padding(.trailing, CameraLayout.sideInset)
     }
 }
 
