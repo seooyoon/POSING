@@ -36,10 +36,10 @@ struct LayerOverlay: View {
             ZStack {
                 fitted(image, kind: kind, size: box)
                     .opacity(isPeeking ? 1 : slot.opacity)
-                // MY 외곽선 · 얼굴 점은 투명도와 상관없이 진하게. 원본 보기 중에는 숨김
+                // MY 외곽선 · 얼굴 점은 투명도와 상관없이 진하게. 원본 보기 중에는 숨김.
+                // 그림자는 가이드 이미지에 미리 그려 둠 (여기서 .shadow를 걸면 분할 칸 보기에서 화면이 멈춘 듯 밀림)
                 if let guide = slot.guide {
                     fitted(guide, kind: kind, size: box)
-                        .shadow(color: .black.opacity(0.6), radius: 1.5)
                         .opacity(isPeeking ? 0 : 1)
                 }
             }

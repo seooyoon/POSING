@@ -87,7 +87,7 @@ struct SplitPreviewOverlay: View {
                     ForEach(0..<split.layout.count, id: \.self) { index in
                         if index != split.currentIndex {
                             let rect = split.layout.cellRect(index, in: proxy.size)
-                            SplitCellImage(shot: split.shots[index], number: index + 1,
+                            SplitCellImage(shot: split.shot(at: index), number: index + 1,
                                            isPending: split.pendingIndices.contains(index))
                                 .frame(width: rect.width, height: rect.height)
                                 // 눌러도 아무 동작 없음 (다시 찍기는 토글 목록에서만). 아래 미리보기로 초점이 가지 않게 터치만 받음
