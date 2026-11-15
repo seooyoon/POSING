@@ -20,6 +20,8 @@ enum MYGuideMaker {
     private static let lineRatio: CGFloat = 0.004
     /// 얼굴 점 반지름 (긴 변 비율)
     private static let dotRatio: CGFloat = 0.006
+    /// 밝은 배경에서도 보이게 선 · 점 둘레에 까는 옅은 그림자 (긴 변 비율)
+    private static let shadowRatio: CGFloat = 0.004
 
     private static let context = CIContext()
 
@@ -50,7 +52,10 @@ enum MYGuideMaker {
         format.scale = 1
         format.opaque = false
         let radius = max(size.width, size.height) * dotRatio
+        let shadow = max(size.width, size.height) * shadowRatio
         return UIGraphicsImageRenderer(size: size, format: format).image { renderer in
+            // 그림자는 여기서 한 번만 그려 넣음 (화면에서 .shadow를 쓰면 매 프레임 다시 계산해 화면이 밀림)
+            renderer.cgContext.setShadow(offset: .zero, blur: shadow, color: UIColor.black.withAlphaComponent(0.6).cgColor)
             if let outline {
                 UIImage(cgImage: outline).draw(in: CGRect(origin: .zero, size: size))
             }
