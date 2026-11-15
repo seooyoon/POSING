@@ -52,21 +52,39 @@ struct SettingsView: View {
                     NavigationLink("포즈 목록") {
                         PoseOrderView(layers: layers)
                     }
-                    // MY 패키지마다 직접 추가한 사진
+                } header: {
+                    Text("포즈")
+                } footer: {
+                    Text("바꾼 순서가 카메라 화면 포즈 목록에 그대로 보입니다.")
+                }
+
+                Section {
                     ForEach(layers.myPackages) { package in
-                        NavigationLink("MY \(package.name)") {
+                        NavigationLink {
                             MYListView(layers: layers, packageID: package.id)
+                        } label: {
+                            HStack(spacing: 12) {
+                                SettingsThumbnailRow(image: package.cover)
+                                LabeledContent(package.name, value: "\(package.items.count)장")
+                            }
                         }
                     }
+                } header: {
+                    Text("MY")
+                } footer: {
+                    Text("패키지마다 사진을 보고, 추가 · 삭제 · 순서 변경 · 이름을 바꿀 수 있습니다.")
+                }
+
+                Section {
                     NavigationLink {
                         CameraOrderView(looks: looks)
                     } label: {
                         LabeledContent("카메라 목록", value: looks.startItem?.name ?? "")
                     }
                 } header: {
-                    Text("목록")
+                    Text("카메라")
                 } footer: {
-                    Text("포즈와 MY 패키지에 직접 추가한 사진은 바꾼 순서가 카메라 화면 목록에 그대로 보입니다. 앱에 넣어 둔 MY 사진은 순서가 정해져 있습니다. 카메라 목록 오른쪽 이름은 앱을 켤 때 쓰는 카메라입니다.")
+                    Text("오른쪽 이름은 앱을 켤 때 쓰는 카메라입니다.")
                 }
 
                 Section("정보") {
