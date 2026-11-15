@@ -9,6 +9,9 @@
 - 표시 배율 = `videoZoomFactor × device.displayVideoZoomFactorMultiplier` (iOS 18+, 트리플 카메라에서 0.5 예상 — 실기기 확인)
 - 렌즈 전환 지점: `virtualDeviceSwitchOverVideoZoomFactors` (16 Pro 예상 `[2, 10]` → 표시 1×, 5× — 실기기 확인)
 - 버튼 → `videoZoomFactor`: `.5`=1, `1`=2, `2`=4, `5`=10
+- 후면은 기본 카메라처럼 **1×**(`videoZoomFactor = 1 / displayVideoZoomFactorMultiplier`)로 시작. 모드 전환(프리셋 변경) 뒤에도 다시 1×로
+- 48MP: `.photo` 프리셋 형식의 `supportedMaxPhotoDimensions`에 48MP가 없으면, 같은 크기·픽셀 형식에서 48MP를 지원하는 `device.formats` 중 하나로 `activeFormat`을 바꿈 (프리셋은 inputPriority가 됨)
+- 48MP (실기기 확인): 후면 트리플 카메라는 형식 55개 모두 사진 최대 24MP(5712×4284). 48MP(JPEG 48 · RAW 48)를 고르면 메인 렌즈(`builtInWideAngleCamera`) 하나로 바꿔 찍고, 다른 해상도 · 비디오 · 전면이면 트리플 카메라로 돌아감. 메인 렌즈만 쓰는 동안 배율 버튼은 1 · 2(확대), 0.5× · 5× · 접사 없음. 사용자가 고른 카메라(userPreferredCamera)는 바꾸지 않음
 - 최대 25× 표시 = `videoZoomFactor 50`, 단 `maxAvailableVideoZoomFactor`보다 크면 그 값으로 제한
 - 버튼 전환은 `ramp(toVideoZoomFactor:withRate:)`로 부드럽게, 다이얼·손가락은 즉시 설정
 - 전면은 `builtInTrueDepthCamera`. 화각 버튼(넓게/가깝게)의 실제 배율 값은 실기기 확인
@@ -25,7 +28,7 @@
 - 화면 좌표 → 장치 좌표: `AVCaptureVideoPreviewLayer.captureDevicePointConverted(fromLayerPoint:)`
 - 탭: `focusPointOfInterest` + `.autoFocus`, `exposurePointOfInterest` + `.autoExpose`. 몇 초 뒤 `.continuousAutoFocus`로 복귀 (기본 카메라처럼 피사체가 바뀌면 복귀)
 - 밝기: `setExposureTargetBias(_:)`, UI 범위 ±2 EV (장치 min/max로 한 번 더 제한)
-- 길게 누르기: focus `.locked`, exposure `.locked` + "AE/AF 잠금" 표시
+- 길게 누르기: focus `.locked`, exposure `.locked` + "자동 노출/초점 고정" 표시
 
 ## 4. 스타일 (사진 스타일과 비슷하게)
 
@@ -35,7 +38,8 @@
   - 색상: 채도·색 강도. `CIColorControls.saturation` (+ 약간의 `CIVibrance`). 흑백 스타일에서는 흑백 톤의 따뜻함/차가움으로 사용
   - 팔레트: 기본 룩의 세기. 원본과 룩 적용본을 `CIDissolveTransition`(또는 mix)으로 0~100% 섞기
   - 흑백 스타일: `CIPhotoEffectMono`/`CIColorControls saturation 0` 후 톤 커브
-- 룩 값은 참고 스크린샷(`docs/reference/style_*.png`)과 같은 장면을 나란히 찍어 비교하며 맞춤. 숫자는 코드 한 곳(`StylePresets.swift`)에 모아 쉽게 고치게
+- 룩 = 채도 · 대비 · 밝기(`CIColorControls`) + 색온도 + 빨강 · 초록 · 파랑 배율(`CIColorMatrix`). 미리보기와 저장 사진에 같은 보정(`PhotoFilter.filtered`)을 적용하며 카메라 화이트밸런스는 건드리지 않음
+- 룩 값은 참고 스크린샷(`docs/reference/style_*.png`)과 같은 장면을 나란히 찍어 비교하며 맞춤. 새로 넣은 10개는 기본 카메라 화면 녹화에서 스타일마다 표준과의 색 분포 차이를 계산해 맞춤. 숫자는 코드 한 곳(`StylePresets.swift`)에 모아 쉽게 고치게
 - **미리보기**: 보정이 보이려면 `AVCaptureVideoPreviewLayer` 대신 `AVCaptureVideoDataOutput` → CIImage → 필터 → `MTKView`(Metal) 렌더링 필요
   - 표준(보정 없음)일 때는 기존 미리보기 레이어를 쓰고, 다른 스타일일 때만 Metal 미리보기로 바꾸는 방식도 가능 (성능·배터리 유리)
   - Metal 미리보기를 쓰면 탭 초점 좌표 변환을 직접 계산해야 함 (미리보기 레이어의 변환 함수를 못 씀)
@@ -45,13 +49,56 @@
 - **카메라 색감**(01_SPEC 7-1절)도 같은 필터 경로 사용: 최종 필터 = 카메라 색감(LUT 또는 값) → 스타일. 둘 다 기본/표준이면 필터 없이 기존 미리보기 레이어 사용
 - `.cube` LUT 읽기: 텍스트 파싱 → `CIColorCubeWithColorSpace`의 cubeData (오프라인, 번들 파일)
 
+
+## 4-1. POSING 카메라 색감 (디카 LUT)
+
+- 자료: 서윤의 `digicam_app_implementation_guide.pdf`. 같은 방을 아이폰과 디지털카메라로 찍은 비교 사진 (플래시 끔 · 켬 각 3장). 인물 클로즈업 사진도 서윤 허락을 받아 플래시 켬 계산에 씀 (#120)
+- #124에서 다시 만듦: 비교 사진으로 계산한 LUT는 흰색이 회색으로 눌리고(최대 약 0.9) 검정이 뜨고 실내 조명색이 섞여 실제 디카 사진과 많이 달랐음. 그래서 서윤이 준 실제 디카 사진 9장(맑은 흰색, 깨끗한 검정, 차분한 채도, 중립 흰색)을 기준으로 직접 설계함
+  - 톤: 밝기(휘도) 곡선만 바꾸고 색 비율은 그대로. 검정 0 → 0, 흰색 1 → 1로 고정하고 가운데는 살짝 S자
+  - 채도: 플래시 끔 0.78배, 켬 0.72배. 화이트밸런스는 아이폰 그대로 (켬은 +1% 따뜻하게)
+- 플래시 끔 (`camera_02_POSING.cube`): 0.2 → 0.17, 0.45 → 0.45, 0.7 → 0.75, 0.88 → 0.95
+- 플래시 켬 (`camera_02_POSING_flash.cube`): 0.2 → 0.23, 0.45 → 0.62, 0.7 → 0.88, 0.85 → 0.98 (밝고 하이라이트가 날아가되 검정은 뜨지 않게)
+- 결과는 17×17×17 `.cube` → `CIColorCubeWithColorSpace`(sRGB). 미리보기는 플래시가 터질지 미리 알 수 없어 항상 플래시 끔 색감
+- `.cube`는 숫자 표라 `.gitattributes`에서 `binary`로 지정해 줄 수 비교 · 리뷰에서 뺌
+- 같은 장면 짝으로 한 번 더 맞춤 (#124): 위 색감으로 찍은 앱 사진과 같은 서랍을 디카로 찍은 사진(플래시 끔 · 켬 각 1쌍)으로 위 LUT 뒤에 보정을 이어 붙임. 채널별 곡선은 흰색을 보라로 물들여서(휴대폰에서 확인) 쓰지 않고 밝기 곡선 · 흰색 균형(±4%) · 채도만 맞춤
+  - 플래시 켬 (우선): 중간을 더 밝게(0.5 → 약 0.66), 노란 기운을 빼고(빨강 0.985배, 파랑 1.035배), 채도 0.85배
+- 플래시 없이 찍어도 디카 플래시 사진처럼 (#124, 서윤 결정: 여행에서는 플래시를 켜지 않고 찍음): 플래시 끔 LUT(`camera_02_POSING.cube`)는 직접 설계 LUT 뒤에 "플래시 느낌" 밝기 곡선을 이어 붙임
+  - 검정은 그대로(0.1 → 0.08), 중간은 크게 밝게(0.3 → 0.42, 0.5 → 0.70), 흰색은 부드럽게 날림(0.7 → 0.88, 0.85 → 0.965). 채도 1.05배, 파랑 +2% (노란 실내 조명 덜어냄)
+  - 휴대폰으로 찍어 보니 디카보다 중간이 덜 밝아서(중앙 밝기 0.60 vs 0.71) 밝기 분위수 곡선을 절반 세기로 한 번 더 이어 붙임 (0.5 → 약 0.75)
+  - 밝기 곡선을 디카에 끝까지 맞추고 가장자리 어둡게 0.6을 넣어 봤으나 사진이 하얗게 날아가서(IMG_7553) 되돌림. 아이폰은 여러 장 합성 · 부분 밝기 보정(Smart HDR)으로 이미 평평한 사진이라, 전체 밝기를 올리면 디카처럼 되지 않고 뜬다
+  - 플래시가 가운데만 닿는 느낌은 가장자리 어둡게 0.45로 냄 (가장자리 / 가운데 밝기 비율이 디카와 같은 약 0.5) (json `vignette`, 미리보기에도 보임)
+  - 플래시를 켜고 찍으면 위 플래시 켬 LUT를 씀 (켜면 너무 밝게 날아가서 여행에서는 끄고 찍음)
+- 다시 만들 때: 같은 장면을 앱 · 디카로 한 장씩 찍어 곡선을 다시 구하면 됨 (스크립트는 저장소 밖)
+
+## 4-2. 디카 질감 · 플래시 후처리 (#120)
+
+- 카메라마다 `camera_XX_이름.json`(선택)에 값을 둔다. 없으면 아무것도 하지 않음. POSING 값 (#124): 부드럽게 0, 또렷하게 0.3 (디카처럼 경계를 살짝 또렷하게, `CIUnsharpMask` 폭 1.5), 노이즈 0 (서윤 요청으로 없앰), 가장자리 어둡게 0.45 (플래시가 가운데만 닿는 느낌), 빠른 처리 우선, 플래시 사람 +0.15 EV · 배경 -0.6 EV
+- 순서: 색감 LUT → (플래시 사진) 사람 밝게 · 배경 어둡게 → 스타일 → 부드럽게(가우시안 흐림) → 또렷하게(`CIUnsharpMask`) → 노이즈(sRGB 기준 흑백 노이즈) → 가장자리 어둡게(`CIVignetteEffect`)
+- 플래시가 터졌는지: 저장 직전 사진의 EXIF `Flash` 값 첫 비트. 자동 플래시에서 안 터진 사진은 플래시 끔 색감
+- 사람 영역: Vision `VNGeneratePersonSegmentationRequest`(기기 안 처리, 오프라인). 사진을 똑바로 세운 긴 변 1024픽셀로 인식 → 원래 방향 · 크기로 되돌려 경계를 살짝 흐림. 사람이 10%보다 작으면 하지 않음 (발 · 손만 찍힌 사진 제외, #124). 거리(깊이) 데이터는 세션 구성을 바꿔야 해서 쓰지 않음
+- 빠른 처리 우선(`photoQualityPrioritization = .speed`): 아이폰이 여러 장을 합쳐 진하고 딱딱하게 만드는 처리를 줄임. 기기마다 줄어드는 정도는 실기기로 확인
+- 미리보기는 질감(부드럽게 · 또렷하게 · 노이즈 · 가장자리)만 같이 보여줌. 노이즈 위치는 프레임마다 바꿔 무늬가 화면에 박혀 보이지 않게. 사람 밝게는 저장 사진에만
+- 한계: 진짜 플래시의 그림자 모양 · 빛 퍼짐은 계산으로 완전히 같게 만들 수 없음. 이미 하얗게 날거나 어둡게 뭉친 부분은 되살릴 수 없음
+
 ## 5. 비율 (16:9, 1:1 자르기)
 
 - 촬영은 항상 4:3으로 하고, 저장 직전에 가운데 기준으로 자름
-- `fileDataRepresentation()` → `CGImageSource`로 읽기 → **방향(orientation)을 반영한 좌표계에서** 자르기 → `CGImageDestination`에 원본 메타데이터(EXIF, GPS 등)와 함께 같은 형식(HEIF/JPEG)으로 쓰기
-- 자동 지연 처리(`isAutoDeferredPhotoDeliveryEnabled`)를 쓰면 처리 전 사진은 자를 수 없음 → 비율이 4:3이 아닐 때는 지연 처리 끄기
+- `fileDataRepresentation()` → `CGImageSource`로 읽기 → **방향(orientation)을 반영한 좌표계에서** 자르기 → `CGImageDestination`에 원본 메타데이터(EXIF, GPS 등)와 함께 같은 형식(JPEG)으로 쓰기
+- 자동 지연 처리(`isAutoDeferredPhotoDeliveryEnabled`)를 쓰면 처리 전 사진은 자를 수 없음. 비율마다 켜고 끄면 세션이 다시 구성되어 미리보기가 흔들리므로 항상 끔
+- 비율을 바꿀 때 미리보기 층 크기를 바꾸면 영상이 흔들림 → 사진은 층을 4:3으로 고정하고 확대(`scaleEffect`) · 자르기(`clipped`)만 움직임. 초점 위치는 층 좌표로 변환 (`CameraLayout.previewLayerPoint`)
 - 비율이 4:3이 아니면 LIVE 끔 (CLAUDE.md 6절 임시 기본값)
+- RAW는 Apple ProRAW(`isAppleProRAWEnabled`). 켜면 세션 구성이 다시 일어나므로 RAW를 고를 때만 켬. DNG는 자를 수 없어 비율과 상관없이 4:3 원본 저장
 - 미리보기: 같은 비율의 프레임 사각형을 계산해 바깥을 검게 가리고, 레이어도 그 사각형 기준으로 배치
+
+## 5-1. 분할 사진 (#128)
+
+- 상태는 `SplitShotState` (메인 액터). 셔터 순간 지금 칸을 "찍는 중"으로 두고 바로 다음 빈 칸으로 넘김 (처리가 끝나기 전에 다음 셔터를 눌러도 같은 칸에 겹치지 않게). 분할을 바꾸거나 저장하면 `session`이 바뀌어 그 전 사진은 버림
+- 칸 사진은 지금까지와 같은 저장 전 처리(비율 자르기 · 색감 · 스타일)를 거친 JPEG 데이터 + 작은 그림(긴 변 600px)을 메모리에만 둠
+- 합치기 `SplitComposer`: 첫 사진 폭을 전체 폭으로, 높이는 사진 비율. 칸마다 사진을 꽉 차게 키워 가운데만 남기고(Core Image, 위아래 좌표 뒤집음) 검정 바탕 위에 붙임 → JPEG(품질 0.92). 메인 스레드 밖에서 처리
+- 칸별 원본: 방향을 반영한 원본 가운데를 칸 비율로 잘라 JPEG로 (`SplitComposer.cropToCell`, 메타데이터 유지, 방향 값은 1로). 4분할은 칸 비율이 사진 비율과 같아 그대로
+- 저장 순서: (설정이 켜져 있으면) 칸별 원본 → 합친 사진 (사진 앱 맨 끝 · 썸네일이 합친 사진)
+- 찍는 화면: 저장될 영역(미리보기를 칸 비율로 가운데 자른 자리)이 지금 칸에 꼭 맞도록 미리보기 · 레이어를 줄여 옮김 (`SplitCellTransform`, 배율 = 칸 폭 / 영역 폭). 격자 · 수평계는 영역 크기로 맞춘 뒤 같이 옮김. 미리보기 탭 위치는 되돌려 계산해 초점에 씀 (`unprojected`). 칸 보기 중에는 미리보기를 미리보기 자리로 자름. 수평계는 뷰를 if로 갈아끼우지 않음 (센서가 꺼짐)
+- 레이어는 화면에만 (CLAUDE.md 4절 1번): 합치기는 저장된 사진 데이터만 씀
 
 ## 6. 레이어 좌표 · 순서
 
@@ -87,11 +134,12 @@
 
 - 슬로 모션: `videoSupportedFrameRateRanges` 최대 240 이상인 포맷 선택 → `activeFormat`, `activeVideoMin/MaxFrameDuration` 설정 후 녹화. 사진 앱이 슬로 모션으로 인식하는지 실기기 확인, 안 되면 저장 시 재생 속도를 늘려 저장
 - 타임랩스: `AVCaptureVideoDataOutput`에서 일정 간격 프레임만 골라 `AVAssetWriter`로 30fps 영상 작성
-- 비디오 해상도·FPS: 지원 포맷에서 4K/HD × 24/30/60 조합만 표시
+- 비디오 해상도·FPS: 4K/HD × 24/30/60을 모두 보여 주고, 지금 카메라가 지원하지 않는 조합은 흐리게 · 누를 수 없게 함. 카메라를 바꿔 고른 조합이 없으면 같은 해상도의 더 낮은 프레임률로 찍고 버튼에도 그 값을 표시
 
 ## 11. 수평계
 
 - CoreMotion `deviceMotion.gravity`로 기울기 계산. 수평 ±약 1° 안에서 가운데 선이 노랗게 일치 (기본 카메라 모양 참고)
+- 화면이 바닥·하늘을 거의 똑바로 향하면(기울기 8° 안) 가운데 흰 십자 + 중력 x·y만큼 비켜 난 노란 십자. 3° 안은 또렷하고 8°까지 점점 투명. 약 1° 안이면 노란 십자 하나로 합쳐짐 (햅틱 없음)
 
 ## 12. 전면 카메라
 
@@ -122,6 +170,7 @@
 
 - `UIApplication.shared.setAlternateIconName("AppIcon-01")`, 기본으로 되돌릴 때는 `nil`. 현재 값은 `alternateIconName`
 - `supportsAlternateIcons` 확인. 무료 Personal Team 설치에서도 동작, 오프라인 동작
-- Xcode 빌드 설정: `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`에 `AppIcon-01 … AppIcon-10` (또는 "Include All App Icon Assets" 켜기)
+- Xcode 빌드 설정: 앱 타깃의 "Include All App Icon Assets"(`ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS`) 켬 → `AppIcon-01 … AppIcon-12`가 모두 들어감
+- 잠금 화면 캡처 확장은 아이콘을 바꿀 수 없어서(`UIApplication.shared` 못 씀) 확장 타깃에 `APP_EXTENSION` 조건을 두고 `#if !APP_EXTENSION`으로 아이콘 카드를 뺌
 - 목록 썸네일은 아이콘 세트를 직접 읽을 수 없으므로, 같은 그림의 작은 미리보기 이미지(`IconPreview-01` 등, 180px)를 일반 이미지로 함께 넣음
 - 바꾼 직후 iOS가 알림창을 띄움 (막을 수 없음). 알림이 뜨는 동안 카메라 화면이 아니라 설정 화면이므로 문제없음

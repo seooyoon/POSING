@@ -1,7 +1,7 @@
 ---
 name: "[✨FEAT] 작업 내용"
 about: 새로운 기능 추가
-title: "[단계] "
+title: "[FEAT] "
 labels: "✨FEAT"
 ---
 

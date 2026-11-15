@@ -1,0 +1,296 @@
+//
+//  CameraLookPicker.swift
+//  포징
+//
+//  셔터 왼쪽 카메라 버튼과 세로 카메라 목록 (docs/01_SPEC.md 7-1절, docs/02_UI.md 7절).
+//  버튼 아래에 지금 카메라 이름. 버튼은 꾹 누르거나 위아래로 밀어 카메라를 바꾸고, 버튼 · 목록 칸을 두 번 빠르게 탭하면 즐겨찾기를 켜고 끈다.
+//
+
+import SwiftUI
+
+/// 지금 고른 카메라의 PNG가 그대로 버튼 모양, 아래에 이름.
+/// 탭 = 목록 열고 닫기, 두 번 빠르게 탭 = 지금 카메라 즐겨찾기 켜고 끔. 꾹 누르거나 위아래로 밀면 목록이 열리고, 손을 떼지 않고 위아래로 움직이면
+/// 고른 칸이 손가락을 따라 바뀜 (모드 캡슐과 같은 방식). 움직인 뒤 손을 떼면 그 카메라로 바뀌고 목록이 닫힘,
+/// 꾹 누르기만 하고 떼면 목록은 열린 채로 남음
+struct CameraLookButton: View {
+
+    let looks: CameraLookState
+    @Binding var isListOpen: Bool
+    /// 밀어서 고르는 중인 칸 (목록에서 이 칸만 불투명). 고르는 중이 아니면 nil
+    @Binding var highlightedID: String?
+    let onSelect: (CameraLookItem) -> Void
+
+    @State private var isPressed = false
+    @State private var longPressTask: Task<Void, Never>?
+    /// 첫 탭 뒤 두 번째 탭을 기다리는 중 (안 오면 목록 열고 닫기)
+    @State private var pendingTapTask: Task<Void, Never>?
+    /// 손가락이 움직여 탭이 아님
+    @State private var hasMoved = false
+    /// 고르기를 시작한 순간의 칸 · 손가락 위치
+    @State private var dragStart: (index: Int, translation: CGFloat)?
+
+    /// 이만큼 움직이면 탭이 아니라 밀기
+    private let moveThreshold: CGFloat = 10
+    /// 폰 방향 (목록 순서를 사용자가 보는 방향에 맞춤)
+    @Environment(\.iconAngle) private var iconAngle
+
+    var body: some View {
+        Group {
+            if let image = looks.selected?.image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            }
+        }
+        .frame(width: CameraLookList.cellSize, height: CameraLookList.cellSize)
+        // 즐겨찾기 하트 (카메라 몸체 오른쪽 위 모서리에 살짝 겹쳐 그 위에)
+        .overlay(alignment: .topTrailing) {
+            if let selected = looks.selected, looks.isFavorite(selected) {
+                FavoriteHeart()
+                    .offset(x: -AppDefaults.favoriteHeartInset.width, y: AppDefaults.favoriteHeartInset.height)
+                    .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .scaleEffect(isPressed ? 0.9 : 1)
+        .animation(.easeOut(duration: 0.12), value: isPressed)
+        // 이미지만으로는 어떤 카메라인지 모를 수 있어 아래에 이름 (버튼 자리 · 크기는 그대로)
+        .overlay(alignment: .bottom) {
+            Text(looks.selected?.name ?? "")
+                .font(.system(size: AppDefaults.cameraNameFontSize, weight: .medium))
+                .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(1)
+                .fixedSize()
+                .offset(y: AppDefaults.cameraNameGap + AppDefaults.cameraNameFontSize)
+                .allowsHitTesting(false)
+        }
+        // 이미지 + 이름 덩어리의 가운데가 셔터 가운데에 오게 살짝 올림 (돌리기 전이라 가로에서는 이름 반대쪽으로)
+        .offset(y: -AppDefaults.cameraButtonLift)
+        // 이미지와 아래 이름을 한 덩어리로 폰 방향대로 돌림 (이름은 늘 이미지 아래)
+        .rotatesWithDevice()
+        .contentShape(.rect)
+        // 탭 · 꾹 누르기 · 밀기를 한 제스처로
+        .gesture(touchGesture)
+        .sensoryFeedback(.selection, trigger: highlightedID) { old, new in old != new && dragStart != nil }
+        .accessibilityElement()
+        .accessibilityLabel("카메라")
+        .accessibilityValue(looks.selected?.name ?? "")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { isListOpen.toggle() }
+        .accessibilityAction(named: isSelectedFavorite ? "즐겨찾기 해제" : "즐겨찾기") { toggleSelectedFavorite() }
+        .accessibilityAdjustableAction { direction in
+            step(direction == .increment ? 1 : -1)
+        }
+    }
+
+    private var touchGesture: some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .onChanged { value in
+                if !isPressed {
+                    isPressed = true
+                    startLongPress()
+                }
+                let translation = value.translation
+                if !hasMoved, hypot(translation.width, translation.height) > moveThreshold {
+                    hasMoved = true
+                    cancelLongPress()
+                    // 위아래로 밀면 바로 목록을 열고 고르기 시작 (옆으로 밀면 아무것도 안 함)
+                    if dragStart == nil, abs(translation.height) > abs(translation.width) {
+                        beginSelecting(at: translation.height)
+                    }
+                }
+                if let start = dragStart {
+                    // 버튼 자리(0)에서 시작해 위로 한 칸 올릴 때마다 버튼에서 먼 칸으로 (목록 맨 아래 칸이 버튼 바로 위)
+                    let items = looks.shownListItems(iconAngle: iconAngle)
+                    let steps = Int(((start.translation - translation.height) / CameraLookList.cellPitch).rounded())
+                    let position = min(max(start.index + steps, 0), items.count)
+                    highlightedID = position > 0 ? items[items.count - position].id : nil
+                }
+            }
+            .onEnded { _ in
+                defer {
+                    cancelLongPress()
+                    isPressed = false
+                    hasMoved = false
+                    dragStart = nil
+                    highlightedID = nil
+                }
+                if dragStart != nil {
+                    // 꾹 누르고 움직이지 않고 떼면 목록만 열어 둠 (칸을 탭해서 고를 수 있게)
+                    guard hasMoved else { return }
+                    if let item = looks.listItems.first(where: { $0.id == highlightedID }) {
+                        onSelect(item)
+                    }
+                    isListOpen = false
+                } else if !hasMoved {
+                    handleTap()
+                }
+            }
+    }
+
+    private var isSelectedFavorite: Bool {
+        looks.selected.map(looks.isFavorite) ?? false
+    }
+
+    /// 두 번째 탭이면 즐겨찾기, 아니면 잠깐 기다렸다가 목록 열고 닫기
+    private func handleTap() {
+        if let task = pendingTapTask {
+            task.cancel()
+            pendingTapTask = nil
+            toggleSelectedFavorite()
+            return
+        }
+        pendingTapTask = Task {
+            try? await Task.sleep(for: .seconds(AppDefaults.doubleTapInterval))
+            guard !Task.isCancelled else { return }
+            pendingTapTask = nil
+            if !looks.listItems.isEmpty { isListOpen.toggle() }
+        }
+    }
+
+    private func toggleSelectedFavorite() {
+        guard let selected = looks.selected else { return }
+        withAnimation(.easeInOut(duration: 0.25)) { looks.toggleFavorite(selected) }
+    }
+
+    private func startLongPress() {
+        longPressTask = Task {
+            try? await Task.sleep(for: .seconds(AppDefaults.longPressDuration))
+            guard !Task.isCancelled, !hasMoved, dragStart == nil else { return }
+            beginSelecting(at: 0)
+        }
+    }
+
+    /// 목록을 열고 버튼 자리에서 고르기 시작 (지금 카메라는 목록에 없음)
+    private func beginSelecting(at translation: CGFloat) {
+        cancelLongPress()
+        guard !looks.listItems.isEmpty else { return }
+        // 첫 탭 대기가 남아 있으면 끝날 때 목록을 닫아 버리므로 취소
+        pendingTapTask?.cancel()
+        pendingTapTask = nil
+        dragStart = (0, translation)
+        highlightedID = nil
+        isListOpen = true
+    }
+
+    private func cancelLongPress() {
+        longPressTask?.cancel()
+        longPressTask = nil
+    }
+
+    /// 보이스오버 위아래 쓸기: 옆 카메라로 바로 바꿈
+    private func step(_ offset: Int) {
+        guard let index = looks.items.firstIndex(where: { $0.id == looks.selected?.id }) else { return }
+        let next = min(max(index + offset, 0), looks.items.count - 1)
+        if next != index { onSelect(looks.items[next]) }
+    }
+}
+
+/// 버튼 바로 위로 쌓이는 세로 목록. 이름순 처음이 사용자가 보기에 위쪽 · 왼쪽
+struct CameraLookList: View {
+
+    static let cellSize: CGFloat = 52
+    private static let spacing: CGFloat = 10
+    /// 칸 아래 이름 자리 (카메라 버튼 이름과 같은 글자 · 간격)
+    private static var nameHeight: CGFloat { AppDefaults.cameraNameGap + AppDefaults.cameraNameFontSize + 3 }
+    /// 이름까지 포함한 칸 높이
+    private static var cellHeight: CGFloat { cellSize + nameHeight }
+    /// 칸 사이 거리 (가운데끼리). 버튼을 밀 때 이만큼 움직이면 한 칸
+    static var cellPitch: CGFloat { cellHeight + spacing }
+    private static let padding: CGFloat = 8
+    /// 좌우 여백. 가로로 돌렸을 때 이미지 + 이름 덩어리(약 66pt) 양옆에도 여백이 남게 위아래보다 넉넉히
+    private static let sidePadding: CGFloat = 13
+    static let width = cellSize + sidePadding * 2
+
+    let looks: CameraLookState
+    /// 위쪽으로 펼칠 수 있는 높이. 넘치면 세로 스크롤
+    let maxHeight: CGFloat
+    /// 버튼을 밀어서 고르는 중인 칸. 있으면 이 칸이 선택된 모양
+    var highlightedID: String?
+    @Environment(\.iconAngle) private var iconAngle
+    let onSelect: (CameraLookItem) -> Void
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: Self.spacing) {
+                    ForEach(looks.shownListItems(iconAngle: iconAngle)) { item in
+                        cell(item)
+                            .id(item.id)
+                    }
+                }
+                .padding(.vertical, Self.padding)
+                .padding(.horizontal, Self.sidePadding)
+            }
+            // 밀어서 고르는 칸이 가려지지 않게 스크롤
+            .onChange(of: highlightedID) { _, id in
+                guard let id else { return }
+                withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(id) }
+            }
+        }
+        .defaultScrollAnchor(.bottom)
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(width: Self.width, height: height)
+        .background(.black.opacity(0.5), in: .rect(cornerRadius: 16))
+        .clipShape(.rect(cornerRadius: 16))
+    }
+
+    var height: CGFloat {
+        let count = CGFloat(looks.listItems.count)
+        return min(maxHeight, count * Self.cellHeight + max(0, count - 1) * Self.spacing + Self.padding * 2)
+    }
+
+    /// 칸: 카메라 PNG + 아래 이름. 버튼을 밀어 고르는 중이면 그 칸만 또렷하고 나머지는 흐리게 (테두리 없음)
+    private func cell(_ item: CameraLookItem) -> some View {
+        let isSelected = highlightedID == nil || highlightedID == item.id
+        return VStack(spacing: AppDefaults.cameraNameGap) {
+            Image(uiImage: item.image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: Self.cellSize, height: Self.cellSize)
+                // 즐겨찾기 하트 (카메라 몸체 오른쪽 위 모서리에 살짝 겹쳐 그 위에)
+                .overlay(alignment: .topTrailing) {
+                    if looks.isFavorite(item) {
+                        FavoriteHeart()
+                            .offset(x: -AppDefaults.favoriteHeartInset.width, y: AppDefaults.favoriteHeartInset.height)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+            Text(item.name)
+                .font(.system(size: AppDefaults.cameraNameFontSize, weight: .medium))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        // 이미지와 이름을 한 덩어리로 폰 방향대로 돌림 (가로로 돌아도 목록 폭 안에 들어감)
+        .frame(width: Self.cellSize + 12)
+        .rotatesWithDevice()
+        .frame(width: Self.cellSize, height: Self.cellHeight, alignment: .top)
+        .opacity(isSelected ? 1 : AppDefaults.cameraListUnselectedOpacity)
+        .animation(.easeOut(duration: 0.12), value: isSelected)
+        .contentShape(.rect)
+            // 두 번 빠르게 탭하면 즐겨찾기 켜고 끔 (즐겨찾기는 목록 맨 위 · 왼쪽으로). 한 번 탭은 그 카메라로
+            .onTapGesture(count: 2) {
+                withAnimation(.easeInOut(duration: 0.25)) { looks.toggleFavorite(item) }
+            }
+            .onTapGesture { onSelect(item) }
+            .accessibilityElement()
+            .accessibilityLabel(item.name)
+            .accessibilityAddTraits(highlightedID == item.id ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction { onSelect(item) }
+            .accessibilityAction(named: looks.isFavorite(item) ? "즐겨찾기 해제" : "즐겨찾기") { looks.toggleFavorite(item) }
+            .accessibilityValue(looks.isFavorite(item) ? "즐겨찾기" : "")
+    }
+}
+
+/// 즐겨찾기 표시: 작은 분홍 하트 (#FA1B58)
+struct FavoriteHeart: View {
+    var size: CGFloat = AppDefaults.favoriteBadgeSize
+
+    var body: some View {
+        Image(systemName: "heart.fill")
+            .font(.system(size: size * 0.8, weight: .semibold))
+            .foregroundStyle(Color.favoritePink)
+            .shadow(color: .black.opacity(0.4), radius: 1)
+            .accessibilityHidden(true)
+    }
+}
