@@ -17,7 +17,7 @@ enum MYGuideMaker {
     /// 가이드 이미지 긴 변 (화면 폭에 맞춰 늘려 보여도 선이 거칠지 않을 만큼)
     private static let longSide: CGFloat = 1200
     /// 외곽선 두께 (긴 변 비율)
-    private static let lineRatio: CGFloat = 0.004
+    private static let lineRatio: CGFloat = 0.006
     /// 얼굴 점 반지름 (긴 변 비율)
     private static let dotRatio: CGFloat = 0.006
     /// 밝은 배경에서도 보이게 선 · 점 둘레에 까는 옅은 그림자 (긴 변 비율)
