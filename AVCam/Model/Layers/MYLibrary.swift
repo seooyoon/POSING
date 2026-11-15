@@ -2,16 +2,17 @@
 //  MYLibrary.swift
 //  포징
 //
-//  MY 저장소 (docs/01_SPEC.md 5절). 앱에 넣어 둔 MY 패키지와 패키지마다 직접 추가한 사진.
-//  추가한 사진은 앱 Documents/MY/<패키지 이름>/ 폴더에 복사하고,
-//  같은 폴더의 order.json에 순서, names.json에 이름을 저장한다. 원본을 사진 앱에서 지워도 목록은 남는다.
+//  MY 저장소 (docs/01_SPEC.md 5 · 6절). 앱에 넣어 둔 MY 패키지와 패키지마다 직접 추가한 사진.
+//  추가한 사진은 앱 Documents/MY/<패키지 이름>/ 폴더에 복사한다. 같은 폴더에
+//  order.json(넣어 둔 사진 + 추가한 사진 순서), names.json(이름), hidden.json(지운 넣어 둔 사진)을 저장한다.
+//  앱 번들 사진은 지울 수 없어 숨김 목록으로만 뺀다. 원본을 사진 앱에서 지워도 추가한 사진은 남는다.
 //
 
 import ImageIO
 import PhotosUI
 import SwiftUI
 
-/// 패키지 하나에 직접 추가한 사진 저장소. 폴더 번호가 바뀌어도 이어지게 패키지 이름으로 나눔
+/// 패키지 하나의 사진 순서 · 이름 · 추가한 사진 저장소. 폴더 번호가 바뀌어도 이어지게 패키지 이름으로 나눔
 struct MYLibrary {
 
     /// 화면에 겹칠 사진의 긴 변 최대 크기 (메모리 절약)
@@ -19,6 +20,12 @@ struct MYLibrary {
 
     /// 이름 최대 글자 수 (띄어쓰기 포함)
     static let maxNameLength = 10
+
+    /// 저장 키 앞머리: 넣어 둔 사진 `bundle/01.jpg`, 추가한 사진 `added/파일 이름`
+    private static let bundlePrefix = "bundle/"
+    private static let addedPrefix = "added/"
+    /// 추가한 사진 id 앞머리 (넣어 둔 사진 id `01_셀카/01.jpg`와 겹치지 않게)
+    private static let addedIDPrefix = "추가/"
 
     let packageName: String
 
@@ -29,46 +36,94 @@ struct MYLibrary {
 
     private var orderFile: URL { folder.appending(path: "order.json") }
     private var namesFile: URL { folder.appending(path: "names.json") }
+    private var hiddenFile: URL { folder.appending(path: "hidden.json") }
 
-    // MARK: - 불러오기 · 저장
+    static func isAdded(_ item: LayerItem) -> Bool {
+        item.id.hasPrefix(addedIDPrefix)
+    }
 
-    /// 저장된 순서대로 추가한 사진. 파일이 없어진 칸은 건너뜀
-    func load() -> [LayerItem] {
-        guard let data = try? Data(contentsOf: orderFile),
-              let names = try? JSONDecoder().decode([String].self, from: data)
-        else { return [] }
-        let itemNames = loadNames()
-        return names.compactMap { name in
-            var item = item(named: name)
-            item?.name = itemNames[name] ?? ""
+    // MARK: - 불러오기
+
+    /// 저장된 순서대로 패키지 사진. 순서에 없는 넣어 둔 사진(새로 넣은 것)은 뒤에 번호순,
+    /// 지운 넣어 둔 사진 · 파일이 없어진 추가한 사진은 빠짐
+    func load(bundled: [LayerItem]) -> [LayerItem] {
+        let hidden = Set(loadHidden())
+        let bundledByKey = Dictionary(uniqueKeysWithValues: bundled.map { (key(of: $0), $0) })
+        var items = loadOrder().compactMap { key -> LayerItem? in
+            if key.hasPrefix(Self.bundlePrefix) {
+                return hidden.contains(key) ? nil : bundledByKey[key]
+            }
+            // 예전 저장본은 추가한 사진 파일 이름만 있음
+            let name = key.hasPrefix(Self.addedPrefix) ? String(key.dropFirst(Self.addedPrefix.count)) : key
+            return item(named: name)
+        }
+        let listed = Set(items.map(key(of:)))
+        items += bundled.filter { !listed.contains(key(of: $0)) && !hidden.contains(key(of: $0)) }
+        let names = loadNames()
+        return items.map { item in
+            var item = item
+            item.name = names[key(of: item)] ?? ""
             return item
         }
     }
 
+    /// 지운 넣어 둔 사진 수 (되돌리기 버튼)
+    func hiddenCount() -> Int {
+        loadHidden().count
+    }
+
+    // MARK: - 저장
+
     func saveOrder(_ items: [LayerItem]) {
-        guard let data = try? JSONEncoder().encode(items.map(fileName(of:))) else { return }
-        try? data.write(to: orderFile, options: .atomic)
+        write(items.map(key(of:)), to: orderFile)
     }
 
-    /// 이름이 있는 칸만 저장 (파일 이름 → 이름)
+    /// 이름이 있는 칸만 저장 (저장 키 → 이름)
     func saveNames(_ items: [LayerItem]) {
-        let names = Dictionary(uniqueKeysWithValues: items.filter { !$0.name.isEmpty }.map { (fileName(of: $0), $0.name) })
-        guard let data = try? JSONEncoder().encode(names) else { return }
-        try? data.write(to: namesFile, options: .atomic)
+        let names = Dictionary(uniqueKeysWithValues: items.filter { !$0.name.isEmpty }.map { (key(of: $0), $0.name) })
+        write(names, to: namesFile)
     }
 
-    private func loadNames() -> [String: String] {
-        guard let data = try? Data(contentsOf: namesFile),
-              let names = try? JSONDecoder().decode([String: String].self, from: data)
-        else { return [:] }
-        return names
-    }
-
-    /// 목록에서 지운 사진의 복사본 삭제
+    /// 추가한 사진은 복사본 삭제, 넣어 둔 사진은 숨김 목록에 넣음
     func delete(_ items: [LayerItem]) {
+        var hidden = loadHidden()
         for item in items {
-            try? FileManager.default.removeItem(at: item.imageURL)
+            if Self.isAdded(item) {
+                try? FileManager.default.removeItem(at: item.imageURL)
+            } else if !hidden.contains(key(of: item)) {
+                hidden.append(key(of: item))
+            }
         }
+        write(hidden, to: hiddenFile)
+    }
+
+    /// 지운 넣어 둔 사진을 모두 다시 보이게 (순서 목록 맨 뒤로)
+    func restoreHidden() {
+        try? FileManager.default.removeItem(at: hiddenFile)
+    }
+
+    // MARK: - 파일
+
+    private func key(of item: LayerItem) -> String {
+        (Self.isAdded(item) ? Self.addedPrefix : Self.bundlePrefix) + item.imageURL.lastPathComponent
+    }
+
+    private func loadOrder() -> [String] { read([String].self, from: orderFile) ?? [] }
+    private func loadHidden() -> [String] { read([String].self, from: hiddenFile) ?? [] }
+    private func loadNames() -> [String: String] { read([String: String].self, from: namesFile) ?? [:] }
+
+    private func read<T: Decodable>(_ type: T.Type, from url: URL) -> T? {
+        // 없는 파일을 읽으면 Xcode에 오류 기록이 남음
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)),
+              let data = try? Data(contentsOf: url)
+        else { return nil }
+        return try? JSONDecoder().decode(type, from: data)
+    }
+
+    private func write<T: Encodable>(_ value: T, to url: URL) {
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        guard let data = try? JSONEncoder().encode(value) else { return }
+        try? data.write(to: url, options: .atomic)
     }
 
     // MARK: - 사진 추가
@@ -94,15 +149,11 @@ struct MYLibrary {
 
     // MARK: - 내부
 
-    /// id는 앱에 넣어 둔 사진(`01_셀카/01.jpg`)과 겹치지 않게 `추가/패키지 이름/파일 이름`
+    /// id는 `추가/패키지 이름/파일 이름`
     private func item(named name: String) -> LayerItem? {
         let url = folder.appending(path: name)
         guard let thumbnail = ImageDownsampler.image(at: url, maxPixels: ImageDownsampler.thumbnailPixels) else { return nil }
-        return LayerItem(id: "추가/\(packageName)/\(name)", thumbnail: thumbnail, imageURL: url)
-    }
-
-    private func fileName(of item: LayerItem) -> String {
-        item.imageURL.lastPathComponent
+        return LayerItem(id: "\(Self.addedIDPrefix)\(packageName)/\(name)", thumbnail: thumbnail, imageURL: url)
     }
 
     /// 사진 앱 식별자로 파일 이름을 만든다. 식별자가 없으면 새 이름
@@ -128,18 +179,18 @@ struct MYLibrary {
 // MARK: - MY 패키지
 
 /// 앱에 넣어 둔 MY 사진 묶음 하나 (docs/04_ASSETS.md 1-1절).
-/// 대표 이미지를 꾹 눌러 직접 추가한 사진이 맨 왼쪽, 그 뒤에 앱에 넣어 둔 사진 (파일 번호순 고정)
+/// 넣어 둔 사진 + 대표 이미지를 꾹 눌러 추가한 사진. 순서 · 삭제는 설정에서 바꿈
 struct MYPackage: Identifiable {
     /// 폴더 이름 (`01_셀카`)
     let id: String
     /// 목록에 보이는 이름 (`셀카`)
     let name: String
     let cover: UIImage
+    /// 앱에 넣어 둔 사진 전체 (파일 번호순, 지운 것 포함)
     let bundledItems: [LayerItem]
-    /// 직접 추가한 사진 (설정에서 이름 · 순서 · 삭제)
-    var addedItems: [LayerItem]
+    /// 지금 보이는 사진 (저장된 순서)
+    var items: [LayerItem]
 
-    var items: [LayerItem] { addedItems + bundledItems }
     var library: MYLibrary { MYLibrary(packageName: name) }
 }
 
@@ -178,6 +229,6 @@ enum MYPackageLibrary {
         // 대표 이미지가 없으면 첫 사진으로
         let cover = coverURL.flatMap { ImageDownsampler.image(at: $0, maxPixels: ImageDownsampler.thumbnailPixels) } ?? items[0].thumbnail
         return MYPackage(id: id, name: name, cover: cover, bundledItems: items,
-                         addedItems: MYLibrary(packageName: name).load())
+                         items: MYLibrary(packageName: name).load(bundled: items))
     }
 }
