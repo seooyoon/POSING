@@ -237,7 +237,7 @@ struct SplitCellPanel<CameraModel: Camera>: View {
     /// 칸 하나의 높이 / 폭
     private func shotCellRatio(_ index: Int) -> CGFloat {
         let cell = split.layout.cellRect(index, in: CGSize(width: 1, height: heightRatio))
-        return min(cell.height / cell.width, 1.6)
+        return cell.height / cell.width
     }
 
     /// 묶음이 미리보기 안에 다 들어가는 칸 폭 (기본 52pt, 가로로 돌려 높이가 모자라면 줄임)
