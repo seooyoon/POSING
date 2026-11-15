@@ -12,8 +12,8 @@ struct OpacitySlider: View {
 
     @Binding var value: Double
     var isEnabled: Bool
+    var range = AppDefaults.poseOpacityRange
 
-    private let range = AppDefaults.opacityRange
     private let step = AppDefaults.opacityStep
     private var tickCount: Int { Int(((range.upperBound - range.lowerBound) / step).rounded()) + 1 }
 
