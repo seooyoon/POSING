@@ -103,6 +103,8 @@ final class SplitShotState {
     /// 칸을 눌러 그 칸을 (다시) 찍기.
     /// 다시 찍으려고 고른 칸을 한 번 더 누르면 취소: 찍어 둔 사진을 그대로 두고 다음 빈 칸으로 (모두 찍었으면 없음)
     func select(_ index: Int) {
+        // 저장 중에는 칸을 고르지 않음 (고른 칸에 찍은 사진이 저장 뒤 비워지며 사라지지 않게)
+        guard !isSaving else { return }
         guard shots.indices.contains(index), !pendingIndices.contains(index) else { return }
         if index == currentIndex, shots[index] != nil {
             currentIndex = nextEmptyIndex(after: index)
