@@ -47,6 +47,13 @@ enum RAWDeveloper {
         return result as Data
     }
 
+    /// RAW(DNG) 데이터인지
+    static func isRAW(_ data: Data) -> Bool {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let type = CGImageSourceGetType(source) else { return false }
+        return (type as String) == "com.adobe.raw-image"
+    }
+
     // MARK: - 내부
 
     /// 따뜻한 조명(낮은 색온도)일수록 중립 쪽으로 당김. 디카 플래시가 실내 조명색을 덮는 느낌
@@ -55,19 +62,33 @@ enum RAWDeveloper {
         let gap = RAWTuning.neutralTemperature - temperature
         guard temperature > 0, gap > 0 else { return }
         let shift = min(gap * RAWTuning.warmthRemoval, RAWTuning.maxTemperatureShift)
-        filter.neutralTemperature = Float(temperature - shift)
+        // CIRAWFilter가 받는 범위(2000K 이상) 안으로
+        filter.neutralTemperature = Float(max(RAWTuning.minTemperature, temperature - shift))
     }
 
-    /// 작은 크기로 한 번 현상해 밝기 중앙값을 재고, 목표 밝기까지 올리는 EV (범위 제한)
+    /// 작은 크기로 현상해 밝기 중앙값을 재고, 목표 밝기까지 올리는 EV (범위 제한).
+    /// 톤 곡선 때문에 EV만큼 정확히 바뀌지 않아서, 적용한 뒤 한 번 더 재서 남은 차이를 한 번만 보정
     private static func autoExposure(_ filter: CIRAWFilter) -> Double {
-        let original = filter.scaleFactor
-        defer { filter.scaleFactor = original }
+        let originalScale = filter.scaleFactor
+        let originalExposure = filter.exposure
+        defer {
+            filter.scaleFactor = originalScale
+            filter.exposure = originalExposure
+        }
         let longSide = max(filter.nativeSize.width, filter.nativeSize.height)
         guard longSide > 0 else { return 0 }
         filter.scaleFactor = Float(min(1, RAWTuning.probeLongSide / longSide))
-        guard let probe = filter.outputImage, let median = medianLuminance(of: probe), median > 0 else { return 0 }
-        let ev = log2(RAWTuning.targetMedianLuminance / median)
-        return min(max(ev, RAWTuning.minExposure), RAWTuning.maxExposure)
+        var ev = 0.0
+        for _ in 0..<2 {
+            filter.exposure = Float(ev)
+            guard let probe = filter.outputImage, let median = medianLuminance(of: probe), median > 0 else { break }
+            ev = clampedExposure(ev + log2(RAWTuning.targetMedianLuminance / median))
+        }
+        return ev
+    }
+
+    private static func clampedExposure(_ ev: Double) -> Double {
+        min(max(ev, RAWTuning.minExposure), RAWTuning.maxExposure)
     }
 
     /// 선형 밝기의 중앙값 (밝은 창문 하나에 끌려가지 않게 평균 대신 중앙값)
@@ -99,6 +120,8 @@ private enum RAWTuning {
     /// 차이의 몇 배만큼 당길지, 최대 얼마까지 (K)
     static let warmthRemoval = 0.9
     static let maxTemperatureShift = 800.0
+    /// CIRAWFilter 색온도 하한 (K)
+    static let minTemperature = 2000.0
     /// 밝기를 잴 때 쓰는 작은 현상본의 긴 변 (픽셀)
     static let probeLongSide: CGFloat = 256
     static let jpegQuality = 0.92

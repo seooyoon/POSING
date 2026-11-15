@@ -955,8 +955,10 @@ actor CaptureService {
         let photo = try await photoCapture.capturePhoto(with: features, onCaptured: onCaptured)
         guard !photo.isProxy, features.cropRatio != nil || features.look != nil || features.style != nil else { return photo }
         var data = photo.data
-        // POSING: RAW를 앱에서 현상해 JPEG로. 실패하면 RAW 그대로 저장 (사진을 잃지 않게)
-        if features.developsRAW {
+        // POSING: RAW를 앱에서 현상해 JPEG로. RAW 현상이 실패하면 RAW 그대로 저장 (사진을 잃지 않게).
+        // RAW 대신 JPEG로 찍혔으면 현상 없이 지금까지 방식 (자르기 · 기본 색감)
+        let isDevelopedRAW = features.developsRAW && RAWDeveloper.isRAW(data)
+        if isDevelopedRAW {
             guard let developed = RAWDeveloper.develop(data) else { return photo }
             data = developed
         }
@@ -966,7 +968,7 @@ actor CaptureService {
         }
         // 자른 뒤 카메라 색감 → 스타일 → 디카 질감을 입힘
         if features.look != nil || features.style != nil {
-            data = PhotoFilter.apply(look: features.look, style: features.style, to: data, isDevelopedRAW: features.developsRAW)
+            data = PhotoFilter.apply(look: features.look, style: features.style, to: data, isDevelopedRAW: isDevelopedRAW)
         }
         return Photo(data: data, isProxy: false, livePhotoMovieURL: nil)
     }
