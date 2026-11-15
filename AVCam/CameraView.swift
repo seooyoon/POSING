@@ -32,6 +32,8 @@ struct CameraView<CameraModel: Camera>: View {
             let isSplitShown = camera.captureMode == .photo
             let split = SplitPreviewGeometry(split: camera.splitShot, previewSize: layout.previewRect.size,
                                              isEnabled: isSplitShown)
+            // 분할 칸 보기 중에도 MY 사진은 칸으로 옮기지 않고 화면 전체에 (최종으로 찍고 싶은 사진이라서)
+            let showsMYWholeFrame = split.isShowing
             ZStack(alignment: .topLeading) {
                 // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 검정이고,
                 // 1:1 · 16:9에서 잘려 나가는 4:3 부분만 미리보기와 같은 크기로 어둡게 비침 (docs/02_UI.md 5절)
@@ -67,15 +69,23 @@ struct CameraView<CameraModel: Camera>: View {
                 // 미리보기 위 표시 (아래 → 위): MY · 포즈 레이어 → 격자 · 중심점 → 수평계 · 초점 (docs/02_UI.md 5절)
                 // 모두 화면에만 그리고 저장본에는 없음
                 Group {
-                    // 분할 칸 보기에서는 레이어도 미리보기와 함께 지금 칸으로, 격자 · 중심점 · 수평계는 지금 칸에 꼭 맞게
-                    LayerOverlay(layers: layers)
-                        .modifier(SplitCellTransform(geometry: split))
+                    // 분할 칸 보기에서는 포즈도 미리보기와 함께 지금 칸으로 (MY는 아래에서 화면 전체로), 격자 · 중심점 · 수평계는 지금 칸에 꼭 맞게
+                    if !showsMYWholeFrame {
+                        LayerOverlay(layers: layers)
+                            .modifier(SplitCellTransform(geometry: split))
+                    }
                     GridOverlay()
                         .modifier(SplitCellTransform(geometry: split, fitsCrop: true))
                     LevelOverlay(level: level)
                         .modifier(SplitCellTransform(geometry: split, fitsCrop: true))
                     // 분할: 나머지 칸 (찍은 사진 · 번호, 누르면 그 칸 찍기). 초점 아래
                     SplitPreviewOverlay(geometry: split)
+                    // 분할 칸 보기: MY는 나머지 칸 위에 화면 전체로, 포즈는 그 위 지금 칸에
+                    if showsMYWholeFrame {
+                        LayerOverlay(layers: layers, kinds: [.my])
+                        LayerOverlay(layers: layers, kinds: [.pose])
+                            .modifier(SplitCellTransform(geometry: split))
+                    }
                     FocusOverlay(focus: focus,
                                  topInset: max(0, layout.safeTop + CameraLayout.topBarHeight - layout.previewRect.minY))
                     OpacityDragLabel(layers: layers, kind: opacityDragKind,
