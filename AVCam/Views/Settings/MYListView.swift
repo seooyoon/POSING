@@ -72,7 +72,7 @@ struct MYListView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("MY \(package?.name ?? "")")
+        .navigationTitle("포즈 \(package?.name ?? "")")
         .toolbar {
             EditToggleButton(editMode: $editMode)
         }
