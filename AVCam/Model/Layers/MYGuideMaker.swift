@@ -25,7 +25,7 @@ enum MYGuideMaker {
 
     /// 사람도 얼굴도 못 찾으면 nil
     static func guide(for image: UIImage) -> UIImage? {
-        guard let cgImage = image.cgImage else { return nil }
+        guard let cgImage = upright(image).cgImage else { return nil }
         let original = CGSize(width: cgImage.width, height: cgImage.height)
         let scale = min(1, longSide / max(original.width, original.height))
         let size = CGSize(width: (original.width * scale).rounded(), height: (original.height * scale).rounded())
@@ -35,7 +35,12 @@ enum MYGuideMaker {
         segmentation.outputPixelFormat = kCVPixelFormatType_OneComponent8
         let faces = VNDetectFaceLandmarksRequest()
         let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up)
-        try? handler.perform([segmentation, faces])
+        // 인식 자체가 실패하면 가이드 없이 사진만
+        do {
+            try handler.perform([segmentation, faces])
+        } catch {
+            return nil
+        }
 
         let outline = segmentation.results?.first.flatMap { outlineImage(mask: $0.pixelBuffer, size: size) }
         let points = (faces.results ?? []).flatMap { facePoints($0, size: size) }
@@ -54,6 +59,18 @@ enum MYGuideMaker {
                 renderer.cgContext.fillEllipse(in: CGRect(x: point.x - radius, y: point.y - radius,
                                                           width: radius * 2, height: radius * 2))
             }
+        }
+    }
+
+    /// 방향 정보가 있는 사진은 똑바로 다시 그려 픽셀과 화면 방향을 맞춤 (Vision은 .up으로 분석)
+    private static func upright(_ image: UIImage) -> UIImage {
+        guard image.imageOrientation != .up else { return image }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        let size = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
         }
     }
 

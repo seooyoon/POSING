@@ -104,6 +104,8 @@ struct PosingButton: View {
             } onPressingChanged: { isPressing in
                 if !isPressing { onHold?(false) }
             }
+            // 누르는 중에 버튼이 사라져도(녹화 시작 등) 원본 보기가 남지 않게
+            .onDisappear { onHold?(false) }
     }
 
     /// 꾹 누르기 인식 시 살짝 커졌다 돌아옴

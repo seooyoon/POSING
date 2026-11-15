@@ -131,6 +131,7 @@ final class LayerState {
         pose.deselect()
         my.deselect()
         openPanel = nil
+        isPeekingMY = false
     }
 
     /// 새로 추가한 사진을 고른 순서대로 그 패키지 맨 왼쪽에 놓고, 1번을 바로 적용 + 그 패키지를 연 MY 패널.
