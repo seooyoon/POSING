@@ -36,7 +36,11 @@ final class LevelModel {
 
     private let motion = CMMotionManager()
 
+    /// start를 부른 화면 수. 뷰가 다시 만들어질 때 새 뷰의 onAppear가 옛 뷰의 onDisappear보다 먼저 와도 센서가 꺼지지 않게
+    private var activeCount = 0
+
     func start() {
+        activeCount += 1
         guard motion.isDeviceMotionAvailable, !motion.isDeviceMotionActive else { return }
         motion.deviceMotionUpdateInterval = 1.0 / 30
         motion.startDeviceMotionUpdates(to: .main) { [weak self] data, _ in
@@ -48,6 +52,8 @@ final class LevelModel {
     }
 
     func stop() {
+        activeCount = max(0, activeCount - 1)
+        guard activeCount == 0 else { return }
         motion.stopDeviceMotionUpdates()
         roll = nil
         flatTilt = nil
