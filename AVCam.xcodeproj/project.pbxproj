@@ -36,11 +36,17 @@
 		5A86DE456A0C4A2CB9ED79E1 /* CameraLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17FE069C06BA4A1DBB6250C5 /* CameraLook.swift */; };
 		A6EC6038C95987583F534679 /* QuickSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */; };
 		0A2218DE53B144AC3B56F6A3 /* QuickSettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */; };
+		C71373C8F11902A01C04C380 /* CameraModel+Split.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BCEFAC911265B0F4D7BC78 /* CameraModel+Split.swift */; };
+		443B2AA069FA2EB3DD790546 /* SplitShotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E09F9D7C4E4AC20F1A3B34B /* SplitShotState.swift */; };
 		A1F0C3D27B6E4A9081D2E3F5 /* CameraModel+Observation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */; };
+		C31E7B3A124D0430EE658F98 /* CameraModel+Split.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BCEFAC911265B0F4D7BC78 /* CameraModel+Split.swift */; };
+		17E2FE59978B1CF5A34318EA /* SplitShotState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E09F9D7C4E4AC20F1A3B34B /* SplitShotState.swift */; };
 		A1F0C3D27B6E4A9081D2E3F6 /* CameraModel+Observation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */; };
 		B84A97739ADFA006BD43133B /* CaptureTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */; };
 		5DC36A618CF5A9ADD1E0B04F /* CaptureTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */; };
+		B0322C3E4CD8684C6D3C7D6E /* SplitComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34EC45120A3233F01BBD7A9 /* SplitComposer.swift */; };
 		555BFEEAA63608EEB952BF7C /* PhotoCropper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */; };
+		0BB939CB282F3D57377FBC5C /* SplitComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34EC45120A3233F01BBD7A9 /* SplitComposer.swift */; };
 		122A2A8ACC04B449B1BEB614 /* PhotoCropper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */; };
 		D0D1E996ACA9255E443123A1 /* CaptureOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */; };
 		9A6844DC13704CB2DDF30B5F /* CaptureOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */; };
@@ -94,7 +100,11 @@
 		9D6B57B4376A8FE371C6FE96 /* LayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6DEE35AD265FC3618F1CC8 /* LayerState.swift */; };
 		E158E19AD17FCAA1AB53D649 /* LayerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0B06E27586286E51EF6078 /* LayerOverlay.swift */; };
 		E99072C09B3A50F7252BF8E0 /* LayerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F0B06E27586286E51EF6078 /* LayerOverlay.swift */; };
+		D945742A26298BF5AFA10A6A /* SplitControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3794395E3FCA2DAB3AA27D90 /* SplitControls.swift */; };
+		9160D6E744D5E9B23D7A516E /* SplitPreviewOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E84EC274D0B1A708C30648 /* SplitPreviewOverlay.swift */; };
 		B43D70E69F970FC9C523154D /* LayerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F505727295AEF9F4C4F96F /* LayerPanel.swift */; };
+		6EDDDE2A1A7564D74205E6BF /* SplitControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3794395E3FCA2DAB3AA27D90 /* SplitControls.swift */; };
+		5398118616CC1BAFBB31BDF1 /* SplitPreviewOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E84EC274D0B1A708C30648 /* SplitPreviewOverlay.swift */; };
 		0D55C0CF88F9ABE1C444340E /* LayerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F505727295AEF9F4C4F96F /* LayerPanel.swift */; };
 		0C44BA3F7BFF122D45E4CE0C /* OpacitySlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789AE4A43BD97D21511D4689 /* OpacitySlider.swift */; };
 		2DE10EA706A5B7A52728CEDE /* OpacitySlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789AE4A43BD97D21511D4689 /* OpacitySlider.swift */; };
@@ -238,8 +248,11 @@
 		C47D299CD3134F2B8DFAED9B /* CameraLookPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLookPicker.swift; sourceTree = "<group>"; };
 		17FE069C06BA4A1DBB6250C5 /* CameraLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLook.swift; sourceTree = "<group>"; };
 		0FCF286863DB8F16ED60D6DC /* QuickSettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSettingsPanel.swift; sourceTree = "<group>"; };
+		E2BCEFAC911265B0F4D7BC78 /* CameraModel+Split.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraModel+Split.swift"; sourceTree = "<group>"; };
+		8E09F9D7C4E4AC20F1A3B34B /* SplitShotState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Split/SplitShotState.swift"; sourceTree = "<group>"; };
 		A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraModel+Observation.swift"; sourceTree = "<group>"; };
 		52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureTimer.swift; sourceTree = "<group>"; };
+		C34EC45120A3233F01BBD7A9 /* SplitComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitComposer.swift; sourceTree = "<group>"; };
 		79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCropper.swift; sourceTree = "<group>"; };
 		2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureOptions.swift; sourceTree = "<group>"; };
 		A9A290DCFC09981F31DF05ED /* LightController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LightController.swift; sourceTree = "<group>"; };
@@ -267,6 +280,8 @@
 		0275E6595F458A5717223CC6 /* PoseLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseLibrary.swift; sourceTree = "<group>"; };
 		BD6DEE35AD265FC3618F1CC8 /* LayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerState.swift; sourceTree = "<group>"; };
 		7F0B06E27586286E51EF6078 /* LayerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerOverlay.swift; sourceTree = "<group>"; };
+		3794395E3FCA2DAB3AA27D90 /* SplitControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitControls.swift; sourceTree = "<group>"; };
+		74E84EC274D0B1A708C30648 /* SplitPreviewOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitPreviewOverlay.swift; sourceTree = "<group>"; };
 		C0F505727295AEF9F4C4F96F /* LayerPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayerPanel.swift; sourceTree = "<group>"; };
 		789AE4A43BD97D21511D4689 /* OpacitySlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpacitySlider.swift; sourceTree = "<group>"; };
 		24D270174CB96868C9FC6D94 /* Poses */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Poses; sourceTree = "<group>"; };
@@ -426,6 +441,15 @@
 			path = Layers;
 			sourceTree = "<group>";
 		};
+		5A1B2C3D4E5F60718293A4B5 /* Split */ = {
+			isa = PBXGroup;
+			children = (
+				74E84EC274D0B1A708C30648 /* SplitPreviewOverlay.swift */,
+				3794395E3FCA2DAB3AA27D90 /* SplitControls.swift */,
+			);
+			path = Split;
+			sourceTree = "<group>";
+		};
 		8188C915800E6ED312833522 /* Panels */ = {
 			isa = PBXGroup;
 			children = (
@@ -532,6 +556,8 @@
 			children = (
 				52C2B970EAD1ED987C56B1C4 /* CaptureTimer.swift */,
 				A1F0C3D27B6E4A9081D2E3F4 /* CameraModel+Observation.swift */,
+				8E09F9D7C4E4AC20F1A3B34B /* SplitShotState.swift */,
+				E2BCEFAC911265B0F4D7BC78 /* CameraModel+Split.swift */,
 				2FB4206C97D48DE8BB54FD17 /* CaptureOptions.swift */,
 				8F42E92D869146ACA448613D /* StylePresets.swift */,
 				E1AA96D5DD6F467EA6E15F00 /* StyleState.swift */,
@@ -553,6 +579,7 @@
 				2420DD78B0F6636B2B54FFB5 /* MoreMenu */,
 				EA5CE56085A6998525CB6082 /* Settings */,
 				8188C915800E6ED312833522 /* Panels */,
+				5A1B2C3D4E5F60718293A4B5 /* Split */,
 				C0469DF54D5FEE553D15739F /* Layers */,
 				F8396B33B3011D74E7113B46 /* Layout */,
 				D2B9199F440A88BA88C64E6D /* TopBar */,
@@ -572,6 +599,7 @@
 			isa = PBXGroup;
 			children = (
 				79FEC9D3F6DD07F175392382 /* PhotoCropper.swift */,
+				C34EC45120A3233F01BBD7A9 /* SplitComposer.swift */,
 				A84757CD70C944428443607C /* PhotoFilter.swift */,
 				C3D1F0A2B4E64C7D9A1B2C30 /* DigicamFinish.swift */,
 				B64CD468B9634618AEC311EB /* FilteredPreviewFeed.swift */,
@@ -812,7 +840,10 @@
 				0A2218DE53B144AC3B56F6A3 /* QuickSettingsPanel.swift in Sources */,
 				5DC36A618CF5A9ADD1E0B04F /* CaptureTimer.swift in Sources */,
 				A1F0C3D27B6E4A9081D2E3F5 /* CameraModel+Observation.swift in Sources */,
+				443B2AA069FA2EB3DD790546 /* SplitShotState.swift in Sources */,
+				C71373C8F11902A01C04C380 /* CameraModel+Split.swift in Sources */,
 				122A2A8ACC04B449B1BEB614 /* PhotoCropper.swift in Sources */,
+				0BB939CB282F3D57377FBC5C /* SplitComposer.swift in Sources */,
 				57B00AAE29764C2ABD9330F2 /* PhotoFilter.swift in Sources */,
 				C3D1F0A2B4E64C7D9A1B2C32 /* DigicamFinish.swift in Sources */,
 				EF7F85267F63448D98699A98 /* FilteredPreviewFeed.swift in Sources */,
@@ -850,6 +881,8 @@
 				9D6B57B4376A8FE371C6FE96 /* LayerState.swift in Sources */,
 				E99072C09B3A50F7252BF8E0 /* LayerOverlay.swift in Sources */,
 				0D55C0CF88F9ABE1C444340E /* LayerPanel.swift in Sources */,
+				5398118616CC1BAFBB31BDF1 /* SplitPreviewOverlay.swift in Sources */,
+				6EDDDE2A1A7564D74205E6BF /* SplitControls.swift in Sources */,
 				2DE10EA706A5B7A52728CEDE /* OpacitySlider.swift in Sources */,
 				400B0FE41DA5B628F4D08E1B /* AppDefaults.swift in Sources */,
 				39ED809156D77E728E46AC93 /* CameraLayout.swift in Sources */,
@@ -908,7 +941,10 @@
 				A6EC6038C95987583F534679 /* QuickSettingsPanel.swift in Sources */,
 				B84A97739ADFA006BD43133B /* CaptureTimer.swift in Sources */,
 				A1F0C3D27B6E4A9081D2E3F6 /* CameraModel+Observation.swift in Sources */,
+				17E2FE59978B1CF5A34318EA /* SplitShotState.swift in Sources */,
+				C31E7B3A124D0430EE658F98 /* CameraModel+Split.swift in Sources */,
 				555BFEEAA63608EEB952BF7C /* PhotoCropper.swift in Sources */,
+				B0322C3E4CD8684C6D3C7D6E /* SplitComposer.swift in Sources */,
 				D81C3C1392FF4B04AFE0BA74 /* PhotoFilter.swift in Sources */,
 				C3D1F0A2B4E64C7D9A1B2C31 /* DigicamFinish.swift in Sources */,
 				1769FB6435F14A0B8E87C704 /* FilteredPreviewFeed.swift in Sources */,
@@ -946,6 +982,8 @@
 				6AC698C62B26C5FF5471E555 /* LayerState.swift in Sources */,
 				E158E19AD17FCAA1AB53D649 /* LayerOverlay.swift in Sources */,
 				B43D70E69F970FC9C523154D /* LayerPanel.swift in Sources */,
+				9160D6E744D5E9B23D7A516E /* SplitPreviewOverlay.swift in Sources */,
+				D945742A26298BF5AFA10A6A /* SplitControls.swift in Sources */,
 				0C44BA3F7BFF122D45E4CE0C /* OpacitySlider.swift in Sources */,
 				26FB8E31F1E5FD785AA2D5B2 /* AppDefaults.swift in Sources */,
 				D3CFCB5FF9270E3F889E8BC8 /* CameraLayout.swift in Sources */,
