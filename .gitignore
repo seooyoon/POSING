@@ -18,3 +18,6 @@ build/
 **/Resources/Poses/*_photo.*
 # 테스트용 임시 포즈(단순 도형)는 올림. 실제 포즈 세트를 넣을 때 지운다
 !**/Resources/Poses/*sample*
+
+# MY 패키지 사진 · 대표 이미지도 개인 사진이라 올리지 않음 (빈 폴더만 유지, 사진은 각자 로컬에 넣음)
+**/Resources/MYPackages/*/
