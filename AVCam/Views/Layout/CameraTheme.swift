@@ -76,15 +76,21 @@ extension View {
         glassEffect(.regular, in: shape)
     }
 
-    /// 상단 바 캡슐 모양. 반투명 유리 판 위에 흰 글자
-    func topBarCapsule(horizontalPadding: CGFloat = 12) -> some View {
-        font(.system(size: topBarFontSize))
+    /// 상단 바 캡슐 모양. 기본 카메라처럼 효과 없는 반투명 회색 판 위에 흰 글자 (검정 바탕에서도 보임)
+    /// isGlass: 유리 판 (분할 토글처럼 미리보기 위에 떠 있는 버튼)
+    @ViewBuilder
+    func topBarCapsule(horizontalPadding: CGFloat = 12, isGlass: Bool = false) -> some View {
+        let label = font(.system(size: topBarFontSize))
             .foregroundStyle(.white)
             // 글자가 "…"로 잘리지 않게 폭을 글자에 고정
             .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, horizontalPadding)
             .frame(height: topBarControlHeight)
-            .glassEffect(.regular.interactive(), in: .capsule)
+        if isGlass {
+            label.glassEffect(.regular.interactive(), in: .capsule)
+        } else {
+            label.background(Color(white: AppDefaults.topBarCapsuleGray, opacity: AppDefaults.topBarCapsuleOpacity), in: .capsule)
+        }
     }
 }
 

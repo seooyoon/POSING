@@ -21,9 +21,15 @@ struct CameraView<CameraModel: Camera>: View {
     @State private var level = LevelModel()
     /// 렌즈를 바꾸는 동안 고정해 둘 바깥 비침 상태 (바꾸는 순간 배율 값이 흔들려 미리보기 길이가 출렁이지 않게)
     @State private var frozenSeeThrough: Bool?
+    /// 화면 어디든 탭한 자리 (열린 목록 닫기용, 탭은 가로막지 않음)
+    @State private var screenTap: ScreenTap?
     var body: some View {
         GeometryReader { proxy in
             let layout = CameraLayout(proxy: proxy, captureMode: camera.captureMode, photoAspect: camera.photoAspect)
+            // 분할 표시는 사진 모드에서만 (비디오는 항상 원래 비율)
+            let isSplitShown = camera.captureMode == .photo
+            let split = SplitPreviewGeometry(split: camera.splitShot, previewSize: layout.previewRect.size,
+                                             isEnabled: isSplitShown)
             ZStack(alignment: .topLeading) {
                 // 카메라 화면은 다크 고정 (docs/02_UI.md 10절). 미리보기 바깥은 검정이고,
                 // 1:1 · 16:9에서 잘려 나가는 4:3 부분만 미리보기와 같은 크기로 어둡게 비침 (docs/02_UI.md 5절)
@@ -37,13 +43,16 @@ struct CameraView<CameraModel: Camera>: View {
                         }
                         .frame(width: layout.previewLayerSize.width, height: layout.previewLayerSize.height)
                         .scaleEffect(layout.previewScale)
+                        // 분할 칸 보기: 지금 칸으로 줄여 옮김
+                        .modifier(SplitCellTransform(geometry: split))
                     }
                     // 자르지 않음: 1:1이면 4:3 영상의 위아래가 바깥에 이어서 비침 (OutsidePreviewDim이 어둡게)
                     .frame(width: layout.previewRect.width, height: layout.previewRect.height)
                     .contentShape(previewTouchArea(in: layout), eoFill: true)
-                    .modifier(PreviewGestures(camera: camera, layers: layers, focus: focus, layout: layout,
+                    .modifier(PreviewGestures(camera: camera, layers: layers, focus: focus, layout: layout, split: split,
                                               onStyleSwipe: isShowingStyleScreen ? { styles.step(by: $0 == .left ? 1 : -1) } : nil))
-                    .modifier(StyleCardEffect(isActive: isShowingStyleScreen, layout: layout, clipsOutside: false))
+                    // 분할 칸 보기 중에는 미리보기 자리로 자름 (1:1 · 16:9에서 바깥 4:3 부분이 비치지 않게)
+                    .modifier(StyleCardEffect(isActive: isShowingStyleScreen, layout: layout, clipsOutside: split.isShowing))
                 .animation(.easeInOut(duration: 0.25), value: camera.captureMode)
                 .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                 OutsidePreviewDim(previewRect: layout.previewRect, isSeeThrough: isOutsideSeeThrough)
@@ -55,9 +64,15 @@ struct CameraView<CameraModel: Camera>: View {
                 // 미리보기 위 표시 (아래 → 위): MY · 포즈 레이어 → 격자 · 중심점 → 수평계 · 초점 (docs/02_UI.md 5절)
                 // 모두 화면에만 그리고 저장본에는 없음
                 Group {
+                    // 분할 칸 보기에서는 레이어도 미리보기와 함께 지금 칸으로, 격자 · 중심점 · 수평계는 지금 칸에 꼭 맞게
                     LayerOverlay(layers: layers)
+                        .modifier(SplitCellTransform(geometry: split))
                     GridOverlay()
+                        .modifier(SplitCellTransform(geometry: split, fitsCrop: true))
                     LevelOverlay(level: level)
+                        .modifier(SplitCellTransform(geometry: split, fitsCrop: true))
+                    // 분할: 나머지 칸 (찍은 사진 · 번호, 누르면 그 칸 찍기). 초점 아래
+                    SplitPreviewOverlay(geometry: split)
                     FocusOverlay(focus: focus,
                                  topInset: max(0, layout.safeTop + CameraLayout.topBarHeight - layout.previewRect.minY))
                 }
@@ -68,8 +83,13 @@ struct CameraView<CameraModel: Camera>: View {
                 .animation(.easeInOut(duration: 0.25), value: camera.photoAspect)
                 // 카메라 화면 UI
                 CameraUI(camera: camera, layers: layers, looks: looks, styles: styles,
-                         isShowingStyleScreen: $isShowingStyleScreen, layout: layout)
+                         isShowingStyleScreen: $isShowingStyleScreen, layout: layout, screenTap: screenTap)
             }
+            .coordinateSpace(.named(CameraView.screenSpace))
+            // 버튼 · 미리보기 탭과 함께 인식 (목록이 열려 있어도 누른 것이 바로 동작하고 목록은 닫힘)
+            .simultaneousGesture(SpatialTapGesture(coordinateSpace: .named(CameraView.screenSpace)).onEnded { value in
+                screenTap = ScreenTap(id: (screenTap?.id ?? 0) + 1, location: value.location)
+            })
             .ignoresSafeArea()
             // 폰을 가로로 돌리면 아이콘 · 글자만 돌아감 (docs/02_UI.md 10절)
             .environment(\.iconAngle, level.iconAngle)
@@ -89,6 +109,8 @@ struct CameraView<CameraModel: Camera>: View {
             SettingsView(layers: layers, looks: looks)
         }
     }
+
+    private static var screenSpace: String { "cameraScreen" }
 
     /// 1:1 · 16:9에서 잘려 나가는 4:3 부분이 비치는지. 기본 카메라처럼 0.5× · 접사 · 전면 · 비디오 계열은 검정
     private var isOutsideSeeThrough: Bool {
@@ -123,11 +145,13 @@ struct CameraView<CameraModel: Camera>: View {
         // 셔터 자리 (eoFill로 구멍)
         path.addRect(CGRect(x: layout.centerX - 50 - rect.minX, y: layout.shutterCenterY - 50 - rect.minY,
                             width: 100, height: 100))
-        // 카메라 버튼 자리 (사진 모드에서만 보이고, 카메라 컨트롤을 밀고 있는 동안은 숨음)
+        // 카메라 버튼 · 분할 버튼 자리 (사진 모드에서만 보이고, 카메라 컨트롤을 밀고 있는 동안은 숨음)
         if camera.captureMode == .photo && !camera.prefersMinimizedUI {
-            path.addRect(CGRect(x: CameraLayout.cameraButtonCenterX - CameraLookList.cellSize / 2 - rect.minX,
-                                y: layout.shutterCenterY - CameraLookList.cellSize / 2 - rect.minY,
-                                width: CameraLookList.cellSize, height: CameraLookList.cellSize))
+            for centerX in [CameraLayout.cameraButtonCenterX, layout.size.width - CameraLayout.cameraButtonCenterX] {
+                path.addRect(CGRect(x: centerX - CameraLookList.cellSize / 2 - rect.minX,
+                                    y: layout.shutterCenterY - CameraLookList.cellSize / 2 - rect.minY,
+                                    width: CameraLookList.cellSize, height: CameraLookList.cellSize))
+            }
         }
         return path
     }
@@ -171,6 +195,8 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
     let layers: LayerState
     let focus: FocusModel
     let layout: CameraLayout
+    /// 분할 칸 보기에서 누른 자리를 원래 미리보기 자리로 바꿀 때 씀
+    let split: SplitPreviewGeometry
     /// 스타일 화면에서는 좌우로 밀면 모드 대신 스타일이 바뀜
     let onStyleSwipe: ((SwipeDirection) -> Void)?
 
@@ -187,13 +213,13 @@ private struct PreviewGestures<CameraModel: Camera>: ViewModifier {
             .onTapGesture { location in
                 layers.closePanel()
                 focus.tap(at: location)
-                let point = layout.previewLayerPoint(from: location)
+                let point = layout.previewLayerPoint(from: split.unprojected(location))
                 Task { await camera.focusAndExpose(at: point) }
             }
             // 길게 누르기 → AE/AF 잠금
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
                 focus.lock(at: touchLocation)
-                let point = layout.previewLayerPoint(from: touchLocation)
+                let point = layout.previewLayerPoint(from: split.unprojected(touchLocation))
                 Task { await camera.lockFocusAndExposure(at: point) }
             }
             .simultaneousGesture(touchTracker)

@@ -63,6 +63,8 @@ struct CameraLookButton: View {
                 .offset(y: AppDefaults.cameraNameGap + AppDefaults.cameraNameFontSize)
                 .allowsHitTesting(false)
         }
+        // 이미지 + 이름 덩어리의 가운데가 셔터 가운데에 오게 살짝 올림 (돌리기 전이라 가로에서는 이름 반대쪽으로)
+        .offset(y: -AppDefaults.cameraButtonLift)
         // 이미지와 아래 이름을 한 덩어리로 폰 방향대로 돌림 (이름은 늘 이미지 아래)
         .rotatesWithDevice()
         .contentShape(.rect)

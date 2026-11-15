@@ -38,11 +38,14 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     /// 캡슐 가운데 (화면 좌표). 탭한 쪽 모드를 고를 때 기준
     @State private var centerX: CGFloat = 0
 
+    /// 고른 모드 글자 노랑 (기본 카메라 스크린샷 Display P3 값 그대로)
+    private static var selectedYellow: Color { Color(.displayP3, red: 253 / 255, green: 246 / 255, blue: 88 / 255) }
+
     // 기본 카메라 화면에서 잰 값
     private let capsuleSize = CGSize(width: 161, height: 47)
-    private let highlightSize = CGSize(width: 81, height: 41)
+    private let highlightSize = CGSize(width: 80, height: 42)
     /// 펼쳤을 때 강조 판은 조금 커짐
-    private let expandedHighlightSize = CGSize(width: 87, height: 46)
+    private let expandedHighlightSize = CGSize(width: 83, height: 47)
     /// 모드 사이 간격 (가운데끼리). 접혔을 때와 펼쳤을 때가 같음
     private let labelSpacing: CGFloat = 72
     /// 펼친 줄 폭 (양 끝은 흐려짐)
@@ -90,19 +93,31 @@ struct CaptureModePicker<CameraModel: Camera>: View {
     private var capsule: some View {
         labels(capsuleModes, selected: camera.captureMode)
             .background {
-                highlight(size: highlightSize, fillOpacity: AppDefaults.modeHighlightOpacity)
-                    .offset(x: position(of: capsuleModes.firstIndex(of: camera.captureMode) ?? 0, count: capsuleModes.count))
+                highlight(size: highlightSize, isExpanded: false)
+                    .offset(x: highlightX, y: -0.5)
+            }
+            .overlay {
+                lensRim(size: highlightSize)
+                    .offset(x: highlightX, y: -0.5)
             }
             .frame(width: capsuleSize.width, height: capsuleSize.height)
             .bottomGlass(in: .capsule)
     }
 
+    /// 접힌 판 자리: 캡슐 끝에서 3.3pt 안쪽 (기본 카메라에서 잰 값, 글자보다 살짝 바깥쪽)
+    private var highlightX: CGFloat {
+        let side: CGFloat = (capsuleModes.firstIndex(of: camera.captureMode) ?? 0) == 0 ? -1 : 1
+        return side * (capsuleSize.width / 2 - 3.3 - highlightSize.width / 2)
+    }
+
     /// 펼친 모드 줄: 강조 판은 가운데 고정, 글자 줄이 움직임
     private var strip: some View {
         ZStack {
-            highlight(size: expandedHighlightSize, fillOpacity: AppDefaults.modeHighlightOpacity)
+            highlight(size: expandedHighlightSize, isExpanded: true)
             labels(Self.displayOrder, selected: centeredMode)
                 .offset(x: clampedStripOffset)
+            // 판이 글자 위에 얹힌 렌즈처럼 보이게 가장자리 선은 글자 위
+            lensRim(size: expandedHighlightSize)
         }
         .frame(width: stripWidth, height: expandedHighlightSize.height)
         .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.12),
@@ -110,11 +125,31 @@ struct CaptureModePicker<CameraModel: Camera>: View {
                              startPoint: .leading, endPoint: .trailing))
     }
 
-    private func highlight(size: CGSize, fillOpacity: Double) -> some View {
-        Capsule()
-            .fill(.white.opacity(fillOpacity))
-            .overlay(Capsule().stroke(.white.opacity(0.3), lineWidth: 0.5))
+    /// 선택 강조 판 바탕 (기본 카메라 스크린샷에서 잰 색): 접힘 = 고른 회색, 펼침 = 위가 어둡고 아래가 밝은 회색
+    @ViewBuilder
+    private func highlight(size: CGSize, isExpanded: Bool) -> some View {
+        if isExpanded {
+            Capsule()
+                .fill(LinearGradient(colors: [Color(white: 18 / 255), Color(white: 39 / 255)],
+                                     startPoint: .top, endPoint: .bottom))
+                .frame(width: size.width, height: size.height)
+        } else {
+            Capsule()
+                .fill(Color(white: 32 / 255))
+                .frame(width: size.width, height: size.height)
+        }
+    }
+
+    /// 강조 판 가장자리 선 1pt: 왼쪽 위 · 위 · 오른쪽 아래가 밝고 왼쪽 · 오른쪽 위는 흐림 (기본 카메라에서 잰 밝기)
+    private func lensRim(size: CGSize) -> some View {
+        let stops: [(Double, Double)] = [(0, 0.27), (0.125, 0.4), (0.25, 0.26), (0.375, 0.15),
+                                         (0.5, 0.1), (0.625, 0.36), (0.75, 0.32), (0.875, 0.12), (1, 0.27)]
+        return Capsule()
+            .strokeBorder(AngularGradient(stops: stops.map { .init(color: .white.opacity($0.1), location: $0.0) },
+                                          center: .center),
+                          lineWidth: 1)
             .frame(width: size.width, height: size.height)
+            .allowsHitTesting(false)
     }
 
     /// 모드 이름을 가운데 기준 간격대로 놓은 줄. 선택된 모드만 노란색
@@ -122,8 +157,8 @@ struct CaptureModePicker<CameraModel: Camera>: View {
         ZStack {
             ForEach(Array(modes.enumerated()), id: \.element) { index, mode in
                 Text(mode.title)
-                    .font(.system(size: 15.5, weight: .medium))
-                    .foregroundStyle(mode == selected ? Color.cameraYellow : .white)
+                    .font(.system(size: 15.5, weight: .regular))
+                    .foregroundStyle(mode == selected ? Self.selectedYellow : .white)
                     .fixedSize()
                     .offset(x: position(of: index, count: modes.count))
             }

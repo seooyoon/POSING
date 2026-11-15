@@ -32,4 +32,6 @@ enum SettingsKeys {
     static let videoFrameRate = "videoFrameRate"
     /// 슬로 모션 프레임률 (120 · 240)
     static let slowMotionFrameRate = "slowMotionFrameRate"
+    /// 분할 사진을 저장할 때 칸별 원본도 저장 (기본값 AppDefaults.savesSplitOriginals)
+    static let savesSplitOriginals = "savesSplitOriginals"
 }

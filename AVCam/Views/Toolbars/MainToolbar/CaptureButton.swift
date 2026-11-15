@@ -41,11 +41,10 @@ struct CaptureButton<CameraModel: Camera>: View {
             }
             .opacity(camera.captureMode.isMovie ? 1 : 0)
             .allowsHitTesting(camera.captureMode.isMovie)
-            PhotoCaptureButton {
-                Task {
-                    // 타이머가 켜져 있으면 카운트다운
-                    await camera.shutterPressed()
-                }
+            // 분할 사진을 모두 찍으면 셔터가 노란 저장 버튼으로 (누르면 저장)
+            PhotoCaptureButton(isSaveMode: camera.splitShot.isComplete, isSaving: camera.splitShot.isSaving) {
+                // 다 찍었으면 저장, 아니면 촬영 (타이머가 켜져 있으면 카운트다운). 분기는 shutterPressed 안에서
+                Task { await camera.shutterPressed() }
             }
             .opacity(camera.captureMode == .photo ? 1 : 0)
             .allowsHitTesting(camera.captureMode == .photo)
@@ -97,21 +96,43 @@ private struct ShutterRing: View {
 }
 
 private struct PhotoCaptureButton: View {
+    /// 분할 사진을 모두 찍음: 노란 원 + "저장"
+    var isSaveMode = false
+    var isSaving = false
     private let action: () -> Void
-    
-    init(action: @escaping () -> Void) {
+
+    init(isSaveMode: Bool = false, isSaving: Bool = false, action: @escaping () -> Void) {
+        self.isSaveMode = isSaveMode
+        self.isSaving = isSaving
         self.action = action
     }
-    
+
     var body: some View {
         Button {
             action()
         } label: {
             Circle()
                 .inset(by: ShutterRing.width)
-                .fill(.white)
+                .fill(isSaveMode ? Color.cameraYellow : .white)
+                .overlay {
+                    if isSaveMode {
+                        Group {
+                            if isSaving {
+                                ProgressView().tint(.black)
+                            } else {
+                                Text("저장")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundStyle(.black)
+                            }
+                        }
+                        .rotatesWithDevice()
+                    }
+                }
+                .animation(.easeInOut(duration: 0.2), value: isSaveMode)
         }
         .buttonStyle(PhotoButtonStyle())
+        .disabled(isSaving)
+        .accessibilityLabel(isSaveMode ? "분할 사진 저장" : "사진 찍기")
     }
     
     struct PhotoButtonStyle: ButtonStyle {

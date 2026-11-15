@@ -16,10 +16,16 @@ struct CameraUI<CameraModel: Camera>: View {
     let styles: StyleState
     @Binding var isShowingStyleScreen: Bool
     let layout: CameraLayout
+    /// 화면 어디든 마지막으로 탭한 자리 (목록 바깥 탭으로 닫기)
+    var screenTap: ScreenTap?
 
     @State private var panelHeight: CGFloat = 0
     @State private var isShowingMoreMenu = false
     @State private var isShowingCameraList = false
+    /// 분할 버튼 위 1 · 2 · 3 · 4 목록
+    @State private var isShowingSplitList = false
+    /// 분할 사진을 크게 보는 중 (분할 버튼 꾹 누르기 · 칸별 사진 꾹 누르기)
+    @State private var splitPreviewTarget: SplitPreviewTarget?
     /// 카메라 버튼을 밀어서 고르는 중인 칸
     @State private var highlightedLookID: String?
     /// 상단 빠른 설정 판 (형식 버튼 · 오른쪽 묶음 꾹 누르기)
@@ -130,6 +136,7 @@ struct CameraUI<CameraModel: Camera>: View {
             .blur(radius: isShowingMoreMenu ? 6 : 0)
 
             cameraLookControls
+            splitControls
 
             // 타이머 카운트다운: 미리보기 가운데
             TimerCountdownView(countdown: camera.countdown)
@@ -183,6 +190,12 @@ struct CameraUI<CameraModel: Camera>: View {
         .animation(.easeOut(duration: 0.18), value: isShowingMoreMenu)
         .animation(.easeOut(duration: 0.18), value: quickSettings)
         .animation(.easeOut(duration: 0.2), value: isShowingCameraList)
+        .animation(.easeOut(duration: 0.2), value: isShowingSplitList)
+        .animation(.easeOut(duration: 0.2), value: splitPreviewTarget)
+        .animation(.easeOut(duration: 0.2), value: camera.splitShot.isComplete)
+        .onChange(of: screenTap) { _, tap in
+            if let tap { closeListsOnOutsideTap(at: tap.location) }
+        }
         .animation(.easeInOut(duration: AppDefaults.macroButtonFadeDuration), value: camera.zoom.showsMacroButton)
         .animation(.spring(duration: 0.35, bounce: 0.1), value: isShowingStyleScreen)
         // 스타일을 바꾸면 사진 보정에 바로 반영
@@ -193,6 +206,8 @@ struct CameraUI<CameraModel: Camera>: View {
         .onChange(of: camera.captureMode) {
             isShowingMoreMenu = false
             isShowingCameraList = false
+            isShowingSplitList = false
+            splitPreviewTarget = nil
             isShowingStyleScreen = false
             quickSettings = nil
         }
@@ -214,19 +229,8 @@ struct CameraUI<CameraModel: Camera>: View {
             && !isShowingMoreMenu && !isShowingStyleScreen && !camera.prefersMinimizedUI
         let buttonTop = layout.shutterCenterY - CameraLookList.cellSize / 2
         if isShowingCameraList {
-            // 목록 바깥을 탭하면 닫힘
-            if AppDefaults.closesCameraListOnOutsideTap {
-                Color.clear
-                    .contentShape(.rect)
-                    .frame(width: layout.size.width, height: layout.size.height)
-                    .onTapGesture { isShowingCameraList = false }
-            }
-            let list = CameraLookList(looks: looks,
-                                      maxHeight: buttonTop - CameraUI.cameraListGap - previewTopY,
-                                      highlightedID: highlightedLookID) { item in
-                selectLook(item)
-                isShowingCameraList = false
-            }
+            // 목록 바깥 탭은 가로막지 않고 닫기만 함 (closeListsOnOutsideTap). 누른 버튼은 바로 동작
+            let list = cameraLookList
             let listBottom = buttonTop - CameraUI.cameraListGap
             list
                 .position(x: CameraLayout.cameraButtonCenterX, y: listBottom - list.height / 2)
@@ -244,6 +248,89 @@ struct CameraUI<CameraModel: Camera>: View {
     }
 
     private static var cameraListGap: CGFloat { 8 }
+    /// 분할 칸 목록이 배율 버튼 줄 가운데에서 떨어지는 거리
+    private static var zoomRowClearance: CGFloat { 30 }
+
+    private var cameraLookButtonTop: CGFloat { layout.shutterCenterY - CameraLookList.cellSize / 2 }
+
+    private var cameraLookList: CameraLookList {
+        CameraLookList(looks: looks,
+                       maxHeight: cameraLookButtonTop - CameraUI.cameraListGap - previewTopY,
+                       highlightedID: highlightedLookID) { item in
+            selectLook(item)
+            isShowingCameraList = false
+        }
+    }
+
+    /// 카메라 목록 · 분할 목록이 열려 있을 때 화면 어디든 탭하면 닫음.
+    /// 목록 · 그 목록의 버튼(+ 이름 글자) 자리는 빼고, 다른 버튼은 막지 않아 한 번에 동작
+    private func closeListsOnOutsideTap(at point: CGPoint) {
+        guard AppDefaults.closesCameraListOnOutsideTap else { return }
+        let half = CameraLookList.width / 2
+        let buttonBottom = layout.shutterCenterY + CameraLookList.cellSize / 2 + AppDefaults.cameraNameGap
+            + AppDefaults.cameraNameFontSize * 1.5
+        let listBottom = cameraLookButtonTop - CameraUI.cameraListGap
+        if isShowingCameraList {
+            let top = listBottom - cameraLookList.height
+            let rect = CGRect(x: CameraLayout.cameraButtonCenterX - half, y: top,
+                              width: half * 2, height: buttonBottom - top)
+            if !rect.contains(point) { isShowingCameraList = false }
+        }
+        if isShowingSplitList {
+            let buttonX = layout.size.width - CameraLayout.cameraButtonCenterX
+            let top = listBottom - SplitLayoutList(split: camera.splitShot) { _ in }.height
+            let rect = CGRect(x: buttonX - half, y: top, width: half * 2, height: buttonBottom - top)
+            if !rect.contains(point) { isShowingSplitList = false }
+        }
+    }
+
+    /// 셔터 오른쪽 분할 버튼 · 목록, 분할 중이면 미리보기 오른쪽 위 묶음 (사진 모드에서만)
+    @ViewBuilder
+    private var splitControls: some View {
+        let split = camera.splitShot
+        let isAvailable = camera.captureMode == .photo && camera.status == .running
+            && !isShowingMoreMenu && !isShowingStyleScreen && !camera.prefersMinimizedUI
+        let buttonX = layout.size.width - CameraLayout.cameraButtonCenterX
+        let heightRatio = camera.photoAspect.portraitHeightRatio
+        if isAvailable && split.isActive && !isShowingSplitList {
+            // 오른쪽 위 묶음: 미리보기 안, 배율 버튼 줄 위까지만 (가로로 돌려도 배율 버튼과 겹치지 않게). 분할 목록이 열리면 숨김
+            let clusterBottom = min(layout.previewRect.maxY,
+                                    layout.zoomRowCenterY - CameraUI.zoomRowClearance)
+            SplitCellPanel(camera: camera, heightRatio: heightRatio) { target in
+                splitPreviewTarget = target
+            }
+                .frame(width: layout.previewRect.width, height: max(0, clusterBottom - previewTopY))
+                .position(x: layout.previewRect.midX, y: (previewTopY + clusterBottom) / 2)
+                .transition(.opacity)
+        }
+        if isShowingSplitList && isAvailable {
+            let list = SplitLayoutList(split: split) { selected in
+                split.layout = selected
+                isShowingSplitList = false
+            }
+            let listBottom = layout.shutterCenterY - CameraLookList.cellSize / 2 - CameraUI.cameraListGap
+            list
+                .position(x: buttonX, y: listBottom - list.height / 2)
+                .transition(.scale(scale: 0.4, anchor: UnitPoint(x: buttonX / layout.size.width,
+                                                                 y: listBottom / layout.size.height))
+                    .combined(with: .opacity))
+        }
+        SplitButton(split: split, heightRatio: heightRatio, isListOpen: $isShowingSplitList) {
+            splitPreviewTarget = .combined
+        }
+            .position(x: buttonX, y: layout.shutterCenterY)
+            .opacity(isAvailable ? 1 : 0)
+            .allowsHitTesting(isAvailable)
+            .animation(.easeOut(duration: 0.2), value: isAvailable)
+        // 크게 보기: 화면 맨 위에. 아무 곳이나 누르면 촬영 화면으로
+        if let target = splitPreviewTarget, isAvailable && split.isActive {
+            SplitLargePreview(split: split, target: target, heightRatio: heightRatio, screenSize: layout.size) {
+                splitPreviewTarget = nil
+            }
+            .position(x: layout.centerX, y: layout.size.height / 2)
+            .transition(.opacity)
+        }
+    }
 
     private func selectLook(_ item: CameraLookItem) {
         looks.select(item)
@@ -289,4 +376,10 @@ struct CameraUI<CameraModel: Camera>: View {
 
 #Preview {
     CameraView(camera: PreviewCameraModel(status: .running))
+}
+
+/// 화면 탭 한 번 (같은 자리를 또 눌러도 바뀌게 번호를 붙임)
+struct ScreenTap: Equatable {
+    let id: Int
+    let location: CGPoint
 }

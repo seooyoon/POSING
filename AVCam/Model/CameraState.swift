@@ -10,7 +10,8 @@ import Foundation
 
 struct CameraState: Codable {
     
-    var isLivePhotoEnabled = true {
+    // LIVE 기본은 끔 (AppDefaults.isLivePhotoOnAtLaunch와 같게. 이 파일은 확장 대상에도 들어가 AppDefaults를 못 씀)
+    var isLivePhotoEnabled = false {
         didSet { save() }
     }
     

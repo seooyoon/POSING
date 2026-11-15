@@ -43,7 +43,8 @@ final class CameraModel: Camera {
     var thumbnail: CGImage?
     
     /// An error that indicates the details of an error during photo or movie capture.
-    private(set) var error: Error?
+    /// 분할 사진 저장(CameraModel+Split)에서도 씀
+    var error: Error?
     
     /// An object that provides the connection between the capture session and the video preview layer.
     var previewSource: PreviewSource { captureService.previewSource }
@@ -85,6 +86,8 @@ final class CameraModel: Camera {
     
     /// An object that saves captured media to a person's Photos library.
     let mediaLibrary = MediaLibrary()
+    /// 분할 사진 (셔터 오른쪽 분할 버튼)
+    let splitShot = SplitShotState()
     
     /// An object that manages the app's capture functionality.
     let captureService = CaptureService()
@@ -110,6 +113,9 @@ final class CameraModel: Camera {
             // 앱을 처음 열면 마지막 모드와 상관없이 항상 사진 (세션 시작 전이라 didSet은 세션을 건드리지 않음)
             captureMode = .photo
             cameraState.captureMode = .photo
+            // 앱을 열면 LIVE는 기본값(끔)에서 시작. 쓰는 동안 켜고 끈 것은 앱이 켜져 있는 동안 유지
+            isLivePhotoEnabled = AppDefaults.isLivePhotoOnAtLaunch
+            cameraState.isLivePhotoEnabled = AppDefaults.isLivePhotoOnAtLaunch
             // 마지막 형식이 RAW면 세션을 시작하기 전에 준비
             await captureService.setRAWEnabled(photoCodec == .raw)
             // Start the capture service to start the flow of data.
@@ -177,6 +183,12 @@ final class CameraModel: Camera {
     func capturePhoto() async {
         // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
         guard !isSwitchingVideoDevices, !isChangingMainLens, shutterOwner == nil else { return }
+        // 분할 사진 저장 중에는 찍지 않음 (저장 뒤 비워지면서 사라지지 않게)
+        guard !splitShot.isSaving else { return }
+        // 분할 사진: 지금 칸에 넣음. 모든 칸을 찍었으면 저장 전까지 셔터를 받지 않음
+        let splitTarget = splitShot.captureIndex.map { (index: $0, session: splitShot.session) }
+        guard !splitShot.isActive || splitTarget != nil else { return }
+        if let splitTarget { splitShot.beginCapture(at: splitTarget.index) }
         let owner = UUID()
         shutterOwner = owner
         // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
@@ -201,9 +213,16 @@ final class CameraModel: Camera {
                 Task { @MainActor in self?.releaseShutter(owner, hidesScreenFlash: usesScreenFlash) }
             }
             releaseShutter(owner, hidesScreenFlash: usesScreenFlash)
-            try await mediaLibrary.save(photo: photo)
+            if let splitTarget {
+                await storeSplitShot(photo, at: splitTarget.index, session: splitTarget.session)
+            } else {
+                try await mediaLibrary.save(photo: photo)
+            }
         } catch {
             releaseShutter(owner, hidesScreenFlash: usesScreenFlash)
+            if let splitTarget {
+                splitShot.finishCapture(nil, at: splitTarget.index, session: splitTarget.session)
+            }
             self.error = error
             // 찍히는 소리만 나고 저장되지 않을 때 원인 확인용
             logger.notice("[Photo] failed (\(self.activeResolution, privacy: .public)MP \(self.activeCodec.rawValue, privacy: .public)): \(String(describing: error), privacy: .public)")
@@ -212,6 +231,11 @@ final class CameraModel: Camera {
 
     func shutterPressed() async {
         guard shutterOwner == nil else { return }
+        // 분할 사진을 모두 찍었으면 저장 (화면 셔터 · 음량 버튼 · 카메라 컨트롤 모두 같은 길)
+        if splitShot.isComplete {
+            await saveSplitShot()
+            return
+        }
         await captureTimer.shutterPressed(duration: timerDuration) { [weak self] in
             await self?.capturePhoto()
         }
@@ -368,7 +392,7 @@ final class CameraModel: Camera {
     }
     
     /// A Boolean value that indicates whether to capture Live Photos when capturing stills.
-    var isLivePhotoEnabled = true {
+    var isLivePhotoEnabled = AppDefaults.isLivePhotoOnAtLaunch {
         didSet {
             // Update the persistent state value.
             cameraState.isLivePhotoEnabled = isLivePhotoEnabled

@@ -62,7 +62,8 @@ struct FormatButton<CameraModel: Camera>: View {
         Text(text)
             .font(.system(size: 10))
             .foregroundStyle(.white.opacity(0.6))
-            .baselineOffset(baseline)
+            // baselineOffset는 줄 높이를 늘려 큰 글자가 캡슐 가운데에서 밀림 → 자리만 옮기는 offset 사용
+            .offset(y: -baseline)
     }
 }
 
