@@ -20,6 +20,8 @@ enum AppDefaults {
     static let opacityRange = 0.05...1.0
     /// 투명도 조절 단위 (5%)
     static let opacityStep = 0.05
+    /// 미리보기를 좌우로 밀어 투명도 조절: 이만큼(pt) 밀면 0 → 100%
+    static let opacityDragDistance: CGFloat = 300
 
     // MARK: - MY 사진 추가
 
