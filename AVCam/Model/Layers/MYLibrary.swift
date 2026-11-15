@@ -62,7 +62,9 @@ struct MYLibrary {
         let names = loadNames()
         return items.map { item in
             var item = item
-            item.name = names[key(of: item)] ?? ""
+            // 예전 저장본은 추가한 사진의 파일 이름을 키로 저장함
+            let legacyKey = Self.isAdded(item) ? item.imageURL.lastPathComponent : nil
+            item.name = names[key(of: item)] ?? legacyKey.flatMap { names[$0] } ?? ""
             return item
         }
     }
@@ -78,9 +80,13 @@ struct MYLibrary {
         write(items.map(key(of:)), to: orderFile)
     }
 
-    /// 이름이 있는 칸만 저장 (저장 키 → 이름)
+    /// 이름이 있는 칸만 저장 (저장 키 → 이름). 지운(숨긴) 넣어 둔 사진의 이름은 되돌릴 때를 위해 남김
     func saveNames(_ items: [LayerItem]) {
-        let names = Dictionary(uniqueKeysWithValues: items.filter { !$0.name.isEmpty }.map { (key(of: $0), $0.name) })
+        let hidden = Set(loadHidden())
+        var names = loadNames().filter { hidden.contains($0.key) }
+        for item in items where !item.name.isEmpty {
+            names[key(of: item)] = item.name
+        }
         write(names, to: namesFile)
     }
 
