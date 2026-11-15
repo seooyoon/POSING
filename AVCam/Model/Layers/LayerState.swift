@@ -6,7 +6,6 @@
 //  포즈 1개 + MY 1개까지 동시에 선택하고, 패널은 한 번에 하나만 연다.
 //
 
-import PhotosUI
 import SwiftUI
 
 /// 레이어 한 종류(포즈 또는 MY)의 목록과 선택 상태
@@ -58,29 +57,22 @@ struct LayerSlot {
 final class LayerState {
 
     var pose = LayerSlot(defaultOpacity: AppDefaults.poseOpacity)
-    /// MY 선택 상태. `my.items`는 직접 추가한 '내 사진' 패키지의 사진
+    /// MY 선택 상태. 사진 목록은 패키지마다 따로 (`myPackages`)
     var my = LayerSlot(defaultOpacity: AppDefaults.myOpacity)
-    /// 앱에 넣어 둔 MY 패키지 (순서 고정)
-    let myPackages: [MYPackage]
-    /// '내 사진' 대표 이미지로 직접 고른 사진. nil이면 첫 사진
-    private(set) var myCustomCover: UIImage? = MYLibrary.loadCover()
+    /// 앱에 넣어 둔 MY 패키지 (순서 고정) + 패키지마다 직접 추가한 사진
+    private(set) var myPackages: [MYPackage]
     /// MY 패널에서 들어가 있는 패키지. nil이면 패키지 목록. 패널을 닫았다 열어도 그대로
     private(set) var openMYPackageID: String?
     /// 지금 열린 패널. 포즈 · MY 패널은 같은 자리에 하나만
     private(set) var openPanel: LayerKind?
-    /// MY 꾹 누르기로 사진 피커를 띄움
-    var isPickingMY = false
+    /// 패키지 대표 이미지 꾹 누르기로 그 패키지에 사진을 추가하는 피커를 띄움
+    var pickingMYPackageID: String?
     /// 초기화 꾹 누르기로 설정 화면을 띄움
     var isShowingSettings = false
 
-    /// 직접 추가한 사진 묶음의 id (패키지 목록 맨 왼쪽)
-    static let userPackageID = "내 사진"
-
-    init(poses: [LayerItem] = PoseLibrary.load(), myItems: [LayerItem] = MYLibrary.load(),
-         myPackages: [MYPackage] = MYPackageLibrary.load()) {
+    init(poses: [LayerItem] = PoseLibrary.load(), myPackages: [MYPackage] = MYPackageLibrary.load()) {
         self.myPackages = myPackages
         pose.items = poses
-        my.items = myItems
     }
 
     subscript(kind: LayerKind) -> LayerSlot {
@@ -114,36 +106,8 @@ final class LayerState {
         openMYPackageID = nil
     }
 
-    /// '내 사진' 대표 이미지: 직접 고른 사진, 없으면 첫 사진
-    var userPackageCover: UIImage? {
-        myCustomCover ?? my.items.first?.thumbnail
-    }
-
-    /// 대표 이미지 요청 번호: 새로 고르거나 되돌리면 늘어나서, 늦게 끝난 이전 요청은 버림
-    private var coverRequest = 0
-
-    /// 첫 사진으로 되돌림 (진행 중인 대표 이미지 요청도 무효)
-    func resetMYCover() {
-        coverRequest += 1
-        MYLibrary.deleteCover()
-        myCustomCover = nil
-    }
-
-    /// 사진 앱에서 고른 사진을 대표 이미지로. 실패하면 false (최신 요청이 아니어서 버린 경우는 true)
-    func updateMYCover(_ item: PhotosPickerItem) async -> Bool {
-        coverRequest += 1
-        let request = coverRequest
-        guard let jpeg = await MYLibrary.prepareCover(item) else { return request != coverRequest }
-        // 기다리는 사이 새로 고르거나 되돌렸으면 기록하지 않음
-        guard request == coverRequest else { return true }
-        guard let cover = MYLibrary.writeCover(jpeg) else { return false }
-        myCustomCover = cover
-        return true
-    }
-
-    /// 패키지 안의 사진. '내 사진'은 직접 추가한 사진
-    func myItems(inPackage id: String) -> [LayerItem] {
-        id == Self.userPackageID ? my.items : myPackages.first { $0.id == id }?.items ?? []
+    func myPackage(_ id: String) -> MYPackage? {
+        myPackages.first { $0.id == id }
     }
 
     func toggle(_ item: LayerItem, in kind: LayerKind) {
@@ -158,23 +122,25 @@ final class LayerState {
         openPanel = nil
     }
 
-    /// 새로 추가한 사진을 고른 순서대로 맨 왼쪽에 놓고, 1번을 바로 적용 + MY 패널 열기.
+    /// 새로 추가한 사진을 고른 순서대로 그 패키지 맨 왼쪽에 놓고, 1번을 바로 적용 + 그 패키지를 연 MY 패널.
     /// 이미 있던 사진은 중복으로 쌓지 않고 맨 왼쪽으로 옮김
-    func addMY(_ newItems: [LayerItem]) {
+    func addMY(_ newItems: [LayerItem], to packageID: String) {
+        guard let index = myPackages.firstIndex(where: { $0.id == packageID }) else { return }
+        let added = myPackages[index].addedItems
         // 이미 있던 사진은 붙여 둔 이름을 그대로 씀
         let newItems = newItems.map { item in
             var item = item
-            item.name = my.items.first { $0.id == item.id }?.name ?? ""
+            item.name = added.first { $0.id == item.id }?.name ?? ""
             return item
         }
         guard let first = newItems.first else { return }
         let newIDs = Set(newItems.map(\.id))
-        my.items = newItems + my.items.filter { !newIDs.contains($0.id) }
+        myPackages[index].addedItems = newItems + added.filter { !newIDs.contains($0.id) }
         my.select(first)
         loadImage(of: first, in: .my)
         openPanel = .my
-        openMYPackageID = Self.userPackageID
-        MYLibrary.saveOrder(my.items)
+        openMYPackageID = packageID
+        myPackages[index].library.saveOrder(myPackages[index].addedItems)
     }
 
     // MARK: - 설정 화면 목록 편집
@@ -184,30 +150,43 @@ final class LayerState {
         PoseLibrary.saveOrder(pose.items)
     }
 
-    func moveMY(from source: IndexSet, to destination: Int) {
-        my.items.move(fromOffsets: source, toOffset: destination)
-        MYLibrary.saveOrder(my.items)
+    func moveMY(inPackage packageID: String, from source: IndexSet, to destination: Int) {
+        editAdded(inPackage: packageID) { items, library in
+            items.move(fromOffsets: source, toOffset: destination)
+            library.saveOrder(items)
+        }
     }
 
-    /// MY 사진 이름 (띄어쓰기 포함 최대 10자). 넘치는 입력은 받지 않고 이전 이름 유지
-    func renameMY(_ id: String, to name: String) {
-        guard name.count <= MYLibrary.maxNameLength,
-              let index = my.items.firstIndex(where: { $0.id == id })
-        else { return }
-        my.items[index].name = name
-        MYLibrary.saveNames(my.items)
+    /// 추가한 사진 이름 (띄어쓰기 포함 최대 10자). 넘치는 입력은 받지 않고 이전 이름 유지
+    func renameMY(_ id: String, inPackage packageID: String, to name: String) {
+        guard name.count <= MYLibrary.maxNameLength else { return }
+        editAdded(inPackage: packageID) { items, library in
+            guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+            items[index].name = name
+            library.saveNames(items)
+        }
     }
 
     /// 선택 중인 사진을 지우면 화면의 MY 레이어도 사라짐
-    func deleteMY(at offsets: IndexSet) {
-        let removed = offsets.map { my.items[$0] }
-        if removed.contains(where: { $0.id == my.selectedID }) {
-            my.deselect()
+    func deleteMY(inPackage packageID: String, at offsets: IndexSet) {
+        editAdded(inPackage: packageID) { items, library in
+            let removed = offsets.map { items[$0] }
+            if removed.contains(where: { $0.id == my.selectedID }) {
+                my.deselect()
+            }
+            items.remove(atOffsets: offsets)
+            library.delete(removed)
+            library.saveOrder(items)
+            library.saveNames(items)
         }
-        my.items.remove(atOffsets: offsets)
-        MYLibrary.delete(removed)
-        MYLibrary.saveOrder(my.items)
-        MYLibrary.saveNames(my.items)
+    }
+
+    /// 패키지의 추가한 사진 목록을 고치고 다시 넣음
+    private func editAdded(inPackage packageID: String, _ edit: (inout [LayerItem], MYLibrary) -> Void) {
+        guard let index = myPackages.firstIndex(where: { $0.id == packageID }) else { return }
+        var items = myPackages[index].addedItems
+        edit(&items, myPackages[index].library)
+        myPackages[index].addedItems = items
     }
 
     // MARK: - 이미지 읽기
