@@ -111,7 +111,7 @@ final class CameraModel: Camera {
             captureMode = .photo
             cameraState.captureMode = .photo
             // 마지막 형식이 RAW면 세션을 시작하기 전에 준비
-            await captureService.setRAWEnabled(photoCodec == .raw)
+            await captureService.setRAWEnabled(wantsRAWOutput)
             // Start the capture service to start the flow of data.
             try await captureService.start(with: cameraState)
             observeState()
@@ -186,6 +186,7 @@ final class CameraModel: Camera {
         }
         do {
             let appliesPhotoFilters = activeCodec != .raw && !isLivePhotoActive
+            let developsRAW = self.developsRAW
             let photoFeatures = PhotoFeatures(isLivePhotoEnabled: isLivePhotoActive,
                                               qualityPrioritization: photoQualityPrioritization,
                                               flashMode: AVCaptureDevice.FlashMode(flashMode),
@@ -194,8 +195,9 @@ final class CameraModel: Camera {
                                               // RAW(DNG)와 LIVE는 색감 · 스타일을 입히지 않음 (LIVE 영상 부분은 보정할 수 없어 짝이 어긋남)
                                               look: appliesPhotoFilters && !cameraLook.isDefault ? cameraLook.photoLook : nil,
                                               style: appliesPhotoFilters && photoStyle.changesImage ? photoStyle : nil,
-                                              isRAW: activeCodec == .raw,
-                                              maxDimensions: activeDimensions)
+                                              isRAW: activeCodec == .raw || developsRAW,
+                                              developsRAW: developsRAW,
+                                              maxDimensions: developsRAW ? rawDevelopDimensions : activeDimensions)
             let photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
                 // 찍기를 마치면 처리 · 저장이 끝나기 전이라도 다음 셔터를 받음
                 Task { @MainActor in self?.releaseShutter(owner, hidesScreenFlash: usesScreenFlash) }
@@ -245,9 +247,38 @@ final class CameraModel: Camera {
         return (cameraLook, photoStyle)
     }
 
+    /// POSING처럼 RAW 현상을 쓰는 카메라 색감 (사진 모드 · LIVE 아님 · JPEG 형식일 때)
+    private var wantsRAWDevelop: Bool {
+        captureMode == .photo && photoCodec != .raw && !isLivePhotoActive
+            && !cameraLook.isDefault && cameraLook.finish?.developsRAW == true
+    }
+
+    /// 이번 사진을 RAW로 찍어 앱에서 현상함 (지금 카메라가 RAW를 못 찍으면 지금까지 방식)
+    private var developsRAW: Bool { wantsRAWDevelop && isRAWSupported }
+
+    /// RAW 촬영 준비가 필요함 (RAW 형식이거나 RAW 현상 카메라 색감).
+    /// 모드 · LIVE와는 상관없이 둬서 모드를 바꿀 때마다 세션을 다시 구성하지 않게
+    private var wantsRAWOutput: Bool {
+        photoCodec == .raw || (!cameraLook.isDefault && cameraLook.finish?.developsRAW == true)
+    }
+
+    /// RAW 현상 크기: 48MP를 골랐으면 48MP, 아니면 12MP (ProRAW는 24MP가 없음)
+    private var rawDevelopDimensions: CMVideoDimensions? {
+        guard activeResolution < (PhotoResolution.values.last ?? 48) else { return activeDimensions }
+        return photoDimensions.last { PhotoResolution.megapixels(width: $0.width, height: $0.height) == PhotoResolution.values.first }
+            ?? activeDimensions
+    }
+
+    /// RAW 촬영 준비를 켜고 끔 (세션 구성이 다시 일어나서 값이 바뀔 때만)
+    private func updateRAWOutput() {
+        let isEnabled = wantsRAWOutput
+        Task { await captureService.setRAWEnabled(isEnabled) }
+    }
+
     /// 사진 모드에서 카메라 색감 · 스타일 보정이 있으면 미리보기에도 보정 표시 (Metal 미리보기)
     private func updatePreviewFilter() {
         guard status == .running else { return }
+        updateRAWOutput()
         let inputs = previewFilterInputs
         captureService.previewSource.filteredFeed.configure(lutURL: inputs.look?.lutURL, style: inputs.style, finish: inputs.look?.finish)
         Task { await captureService.refreshPreviewFiltering() }
@@ -271,8 +302,7 @@ final class CameraModel: Camera {
             guard photoCodec != oldValue else { return }
             // RAW는 48MP로, JPEG로 돌아오면 기본 해상도로
             photoResolution = photoCodec == .raw ? PhotoResolution.values.last ?? 48 : AppDefaults.photoResolution
-            let isRAW = photoCodec == .raw
-            Task { await captureService.setRAWEnabled(isRAW) }
+            updateRAWOutput()
         }
     }
 
@@ -339,7 +369,7 @@ final class CameraModel: Camera {
     /// 디카 카메라는 아이폰 자동 보정(여러 장 합성)을 줄이려고 빠른 처리 우선.
     /// 빠른 처리는 12MP에서만 지원돼서 24 · 48MP는 그대로 (해상도가 몰래 줄지 않게)
     private var photoQualityPrioritization: QualityPrioritization {
-        guard cameraLook.finish?.prefersFastProcessing == true,
+        guard cameraLook.finish?.prefersFastProcessing == true, !developsRAW,
               let dimensions = activeDimensions,
               Int(dimensions.width) * Int(dimensions.height) <= 12_600_000 else { return qualityPrioritization }
         return .speed

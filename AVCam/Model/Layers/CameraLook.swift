@@ -15,10 +15,12 @@ struct CameraLook: Equatable, Sendable {
     let lutURL: URL?
     /// 플래시가 터진 사진에 쓰는 색감. 없으면 `lutURL`
     var flashLUTURL: URL? = nil
+    /// RAW 현상 사진에 쓰는 색감. 없으면 `lutURL`
+    var rawLUTURL: URL? = nil
     /// 디카 질감 · 플래시 사람 밝게 (json). 없으면 질감 없음
     var finish: CameraFinish? = nil
     var photoLook: PhotoLook {
-        PhotoLook(lutURL: lutURL, flashLUTURL: flashLUTURL, finish: finish)
+        PhotoLook(lutURL: lutURL, flashLUTURL: flashLUTURL, rawLUTURL: rawLUTURL, finish: finish)
     }
     /// 파일이 하나도 없을 때 쓰는 기본 카메라
     static let builtInDefault = CameraLook(id: "camera_00_\(CameraLookLibrary.defaultName)", isDefault: true, lutURL: nil)
@@ -110,7 +112,8 @@ enum CameraLookLibrary {
                 // 기본 카메라는 보정 없음
                 let look = isDefault
                     ? CameraLook(id: id, isDefault: true, lutURL: nil)
-                    : CameraLook(id: id, isDefault: false, lutURL: luts[id], flashLUTURL: luts[id + "_flash"], finish: finishes[id])
+                    : CameraLook(id: id, isDefault: false, lutURL: luts[id], flashLUTURL: luts[id + "_flash"],
+                                 rawLUTURL: luts[id + "_raw"], finish: finishes[id])
                 return Entry(look: look, name: name, imageURL: url)
             }
             .sorted { $0.look.id.localizedStandardCompare($1.look.id) == .orderedAscending }

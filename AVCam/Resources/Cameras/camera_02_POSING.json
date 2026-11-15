@@ -4,6 +4,7 @@
   "grain": 0,
   "vignette": 0.45,
   "prefersFastProcessing": true,
+  "developsRAW": true,
   "flashSubjectEV": 0.15,
   "flashBackgroundEV": -0.6
 }
