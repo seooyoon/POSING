@@ -127,6 +127,10 @@ class PreviewCameraModel: Camera {
 
     // 시뮬레이터에서도 타이머 화면을 확인
     func shutterPressed() async {
+        if splitShot.isComplete {
+            await saveSplitShot()
+            return
+        }
         await captureTimer.shutterPressed(duration: timerDuration) { [weak self] in
             self?.capturePhoto()
         }

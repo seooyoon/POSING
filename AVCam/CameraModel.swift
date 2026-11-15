@@ -183,6 +183,8 @@ final class CameraModel: Camera {
     func capturePhoto() async {
         // 카메라를 바꾸는 중에는 찍지 않음 (이전 카메라 값으로 찍히지 않게)
         guard !isSwitchingVideoDevices, !isChangingMainLens, shutterOwner == nil else { return }
+        // 분할 사진 저장 중에는 찍지 않음 (저장 뒤 비워지면서 사라지지 않게)
+        guard !splitShot.isSaving else { return }
         // 분할 사진: 지금 칸에 넣음. 모든 칸을 찍었으면 저장 전까지 셔터를 받지 않음
         let splitTarget = splitShot.captureIndex.map { (index: $0, session: splitShot.session) }
         guard !splitShot.isActive || splitTarget != nil else { return }
@@ -229,6 +231,11 @@ final class CameraModel: Camera {
 
     func shutterPressed() async {
         guard shutterOwner == nil else { return }
+        // 분할 사진을 모두 찍었으면 저장 (화면 셔터 · 음량 버튼 · 카메라 컨트롤 모두 같은 길)
+        if splitShot.isComplete {
+            await saveSplitShot()
+            return
+        }
         await captureTimer.shutterPressed(duration: timerDuration) { [weak self] in
             await self?.capturePhoto()
         }

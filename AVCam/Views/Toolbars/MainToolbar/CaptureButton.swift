@@ -43,14 +43,8 @@ struct CaptureButton<CameraModel: Camera>: View {
             .allowsHitTesting(camera.captureMode.isMovie)
             // 분할 사진을 모두 찍으면 셔터가 노란 저장 버튼으로 (누르면 저장)
             PhotoCaptureButton(isSaveMode: camera.splitShot.isComplete, isSaving: camera.splitShot.isSaving) {
-                Task {
-                    if camera.splitShot.isComplete {
-                        await camera.saveSplitShot()
-                    } else {
-                        // 타이머가 켜져 있으면 카운트다운
-                        await camera.shutterPressed()
-                    }
-                }
+                // 다 찍었으면 저장, 아니면 촬영 (타이머가 켜져 있으면 카운트다운). 분기는 shutterPressed 안에서
+                Task { await camera.shutterPressed() }
             }
             .opacity(camera.captureMode == .photo ? 1 : 0)
             .allowsHitTesting(camera.captureMode == .photo)
