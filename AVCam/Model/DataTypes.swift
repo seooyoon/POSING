@@ -125,6 +125,8 @@ struct PhotoLook: Sendable {
     let lutURL: URL?
     /// 플래시가 터진 사진에 쓰는 색감. 없으면 `lutURL`
     let flashLUTURL: URL?
+    /// RAW로 찍어 앱에서 현상한 사진에 쓰는 색감 (`_raw.cube`). 없으면 `lutURL`
+    let rawLUTURL: URL?
     /// 디카 질감 · 플래시 사람 밝게
     let finish: CameraFinish?
 }
@@ -141,6 +143,8 @@ struct CameraFinish: Equatable, Sendable, Decodable {
     var vignette: Double = 0
     /// 아이폰 자동 보정(여러 장 합성)을 줄임: 빠른 처리 우선으로 찍음
     var prefersFastProcessing = false
+    /// 아이폰 부분 밝기 보정 없이 RAW 한 장으로 찍어 앱에서 현상 (docs/05_TECH_NOTES.md 4-3절)
+    var developsRAW = false
     /// 플래시 사진에서 사람 밝기 (EV, 양수 = 밝게)
     var flashSubjectEV: Double = 0
     /// 플래시 사진에서 배경 밝기 (EV, 음수 = 어둡게)
@@ -150,7 +154,7 @@ struct CameraFinish: Equatable, Sendable, Decodable {
     var hasFlashFalloff: Bool { flashSubjectEV != 0 || flashBackgroundEV != 0 }
 
     private enum CodingKeys: String, CodingKey {
-        case softness, sharpness, grain, vignette, prefersFastProcessing, flashSubjectEV, flashBackgroundEV
+        case softness, sharpness, grain, vignette, prefersFastProcessing, developsRAW, flashSubjectEV, flashBackgroundEV
     }
 
     init() {}
@@ -162,6 +166,7 @@ struct CameraFinish: Equatable, Sendable, Decodable {
         grain = try values.decodeIfPresent(Double.self, forKey: .grain) ?? 0
         vignette = try values.decodeIfPresent(Double.self, forKey: .vignette) ?? 0
         prefersFastProcessing = try values.decodeIfPresent(Bool.self, forKey: .prefersFastProcessing) ?? false
+        developsRAW = try values.decodeIfPresent(Bool.self, forKey: .developsRAW) ?? false
         flashSubjectEV = try values.decodeIfPresent(Double.self, forKey: .flashSubjectEV) ?? 0
         flashBackgroundEV = try values.decodeIfPresent(Double.self, forKey: .flashBackgroundEV) ?? 0
     }
@@ -186,6 +191,8 @@ struct PhotoFeatures {
     let style: StyleSelection?
     /// RAW(Apple ProRAW)로 찍음. 아니면 JPEG
     let isRAW: Bool
+    /// RAW로 찍어 앱에서 현상한 뒤 JPEG로 저장 (POSING). `isRAW`도 켜져 있음
+    let developsRAW: Bool
     /// 사진 크기. nil이면 출력 최대 크기
     let maxDimensions: CMVideoDimensions?
 }

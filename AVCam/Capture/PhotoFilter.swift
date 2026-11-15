@@ -17,14 +17,16 @@ enum PhotoFilter {
     private static let context = CIContext()
 
     /// 카메라 색감(LUT) → (플래시 사진이면 사람 밝게 · 배경 어둡게) → 스타일 → 디카 질감 순으로 입힘.
-    /// 플래시가 터진 사진은 플래시 전용 색감을 씀. 실패하면 원본 데이터를 그대로 돌려줌 (사진을 잃지 않게)
-    static func apply(look: PhotoLook?, style: StyleSelection?, to data: Data) -> Data {
+    /// 플래시가 터진 사진은 플래시 전용 색감, RAW로 현상한 사진은 RAW 전용 색감을 씀.
+    /// 실패하면 원본 데이터를 그대로 돌려줌 (사진을 잃지 않게)
+    static func apply(look: PhotoLook?, style: StyleSelection?, to data: Data, isDevelopedRAW: Bool = false) -> Data {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let type = CGImageSourceGetType(source)
         else { return data }
         var properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
         let flashFired = didFlashFire(properties)
-        let lutURL = flashFired ? (look?.flashLUTURL ?? look?.lutURL) : look?.lutURL
+        let lutURL = isDevelopedRAW ? (look?.rawLUTURL ?? look?.lutURL)
+            : flashFired ? (look?.flashLUTURL ?? look?.lutURL) : look?.lutURL
         let lut = lutURL.flatMap(CubeLUT.init(contentsOf:))
         let finish = look?.finish
         let usesFalloff = flashFired && finish?.hasFlashFalloff == true
