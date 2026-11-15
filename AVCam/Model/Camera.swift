@@ -166,9 +166,15 @@ extension Camera {
         isLivePhotoEnabled && isLivePhotoAvailable && activeResolution <= PhotoResolution.maxWithLivePhoto
     }
 
-    /// 실제로 찍히는 형식: RAW를 골랐어도 지금 카메라가 지원하지 않으면 JPEG (사진을 놓치지 않게)
+    /// 실제로 찍히는 형식: RAW를 골랐어도 지금 카메라가 지원하지 않거나 분할 사진이면 JPEG
+    /// (분할은 칸 사진에 색감 · 스타일을 넣어 JPEG로 합치므로)
     var activeCodec: PhotoCodec {
-        photoCodec == .raw && isRAWSupported ? .raw : .jpeg
+        photoCodec == .raw && isRAWAvailable ? .raw : .jpeg
+    }
+
+    /// RAW를 고를 수 있는지: 카메라가 지원하고 분할 사진이 아님
+    var isRAWAvailable: Bool {
+        isRAWSupported && !splitShot.isActive
     }
 
     /// 실제로 찍히는 해상도: 고른 값 이하에서 가장 큰 값 (전면 등 지원하지 않으면 낮아짐)

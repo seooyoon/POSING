@@ -213,7 +213,7 @@ struct QuickSettingsView<CameraModel: Camera>: View {
         [
             QuickSettingsRow(title: "포맷", options: PhotoCodec.allCases.map { codec in
                 QuickSettingsOption(id: codec.rawValue, title: codec.label, isSelected: camera.activeCodec == codec,
-                                    isEnabled: codec != .raw || camera.isRAWSupported,
+                                    isEnabled: codec != .raw || camera.isRAWAvailable,
                                     isDefault: codec == AppDefaults.photoCodec) {
                     camera.photoCodec = codec
                 }
