@@ -273,7 +273,13 @@ final class CameraModel: Camera {
     private func updatePreviewFilter() {
         guard status == .running else { return }
         let inputs = previewFilterInputs
-        captureService.previewSource.filteredFeed.configure(lutURL: inputs.look?.lutURL, style: inputs.style, finish: inputs.look?.finish)
+        let feed = captureService.previewSource.filteredFeed
+        // 스타일 경계선이 끝나 보정이 없어졌으면 프레임 출력을 뗌
+        feed.onWipeEnd = { [weak self] in
+            guard let self else { return }
+            Task { await self.captureService.refreshPreviewFiltering() }
+        }
+        feed.configure(lutURL: inputs.look?.lutURL, style: inputs.style, finish: inputs.look?.finish)
         Task { await captureService.refreshPreviewFiltering() }
     }
 
