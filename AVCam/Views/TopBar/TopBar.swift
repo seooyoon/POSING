@@ -32,7 +32,10 @@ struct TopBar<CameraModel: Camera>: View {
                 }
                 // 설정 · 초기화 · 포즈(MY 기능): 따로 떨어진 버튼 3개 (docs/01_SPEC.md 2절)
                 PosingButton(title: "설정") {
-                    layers.isShowingSettings = true
+                    // 아래에서 올라오는 효과 없이 바로 화면을 채움
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) { layers.isShowingSettings = true }
                 }
                 PosingButton(title: "초기화") {
                     layers.reset()
@@ -40,8 +43,7 @@ struct TopBar<CameraModel: Camera>: View {
                 }
                 .sensoryFeedback(.impact(weight: .light), trigger: resetCount)
                 PosingButton(title: "포즈",
-                             isActive: layers.openPanel == .my,
-                             showsDot: layers.my.isSelected,
+                             isActive: layers.openPanel == .my || layers.my.isSelected,
                              onHold: { layers.isPeekingMY = $0 }) {
                     layers.togglePanel(.my)
                 }
@@ -61,10 +63,8 @@ struct TopBar<CameraModel: Camera>: View {
 struct PosingButton: View {
 
     let title: String
-    /// 열려 있는 패널의 버튼은 노란색
+    /// 패널이 열려 있거나 사진이 적용되어 있으면 노란 글자
     var isActive = false
-    /// 레이어가 선택되어 있으면 글자 아래 작은 점
-    var showsDot = false
     /// 꾹 누른 뒤 손을 뗄 때까지 true (MY 원본 보기). 없으면 꾹 눌러도 아무 반응 없음
     var onHold: ((Bool) -> Void)?
     let action: () -> Void
@@ -72,14 +72,6 @@ struct PosingButton: View {
     var body: some View {
         Text(title)
             .foregroundStyle(isActive ? Color.cameraYellow : .white)
-            .overlay(alignment: .bottom) {
-                if showsDot {
-                    Circle()
-                        .fill(isActive ? Color.cameraYellow : .white)
-                        .frame(width: 4, height: 4)
-                        .offset(y: 7)
-                }
-            }
             .topBarCapsule(horizontalPadding: 10)
             .contentShape(.capsule)
             .onTapGesture(perform: action)
