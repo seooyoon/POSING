@@ -110,7 +110,10 @@ struct CameraView<CameraModel: Camera>: View {
         // MY 패키지 대표 이미지 꾹 누르기 → 그 패키지에 사진 추가
         .myPhotoPicker(packageID: $layers.pickingMYPackageID, layers: layers)
         // 초기화 꾹 누르기 → 설정 화면
-        .fullScreenCover(isPresented: $layers.isShowingSettings) {
+        .fullScreenCover(isPresented: $layers.isShowingSettings, onDismiss: {
+            // 설정의 무음 촬영 스위치를 카메라에 반영
+            camera.isSilentCapture = UserDefaults.standard.bool(forKey: SettingsKeys.isSilentCapture)
+        }) {
             SettingsView(layers: layers, looks: looks)
         }
     }

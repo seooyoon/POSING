@@ -34,4 +34,6 @@ enum SettingsKeys {
     static let slowMotionFrameRate = "slowMotionFrameRate"
     /// 분할 사진을 저장할 때 칸별 원본도 저장 (기본값 AppDefaults.savesSplitOriginals)
     static let savesSplitOriginals = "savesSplitOriginals"
+    /// 무음 촬영 (앱을 켤 때마다 꺼짐)
+    static let isSilentCapture = "isSilentCapture"
 }

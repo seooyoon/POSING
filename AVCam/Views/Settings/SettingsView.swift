@@ -18,6 +18,7 @@ struct SettingsView: View {
     @AppStorage(SettingsKeys.isGridEnabled) private var isGridEnabled = AppDefaults.isGridEnabled
     @AppStorage(SettingsKeys.isCenterMarkEnabled) private var isCenterMarkEnabled = AppDefaults.isCenterMarkEnabled
     @AppStorage(SettingsKeys.savesSplitOriginals) private var savesSplitOriginals = AppDefaults.savesSplitOriginals
+    @AppStorage(SettingsKeys.isSilentCapture) private var isSilentCapture = false
 
     var body: some View {
         NavigationStack {
@@ -85,6 +86,14 @@ struct SettingsView: View {
                     Text("카메라")
                 } footer: {
                     Text("오른쪽 이름은 앱을 켤 때 쓰는 카메라입니다.")
+                }
+
+                Section {
+                    Toggle("무음 촬영", isOn: $isSilentCapture)
+                } header: {
+                    Text("촬영")
+                } footer: {
+                    Text("켜면 찰칵 소리 없이 찍습니다. 대신 화질이 조금 낮아지고 플래시 · LIVE · RAW는 쓸 수 없습니다. 앱을 다시 켜면 꺼집니다.")
                 }
 
                 Section("정보") {

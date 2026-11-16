@@ -92,6 +92,9 @@ protocol Camera: AnyObject, SendableMetatype {
     /// 고른 사진 스타일과 값. 사진에만 적용
     var photoStyle: StyleSelection { get set }
 
+    /// 무음 촬영 (설정). 찰칵 소리 없이 영상 프레임으로 찍음
+    var isSilentCapture: Bool { get set }
+
     /// 고른 사진 형식 (JPEG · RAW). 실제로 찍히는 값은 `activeCodec`
     var photoCodec: PhotoCodec { get set }
 
