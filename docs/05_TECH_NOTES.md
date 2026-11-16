@@ -157,7 +157,7 @@
 - 포즈 순서: 포즈 파일 이름 배열을 JSON으로 저장. 새 포즈가 번들에 추가되면 목록 끝에 붙이고, 없어진 포즈는 무시
 - MY 목록: 기존 MY 목록 JSON을 그대로 사용 (카메라 화면과 설정 화면이 같은 저장소 객체를 공유)
 - 정렬·삭제: `List` + `ForEach` + `.onMove` / `.onDelete` + `EditButton`
-- 설정 화면 진입: 초기화 버튼 꾹 누르기 → `.fullScreenCover`, 안에 `NavigationStack`
+- 설정 화면 진입: 설정 버튼 → `.fullScreenCover`(`Transaction.disablesAnimations`로 올라오는 효과 없이), 안에 `NavigationStack`
 
 ## 15. 카메라 컨트롤 버튼으로 앱 열기 (선택, 마무리 단계)
 
