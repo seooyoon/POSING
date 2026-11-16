@@ -18,6 +18,8 @@ enum MYGuideMaker {
     private static let longSide: CGFloat = 1200
     /// 외곽선 두께 (긴 변 비율)
     private static let lineRatio: CGFloat = 0.006
+    /// 경계를 고르게 펴는 흐림 세기 (긴 변 비율). 선을 굵게 해도 손가락 같은 작은 모양이 뭉개지지 않게 따로 둠
+    private static let smoothRatio: CGFloat = 0.004
     /// 얼굴 점 반지름 (긴 변 비율)
     private static let dotRatio: CGFloat = 0.006
     /// 밝은 배경에서도 보이게 선 · 점 둘레에 까는 옅은 그림자 (긴 변 비율)
@@ -87,7 +89,8 @@ enum MYGuideMaker {
         let rect = CGRect(origin: .zero, size: size)
         let lineWidth = max(size.width, size.height) * lineRatio
         // 계단 무늬가 보이지 않게 살짝 흐린 뒤 반으로 나눠 또렷한 경계로
-        let smooth = mask.clampedToExtent().applyingGaussianBlur(sigma: lineWidth).cropped(to: rect)
+        let sigma = max(size.width, size.height) * smoothRatio
+        let smooth = mask.clampedToExtent().applyingGaussianBlur(sigma: sigma).cropped(to: rect)
         let threshold = CIFilter.colorThreshold()
         threshold.inputImage = smooth
         threshold.threshold = 0.5
