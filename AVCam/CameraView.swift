@@ -120,7 +120,7 @@ struct CameraView<CameraModel: Camera>: View {
         }
         // MY 패키지 대표 이미지 꾹 누르기 → 그 패키지에 사진 추가
         .myPhotoPicker(packageID: $layers.pickingMYPackageID, layers: layers)
-        // 초기화 꾹 누르기 → 설정 화면
+        // 설정 버튼 → 설정 화면
         .fullScreenCover(isPresented: $layers.isShowingSettings) {
             SettingsView(layers: layers, looks: looks)
         }
