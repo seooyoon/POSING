@@ -11,14 +11,17 @@ import SwiftUI
 struct LayerOverlay: View {
 
     let layers: LayerState
+    /// 그릴 레이어. 분할 칸 보기에서는 MY만 따로 화면 전체에 그림 (CameraView)
+    var kinds: [LayerKind] = [.my, .pose]
     /// 폰을 가로로 돌리면 MY 사진도 같이 돌려 똑바로 보이게 (포즈 테두리는 그대로)
     @Environment(\.iconAngle) private var angle
 
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                layer(.my, size: proxy.size)
-                layer(.pose, size: proxy.size)
+                ForEach(kinds, id: \.self) { kind in
+                    layer(kind, size: proxy.size)
+                }
             }
         }
         .allowsHitTesting(false)
