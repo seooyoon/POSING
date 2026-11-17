@@ -66,6 +66,8 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
             if let old = state.styleKind, let new = style?.style, old != new {
                 state.wipe = StyleWipe(from: state.style, forward: new.index > old.index)
             }
+            // 보정을 쓰지 않게 되면(비디오 · RAW · LIVE) 지나가던 경계선도 멈춤 (표준 스타일과는 다름)
+            if style == nil { state.wipe = nil }
             state.styleKind = style?.style
             state.lutURL = lutURL
             state.lut = lut
@@ -120,7 +122,8 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
         let progress = (now - start) / AppDefaults.styleWipeDuration
         if progress >= 1 {
             finishWipe()
-            return (filtered, current.generation)
+            // 표준으로 돌아와 보정이 없어졌으면 더 그리지 않음 (숨긴 화면이 다시 보이지 않게)
+            return isFiltering ? (filtered, current.generation) : nil
         }
         let previous = PhotoFilter.filtered(image, lut: current.lut, style: wipe.from,
                                             finish: current.finish, grainOffset: grainOffset)
