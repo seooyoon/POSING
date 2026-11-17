@@ -56,6 +56,9 @@ final class FilteredPreviewRenderer: NSObject, MTKViewDelegate {
     }
 
     func draw(in view: MTKView) {
+        // 스타일 경계선이 지나가는 동안만 더 자주 그림
+        let frameRate = feed.isWiping ? AppDefaults.styleWipeFrameRate : AppDefaults.filteredPreviewFrameRate
+        if view.preferredFramesPerSecond != frameRate { view.preferredFramesPerSecond = frameRate }
         let size = view.drawableSize
         // 그릴 곳을 먼저 확보한 뒤 보정을 계산 (실패할 때마다 보정을 다시 계산하지 않게)
         guard size.width > 0, size.height > 0,

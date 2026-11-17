@@ -84,6 +84,12 @@ enum AppDefaults {
     static let timelapseFrameRate = 30
     /// 보정 미리보기(Metal)를 그리는 초당 횟수
     static let filteredPreviewFrameRate = 30
+    /// 스타일을 바꿀 때 경계선이 화면을 가로지르는 시간 (기본 카메라 녹화 기준)
+    static let styleWipeDuration = 0.35
+    /// 경계선이 지나가는 동안 미리보기를 그리는 초당 횟수 (부드럽게)
+    static let styleWipeFrameRate = 60
+    /// 경계선 두께 (화면 폭 비율)
+    static let styleWipeLineRatio: CGFloat = 0.008
     /// 미리보기 바깥에 비치는 장면을 어둡게 덮는 정도 (0 = 그대로, 1 = 검정)
     static let outsidePreviewDimOpacity = 0.55
     /// 48MP 메인 렌즈로 바꾼 뒤 흐림을 유지하는 시간 (ms). 새 렌즈 화면이 들어오는 동안 검게 깜빡이지 않게
