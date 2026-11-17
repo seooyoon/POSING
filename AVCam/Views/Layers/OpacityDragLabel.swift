@@ -20,7 +20,8 @@ struct OpacityDragLabel: View {
         let value = kind.map { layers[$0].opacity } ?? 0
         let isShown = kind != nil && layers.openPanel != kind
         HStack(spacing: 6) {
-            Text(kind == .pose ? "포즈" : "MY")
+            // MY 기능의 버튼 이름도 "포즈"
+            Text("포즈")
                 .foregroundStyle(.white)
             Text("\(Int((value * 100).rounded()))%")
                 .foregroundStyle(Color.cameraYellow)

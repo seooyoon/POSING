@@ -78,7 +78,7 @@ final class LayerState {
     var pickingMYPackageID: String?
     /// MY 버튼을 누르고 있는 동안 원본 사진을 100%로 (가이드는 숨김)
     var isPeekingMY = false
-    /// 초기화 꾹 누르기로 설정 화면을 띄움
+    /// 상단 설정 버튼으로 설정 화면을 띄움
     var isShowingSettings = false
 
     init(poses: [LayerItem] = PoseLibrary.load(), myPackages: [MYPackage] = MYPackageLibrary.load()) {

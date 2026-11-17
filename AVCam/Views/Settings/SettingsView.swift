@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  포징
 //
-//  초기화 꾹 누르기로 여는 설정 화면 (docs/01_SPEC.md 6절, docs/02_UI.md 4절).
+//  상단 설정 버튼으로 여는 설정 화면 (docs/01_SPEC.md 6절, docs/02_UI.md 4절).
 //  아이폰 설정 앱 > 카메라와 같은 스타일. 카메라 화면과 달리 시스템 밝은/어두운 모드를 따른다.
 //  맨 위는 앱 아이콘 카드 (docs/01_SPEC.md 6절 "앱 아이콘", docs/05_TECH_NOTES.md 16절).
 //
@@ -42,21 +42,11 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Toggle("칸별 원본도 저장", isOn: $savesSplitOriginals)
+                    Toggle("개별 원본 사진 저장", isOn: $savesSplitOriginals)
                 } header: {
                     Text("분할 사진")
                 } footer: {
-                    Text("켜면 합친 사진과 함께 칸마다 찍은 원본 사진도 사진 앱에 저장합니다.")
-                }
-
-                Section {
-                    NavigationLink("포즈 목록") {
-                        PoseOrderView(layers: layers)
-                    }
-                } header: {
-                    Text("포즈")
-                } footer: {
-                    Text("바꾼 순서가 카메라 화면 포즈 목록에 그대로 보입니다.")
+                    Text("합쳐진 사진 외에 각각의 원본 사진도 저장됩니다.")
                 }
 
                 Section {
@@ -71,7 +61,7 @@ struct SettingsView: View {
                         }
                     }
                 } header: {
-                    Text("MY")
+                    Text("포즈")
                 } footer: {
                     Text("패키지마다 사진을 보고, 추가 · 삭제 · 순서 변경 · 이름을 바꿀 수 있습니다.")
                 }

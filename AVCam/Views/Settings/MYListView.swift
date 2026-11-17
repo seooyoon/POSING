@@ -46,11 +46,6 @@ struct MYListView: View {
                     HStack(spacing: 12) {
                         SettingsThumbnailRow(image: item.thumbnail)
                         MYNameField(name: item.name) { layers.renameMY(item.id, inPackage: packageID, to: $0) }
-                        if MYLibrary.isAdded(item) {
-                            Text("추가")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
                     }
                 }
                 .onMove(perform: moveAction)
@@ -58,7 +53,7 @@ struct MYListView: View {
             } header: {
                 Text("사진 \(items.count)장")
             } footer: {
-                Text(items.isEmpty ? "사진이 없습니다." : "오른쪽 위 편집 → 끌어서 순서 변경, 왼쪽으로 밀어 삭제. 바꾼 순서가 카메라 화면에 그대로 보입니다. '추가'는 직접 추가한 사진입니다.")
+                Text(items.isEmpty ? "사진이 없습니다." : "오른쪽 위 편집 → 끌어서 순서 변경, 왼쪽으로 밀어 삭제. 바꾼 순서가 카메라 화면에 그대로 보입니다.")
             }
 
             if hiddenCount > 0 {
@@ -72,7 +67,7 @@ struct MYListView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("MY \(package?.name ?? "")")
+        .navigationTitle("포즈 \(package?.name ?? "")")
         .toolbar {
             EditToggleButton(editMode: $editMode)
         }

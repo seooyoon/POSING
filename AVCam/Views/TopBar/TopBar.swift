@@ -2,7 +2,7 @@
 //  TopBar.swift
 //  포징
 //
-//  상단 바: 형식 버튼 · 초기화 · 포즈 · MY · [플래시 · LIVE · •••] (docs/02_UI.md 2절)
+//  상단 바: 형식 버튼 · 설정 · 초기화 · MY · [플래시 · LIVE · •••] (docs/02_UI.md 2절)
 //
 
 import SwiftUI
@@ -30,22 +30,20 @@ struct TopBar<CameraModel: Camera>: View {
                 if camera.captureMode != .timelapse {
                     FormatButton(camera: camera, quickSettings: $quickSettings)
                 }
-                // 초기화 · 포즈 · MY: 따로 떨어진 버튼 3개 (docs/01_SPEC.md 2절)
-                PosingButton(title: "초기화", onLongPress: {
-                    layers.isShowingSettings = true
-                }) {
+                // 설정 · 초기화 · 포즈(MY 기능): 따로 떨어진 버튼 3개 (docs/01_SPEC.md 2절)
+                PosingButton(title: "설정") {
+                    // 아래에서 올라오는 효과 없이 바로 화면을 채움
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) { layers.isShowingSettings = true }
+                }
+                PosingButton(title: "초기화") {
                     layers.reset()
                     resetCount += 1
                 }
                 .sensoryFeedback(.impact(weight: .light), trigger: resetCount)
                 PosingButton(title: "포즈",
-                             isActive: layers.openPanel == .pose,
-                             showsDot: layers.pose.isSelected) {
-                    layers.togglePanel(.pose)
-                }
-                PosingButton(title: "MY",
-                             isActive: layers.openPanel == .my,
-                             showsDot: layers.my.isSelected,
+                             isActive: layers.openPanel == .my || layers.my.isSelected,
                              onHold: { layers.isPeekingMY = $0 }) {
                     layers.togglePanel(.my)
                 }
@@ -61,62 +59,30 @@ struct TopBar<CameraModel: Camera>: View {
     }
 }
 
-/// 초기화 · 포즈 · MY 버튼. 형식 버튼과 같은 높이 · 배경 · 글자 크기, 폭은 글자에 맞춤
+/// 설정 · 초기화 · MY 버튼. 형식 버튼과 같은 높이 · 배경 · 글자 크기, 폭은 글자에 맞춤
 struct PosingButton: View {
 
     let title: String
-    /// 열려 있는 패널의 버튼은 노란색
+    /// 패널이 열려 있거나 사진이 적용되어 있으면 노란 글자
     var isActive = false
-    /// 레이어가 선택되어 있으면 글자 아래 작은 점
-    var showsDot = false
-    /// 꾹 누르기 동작. 없으면 꾹 눌러도 아무 반응 없음 (포즈 · MY)
-    var onLongPress: (() -> Void)?
-    /// 꾹 누른 뒤 손을 뗄 때까지 true (MY 원본 보기). 있으면 onLongPress 대신 씀
+    /// 꾹 누른 뒤 손을 뗄 때까지 true (MY 원본 보기). 없으면 꾹 눌러도 아무 반응 없음
     var onHold: ((Bool) -> Void)?
     let action: () -> Void
-
-    @State private var isPopped = false
 
     var body: some View {
         Text(title)
             .foregroundStyle(isActive ? Color.cameraYellow : .white)
-            .overlay(alignment: .bottom) {
-                if showsDot {
-                    Circle()
-                        .fill(isActive ? Color.cameraYellow : .white)
-                        .frame(width: 4, height: 4)
-                        .offset(y: 7)
-                }
-            }
             .topBarCapsule(horizontalPadding: 10)
-            .scaleEffect(isPopped ? 1.12 : 1)
             .contentShape(.capsule)
             .onTapGesture(perform: action)
-            // 꾹 누르기는 항상 받아서, 포즈 · MY는 꾹 눌렀다 떼도 탭으로 처리되지 않게 함
+            // 꾹 누르기는 항상 받아서, 꾹 눌렀다 떼도 탭으로 처리되지 않게 함
             .onLongPressGesture(minimumDuration: AppDefaults.longPressDuration) {
-                if let onHold {
-                    onHold(true)
-                    return
-                }
-                guard let onLongPress else { return }
-                popAnimation()
-                onLongPress()
+                onHold?(true)
             } onPressingChanged: { isPressing in
                 if !isPressing { onHold?(false) }
             }
             // 누르는 중에 버튼이 사라져도(녹화 시작 등) 원본 보기가 남지 않게
             .onDisappear { onHold?(false) }
-    }
-
-    /// 꾹 누르기 인식 시 살짝 커졌다 돌아옴
-    private func popAnimation() {
-        withAnimation(.easeOut(duration: 0.12)) {
-            isPopped = true
-        } completion: {
-            withAnimation(.easeIn(duration: 0.12)) {
-                isPopped = false
-            }
-        }
     }
 }
 
