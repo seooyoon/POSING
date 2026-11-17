@@ -96,7 +96,16 @@ final class CameraModel: Camera {
     var cameraState = CameraState()
     
     init() {
-        //
+        // 무음 촬영은 앱을 켤 때마다 꺼짐 (켜 둔 채 잊고 낮은 화질로 찍지 않게)
+        UserDefaults.standard.set(AppDefaults.isSilentCapture, forKey: SettingsKeys.isSilentCapture)
+    }
+
+    /// 무음 촬영 (설정에서 켬). 켜면 프레임 출력을 미리 붙여 둠
+    var isSilentCapture = AppDefaults.isSilentCapture {
+        didSet {
+            guard isSilentCapture != oldValue else { return }
+            Task { await captureService.setSilentCapture(isSilentCapture) }
+        }
     }
     
     // MARK: - Starting the camera
@@ -191,8 +200,9 @@ final class CameraModel: Camera {
         if let splitTarget { splitShot.beginCapture(at: splitTarget.index) }
         let owner = UUID()
         shutterOwner = owner
-        // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함
-        let usesScreenFlash = zoom.isFrontCamera && !isFlashSupported && flashMode == .on
+        // 전면 카메라가 플래시를 지원하지 않으면 촬영 순간 화면을 하얗게 밝혀 대신함 (무음 촬영은 플래시 없음)
+        let isSilent = isSilentCapture && captureMode == .photo
+        let usesScreenFlash = !isSilent && zoom.isFrontCamera && !isFlashSupported && flashMode == .on
         if usesScreenFlash {
             await showScreenFlash()
         }
@@ -208,9 +218,23 @@ final class CameraModel: Camera {
                                               style: appliesPhotoFilters && photoStyle.changesImage ? photoStyle : nil,
                                               isRAW: activeCodec == .raw,
                                               maxDimensions: activeDimensions)
-            let photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
-                // 찍기를 마치면 처리 · 저장이 끝나기 전이라도 다음 셔터를 받음
-                Task { @MainActor in self?.releaseShutter(owner, hidesScreenFlash: usesScreenFlash) }
+            let photo: Photo
+            if isSilent {
+                // 무음: 영상 프레임 한 장 (RAW · LIVE 대신 JPEG, 색감 · 스타일은 그대로)
+                flashScreen()
+                let silentFeatures = PhotoFeatures(isLivePhotoEnabled: false,
+                                                   qualityPrioritization: photoQualityPrioritization,
+                                                   flashMode: .off,
+                                                   cropRatio: photoAspect.cropLongToShort,
+                                                   look: cameraLook.isDefault ? nil : cameraLook.photoLook,
+                                                   style: photoStyle.changesImage ? photoStyle : nil,
+                                                   isRAW: false, maxDimensions: nil)
+                photo = try await captureService.captureSilentPhoto(with: silentFeatures)
+            } else {
+                photo = try await captureService.capturePhoto(with: photoFeatures) { [weak self] in
+                    // 찍기를 마치면 처리 · 저장이 끝나기 전이라도 다음 셔터를 받음
+                    Task { @MainActor in self?.releaseShutter(owner, hidesScreenFlash: usesScreenFlash) }
+                }
             }
             releaseShutter(owner, hidesScreenFlash: usesScreenFlash)
             if let splitTarget {

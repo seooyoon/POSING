@@ -90,6 +90,15 @@ enum AppDefaults {
     static let styleWipeFrameRate = 60
     /// 경계선 두께 (화면 폭 비율)
     static let styleWipeLineRatio: CGFloat = 0.008
+
+    // MARK: - 무음 촬영
+
+    /// 무음 촬영 처음 값 (앱을 켤 때마다 이 값으로 돌아감)
+    static let isSilentCapture = false
+    /// 무음 촬영 JPEG 품질
+    static let silentPhotoQuality = 0.95
+    /// 무음 촬영: 프레임이 아직 없을 때 기다리는 최대 시간 (초)
+    static let silentFrameWait = 1.0
     /// 미리보기 바깥에 비치는 장면을 어둡게 덮는 정도 (0 = 그대로, 1 = 검정)
     static let outsidePreviewDimOpacity = 0.55
     /// 48MP 메인 렌즈로 바꾼 뒤 흐림을 유지하는 시간 (ms). 새 렌즈 화면이 들어오는 동안 검게 깜빡이지 않게

@@ -30,6 +30,8 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
         /// 마지막으로 받은 스타일 종류 (보정이 없는 표준도 포함). 종류가 바뀌면 경계선 효과
         var styleKind: PhotoStyle?
         var wipe: StyleWipe?
+        /// 무음 촬영: 보정이 없어도 가장 최근 프레임을 들고 있음
+        var keepsLatestFrame = false
 
         /// 경계선이 지나가는 동안은 표준으로 돌아가도 계속 그림
         var isFiltering: Bool { lut != nil || style != nil || finish != nil || wipe != nil }
@@ -74,7 +76,7 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
             state.style = style?.changesImage == true ? style : nil
             state.finish = finish?.hasTexture == true ? finish : nil
             // 끄면 지난 프레임을 버려서 다시 켤 때 옛 화면이 잠깐 보이지 않게
-            if !state.isFiltering { state.image = nil }
+            if !state.isFiltering && !state.keepsLatestFrame { state.image = nil }
             state.generation &+= 1
             return state.isFiltering
         }
@@ -94,13 +96,28 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
         guard let pixelBuffer = sampleBuffer.imageBuffer else { return }
         let image = CIImage(cvPixelBuffer: pixelBuffer)
         state.withLock { state in
-            guard state.isFiltering else { return }
+            guard state.isFiltering || state.keepsLatestFrame else { return }
             state.image = image
-            state.generation &+= 1
+            // 무음 촬영용으로만 들고 있을 때는 다시 그릴 필요 없음
+            if state.isFiltering { state.generation &+= 1 }
         }
     }
 
     var isWiping: Bool { state.withLock { $0.wipe != nil } }
+
+    /// 무음 촬영을 켜고 끔. 켜면 화면 크기 옛 프레임을 버려 전체 크기 새 프레임을 기다리게 하고,
+    /// 끄면 보정이 없을 때 들고 있던 프레임을 버림
+    func setKeepsLatestFrame(_ keeps: Bool) {
+        state.withLock { state in
+            state.keepsLatestFrame = keeps
+            if keeps || !state.isFiltering { state.image = nil }
+        }
+    }
+
+    /// 무음 촬영에 쓸 가장 최근 프레임 (보정 전). 시뮬레이터는 샘플 이미지
+    func latestFrame() -> CIImage? {
+        state.withLock { $0.image ?? $0.staticImage }
+    }
 
     /// 지난번 이후 바뀐 보정 프레임. 보정이 없거나, 프레임이 없거나, 바뀐 것이 없으면 nil.
     /// 경계선이 지나가는 동안은 매번 그림 (그리는 쪽에서 메인 스레드로 부름)
@@ -135,7 +152,7 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
     private func finishWipe() {
         let isFiltering = state.withLock { state in
             state.wipe = nil
-            if !state.isFiltering { state.image = nil }
+            if !state.isFiltering && !state.keepsLatestFrame { state.image = nil }
             state.generation &+= 1
             return state.isFiltering
         }

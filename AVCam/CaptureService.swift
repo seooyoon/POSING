@@ -38,6 +38,8 @@ actor CaptureService {
     /// 보정 미리보기 프레임 출력 (사진 모드 + 보정이 있을 때만 세션에 붙음)
     private let filteredFeed = FilteredPreviewFeed()
     private var wantsPreviewFiltering = false
+    /// 무음 촬영: 사진 출력 대신 영상 프레임으로 찍음 (보정 미리보기 출력을 같이 씀)
+    private var isSilentCapture = false
     
     // The app's capture session.
     private let captureSession = AVCaptureSession()
@@ -666,7 +668,7 @@ actor CaptureService {
     /// 사진 모드 + 보정일 때만 출력을 세션에 둠. 보정이 없으면 기존 미리보기만 씀 (성능 · 배터리)
     private func updateFilteredPreviewOutput() {
         let output = filteredFeed.output
-        let shouldAttach = wantsPreviewFiltering && captureMode == .photo
+        let shouldAttach = (wantsPreviewFiltering || isSilentCapture) && captureMode == .photo
         guard shouldAttach != captureSession.outputs.contains(output) else { return }
         captureSession.beginConfiguration()
         defer { captureSession.commitConfiguration() }
@@ -960,6 +962,55 @@ actor CaptureService {
             data = PhotoCropper.crop(data, longToShort: ratio)
         }
         // 자른 뒤 카메라 색감 → 스타일 → 디카 질감을 입힘
+        if features.look != nil || features.style != nil {
+            data = PhotoFilter.apply(look: features.look, style: features.style, to: data)
+        }
+        return Photo(data: data, isProxy: false, livePhotoMovieURL: nil)
+    }
+
+    // MARK: - 무음 촬영
+
+    /// 무음 촬영을 켜면 프레임 출력을 붙이고 전체 크기 프레임을 받음 (끄면 화면 크기로 돌아감)
+    func setSilentCapture(_ isEnabled: Bool) {
+        guard isSilentCapture != isEnabled else { return }
+        isSilentCapture = isEnabled
+        filteredFeed.setKeepsLatestFrame(isEnabled)
+        captureSession.beginConfiguration()
+        filteredFeed.output.deliversPreviewSizedOutputBuffers = !isEnabled
+        captureSession.commitConfiguration()
+        guard photosInProgress == 0 else { return }
+        updateFilteredPreviewOutput()
+    }
+
+    /// 무음 촬영: 가장 최근 프레임을 사진 방향으로 돌려 JPEG로 만든 뒤 사진과 같은 자르기 · 보정
+    func captureSilentPhoto(with features: PhotoFeatures) async throws -> Photo {
+        guard isSilentCapture, captureMode == .photo else { throw PhotoCaptureError.noPhotoData }
+        // 프레임을 기다리는 동안 프레임 출력이 떨어지지 않게 사진 처리 중으로 셈
+        photosInProgress += 1
+        defer {
+            photosInProgress -= 1
+            if photosInProgress == 0, let pending = pendingRAWEnabled {
+                pendingRAWEnabled = nil
+                applyRAWEnabled(pending)
+            }
+            if photosInProgress == 0 { updateFilteredPreviewOutput() }
+        }
+        var frame = filteredFeed.latestFrame()
+        // 막 켠 직후라 프레임이 아직 없으면 잠깐 기다림
+        let deadline = Date().addingTimeInterval(AppDefaults.silentFrameWait)
+        while frame == nil && Date() < deadline {
+            try await Task.sleep(for: .milliseconds(30))
+            frame = filteredFeed.latestFrame()
+        }
+        guard let frame, let rotationCoordinator else { throw PhotoCaptureError.noPhotoData }
+        // 프레임은 미리보기 방향(세로)이라 폰을 돌린 만큼 더 돌림. 전면은 좌우 반전이라 반대로
+        var rotation = rotationCoordinator.videoRotationAngleForHorizonLevelCapture
+            - rotationCoordinator.videoRotationAngleForHorizonLevelPreview
+        if currentDevice.position == .front { rotation = -rotation }
+        guard var data = SilentPhoto.jpegData(from: frame, rotation: rotation) else { throw PhotoCaptureError.noPhotoData }
+        if let ratio = features.cropRatio {
+            data = PhotoCropper.crop(data, longToShort: ratio)
+        }
         if features.look != nil || features.style != nil {
             data = PhotoFilter.apply(look: features.look, style: features.style, to: data)
         }

@@ -39,6 +39,7 @@ class PreviewCameraModel: Camera {
                                              finish: isPhoto ? cameraLook.finish : nil)
     }
     var photoCodec = PhotoCodec.jpeg
+    var isSilentCapture = false
     var photoResolution = 24
     var videoMode = VideoMode(resolution: AppDefaults.videoResolution, frameRate: AppDefaults.videoFrameRate)
     let availableVideoModes = Set<VideoMode>()
