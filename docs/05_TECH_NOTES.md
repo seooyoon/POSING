@@ -91,15 +91,6 @@
 - RAW는 Apple ProRAW(`isAppleProRAWEnabled`). 켜면 세션 구성이 다시 일어나므로 RAW를 고를 때만 켬. DNG는 자를 수 없어 비율과 상관없이 4:3 원본 저장
 - 미리보기: 같은 비율의 프레임 사각형을 계산해 바깥을 검게 가리고, 레이어도 그 사각형 기준으로 배치
 
-## 5-2. 무음 촬영 (#153)
-
-- 한국 아이폰은 `AVCapturePhotoOutput`으로 찍으면 찰칵 소리를 끌 수 없음 (iOS 18의 소리 끄기도 한국 · 일본 기기에서는 막힘). 한국에 소리를 강제하는 법은 없고 제조사 권고 기준이며, 불법은 몰래 찍기
-- 설정 > 무음 촬영을 켜면 보정 미리보기용 `AVCaptureVideoDataOutput`을 세션에 붙이고(`deliversPreviewSizedOutputBuffers = false`로 전체 크기 프레임), 셔터를 누르면 가장 최근 프레임을 JPEG로 저장 (`SilentPhoto`)
-- 프레임은 미리보기 방향(세로)이라 `videoRotationAngleForHorizonLevelCapture - …Preview`만큼 더 돌림 (전면은 좌우 반전이라 반대 방향)
-- 그 뒤 자르기 · 카메라 색감 · 스타일은 사진과 같은 길(`PhotoCropper` · `PhotoFilter`)
-- 단점: 사진 출력의 여러 장 합성 · HDR · 어두운 곳 보정이 없어 화질이 낮음. 플래시 · LIVE · RAW 없음
-- 켜 둔 채 잊지 않게 앱을 켤 때마다 꺼짐 (`CameraModel.init`)
-
 ## 5-1. 분할 사진 (#128)
 
 - 상태는 `SplitShotState` (메인 액터). 셔터 순간 지금 칸을 "찍는 중"으로 두고 바로 다음 빈 칸으로 넘김 (처리가 끝나기 전에 다음 셔터를 눌러도 같은 칸에 겹치지 않게). 분할을 바꾸거나 저장하면 `session`이 바뀌어 그 전 사진은 버림
@@ -109,6 +100,16 @@
 - 저장 순서: (설정이 켜져 있으면) 칸별 원본 → 합친 사진 (사진 앱 맨 끝 · 썸네일이 합친 사진)
 - 찍는 화면: 저장될 영역(미리보기를 칸 비율로 가운데 자른 자리)이 지금 칸에 꼭 맞도록 미리보기 · 레이어를 줄여 옮김 (`SplitCellTransform`, 배율 = 칸 폭 / 영역 폭). 격자 · 수평계는 영역 크기로 맞춘 뒤 같이 옮김. 미리보기 탭 위치는 되돌려 계산해 초점에 씀 (`unprojected`). 칸 보기 중에는 미리보기를 미리보기 자리로 자름. 수평계는 뷰를 if로 갈아끼우지 않음 (센서가 꺼짐)
 - 레이어는 화면에만 (CLAUDE.md 4절 1번): 합치기는 저장된 사진 데이터만 씀
+
+## 5-2. 무음 촬영 (#153)
+
+- 한국 아이폰은 `AVCapturePhotoOutput`으로 찍으면 찰칵 소리를 끌 수 없어 영상 프레임을 씀
+- 설정 > 무음 촬영을 켜면 보정 미리보기용 `AVCaptureVideoDataOutput`을 세션에 붙이고(`deliversPreviewSizedOutputBuffers = false`로 전체 크기 프레임), 셔터를 누르면 가장 최근 프레임을 JPEG로 저장 (`SilentPhoto`)
+- 프레임은 미리보기 방향(세로)이라 `videoRotationAngleForHorizonLevelCapture - …Preview`만큼 더 돌림 (전면은 좌우 반전이라 반대 방향)
+- 그 뒤 자르기 · 카메라 색감 · 스타일은 사진과 같은 길(`PhotoCropper` · `PhotoFilter`)
+- 단점: 사진 출력의 여러 장 합성 · HDR · 어두운 곳 보정이 없어 화질이 낮음. 크기는 고른 MP가 아니라 영상 프레임 크기. 플래시 · LIVE · RAW 없음
+- 켤 때 화면 크기 옛 프레임을 버리고, 프레임을 기다리는 동안은 사진 처리 중으로 세어 프레임 출력이 떨어지지 않게 함
+- 켜 둔 채 잊지 않게 앱을 켤 때마다 꺼짐 (`CameraModel.init`)
 
 ## 6. 레이어 좌표 · 순서
 
