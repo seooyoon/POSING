@@ -93,6 +93,8 @@ enum AppDefaults {
 
     // MARK: - 무음 촬영
 
+    /// 무음 촬영 처음 값 (앱을 켤 때마다 이 값으로 돌아감)
+    static let isSilentCapture = false
     /// 무음 촬영 JPEG 품질
     static let silentPhotoQuality = 0.95
     /// 무음 촬영: 프레임이 아직 없을 때 기다리는 최대 시간 (초)

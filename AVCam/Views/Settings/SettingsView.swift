@@ -18,7 +18,7 @@ struct SettingsView: View {
     @AppStorage(SettingsKeys.isGridEnabled) private var isGridEnabled = AppDefaults.isGridEnabled
     @AppStorage(SettingsKeys.isCenterMarkEnabled) private var isCenterMarkEnabled = AppDefaults.isCenterMarkEnabled
     @AppStorage(SettingsKeys.savesSplitOriginals) private var savesSplitOriginals = AppDefaults.savesSplitOriginals
-    @AppStorage(SettingsKeys.isSilentCapture) private var isSilentCapture = false
+    @AppStorage(SettingsKeys.isSilentCapture) private var isSilentCapture = AppDefaults.isSilentCapture
 
     var body: some View {
         NavigationStack {

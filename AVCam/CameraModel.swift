@@ -97,11 +97,11 @@ final class CameraModel: Camera {
     
     init() {
         // 무음 촬영은 앱을 켤 때마다 꺼짐 (켜 둔 채 잊고 낮은 화질로 찍지 않게)
-        UserDefaults.standard.set(false, forKey: SettingsKeys.isSilentCapture)
+        UserDefaults.standard.set(AppDefaults.isSilentCapture, forKey: SettingsKeys.isSilentCapture)
     }
 
     /// 무음 촬영 (설정에서 켬). 켜면 프레임 출력을 미리 붙여 둠
-    var isSilentCapture = false {
+    var isSilentCapture = AppDefaults.isSilentCapture {
         didSet {
             guard isSilentCapture != oldValue else { return }
             Task { await captureService.setSilentCapture(isSilentCapture) }
