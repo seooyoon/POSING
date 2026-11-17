@@ -984,6 +984,17 @@ actor CaptureService {
 
     /// 무음 촬영: 가장 최근 프레임을 사진 방향으로 돌려 JPEG로 만든 뒤 사진과 같은 자르기 · 보정
     func captureSilentPhoto(with features: PhotoFeatures) async throws -> Photo {
+        guard isSilentCapture, captureMode == .photo else { throw PhotoCaptureError.noPhotoData }
+        // 프레임을 기다리는 동안 프레임 출력이 떨어지지 않게 사진 처리 중으로 셈
+        photosInProgress += 1
+        defer {
+            photosInProgress -= 1
+            if photosInProgress == 0, let pending = pendingRAWEnabled {
+                pendingRAWEnabled = nil
+                applyRAWEnabled(pending)
+            }
+            if photosInProgress == 0 { updateFilteredPreviewOutput() }
+        }
         var frame = filteredFeed.latestFrame()
         // 막 켠 직후라 프레임이 아직 없으면 잠깐 기다림
         let deadline = Date().addingTimeInterval(AppDefaults.silentFrameWait)

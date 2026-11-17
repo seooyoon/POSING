@@ -98,17 +98,19 @@ final class FilteredPreviewFeed: NSObject, AVCaptureVideoDataOutputSampleBufferD
         state.withLock { state in
             guard state.isFiltering || state.keepsLatestFrame else { return }
             state.image = image
-            state.generation &+= 1
+            // 무음 촬영용으로만 들고 있을 때는 다시 그릴 필요 없음
+            if state.isFiltering { state.generation &+= 1 }
         }
     }
 
     var isWiping: Bool { state.withLock { $0.wipe != nil } }
 
-    /// 무음 촬영을 켜고 끔. 끄면 보정이 없을 때 들고 있던 프레임을 버림
+    /// 무음 촬영을 켜고 끔. 켜면 화면 크기 옛 프레임을 버려 전체 크기 새 프레임을 기다리게 하고,
+    /// 끄면 보정이 없을 때 들고 있던 프레임을 버림
     func setKeepsLatestFrame(_ keeps: Bool) {
         state.withLock { state in
             state.keepsLatestFrame = keeps
-            if !keeps && !state.isFiltering { state.image = nil }
+            if keeps || !state.isFiltering { state.image = nil }
         }
     }
 
